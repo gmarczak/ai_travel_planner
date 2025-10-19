@@ -1,0 +1,2 @@
+# This file ensures the savedPlans directory is tracked by Git
+# Individual plan JSON files are ignored via .gitignore

@@ -1,0 +1,155 @@
+@page
+@model project.Pages.TravelPlanner.IndexModel
+@{
+    ViewData["Title"] = "AI Travel Planner";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+            <h1 class="text-center mb-4 fw-bold">Create Your Travel Plan</h1>
+            <p class="text-center text-muted mb-4">Fill in the details below to generate a personalized AI itinerary.
+            </p>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0">Trip Details</h4>
+                </div>
+                <div class="card-body p-4">
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            <strong>Fix the issues below:</strong>
+                            <div asp-validation-summary="All" class="mt-2"></div>
+                        </div>
+                    }
+
+                    <form method="post" id="travelForm">
+                        <!-- DESTINATION & DATES -->
+                        <fieldset class="mb-4">
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">Destination & Dates
+                            </legend>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="TravelRequest.Destination" class="form-label">Destination *</label>
+                                    <input asp-for="TravelRequest.Destination" class="form-control"
+                                        placeholder="e.g. Barcelona" required />
+                                    <span asp-validation-for="TravelRequest.Destination"
+                                        class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="TravelRequest.StartDate" class="form-label">Start *</label>
+                                    <input asp-for="TravelRequest.StartDate" type="date" class="form-control"
+                                        required />
+                                    <span asp-validation-for="TravelRequest.StartDate" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label asp-for="TravelRequest.EndDate" class="form-label">End *</label>
+                                    <input asp-for="TravelRequest.EndDate" type="date" class="form-control" required />
+                                    <span asp-validation-for="TravelRequest.EndDate" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- TRAVELERS / BUDGET / TYPE -->
+                        <fieldset class="mb-4">
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">People & Budget
+                            </legend>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label asp-for="TravelRequest.NumberOfTravelers" class="form-label">Travelers
+                                        *</label>
+                                    <input asp-for="TravelRequest.NumberOfTravelers" type="number" min="1" max="20"
+                                        class="form-control" required />
+                                    <span asp-validation-for="TravelRequest.NumberOfTravelers"
+                                        class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="TravelRequest.Budget" class="form-label">Total Budget (USD)
+                                        *</label>
+                                    <input asp-for="TravelRequest.Budget" type="number" min="100" step="50"
+                                        class="form-control" placeholder="e.g. 2500" required />
+                                    <span asp-validation-for="TravelRequest.Budget" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="TravelRequest.TripType" class="form-label">Trip Type</label>
+                                    <select asp-for="TravelRequest.TripType" class="form-select">
+                                        <option value="">(optional)</option>
+                                        <option value="Adventure">Adventure</option>
+                                        <option value="Relaxation">Relaxation</option>
+                                        <option value="Cultural">Cultural</option>
+                                        <option value="Business">Business</option>
+                                        <option value="Family">Family</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- NOTE: Interests removed — form includes only destination, dates, travelers, budget, trip type, and preferences -->
+
+                        <!-- PREFERENCES -->
+                        <fieldset class="mb-4">
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">Additional
+                                Preferences</legend>
+                            <textarea asp-for="TravelRequest.TravelPreferences" class="form-control" rows="3"
+                                placeholder="Dietary needs, accessibility, pace, style, must-see spots..."></textarea>
+                        </fieldset>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="generateBtn">
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"
+                                    style="display: none;" id="loadingSpinner"></span>
+                                <span id="buttonText">Generate Travel Plan</span>
+                            </button>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <small class="text-muted">* Required fields � Processing time: a few seconds</small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <small class="text-muted">Powered by AI � Optimized for clarity</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const today = new Date().toISOString().split('T')[0];
+        const startDateInput = document.querySelector('input[name="TravelRequest.StartDate"]');
+        const endDateInput = document.querySelector('input[name="TravelRequest.EndDate"]');
+        if (startDateInput) {
+            startDateInput.min = today;
+            if (!startDateInput.value) {
+                const defaultStart = new Date();
+                defaultStart.setDate(defaultStart.getDate() + 14);
+                startDateInput.value = defaultStart.toISOString().split('T')[0];
+            }
+            startDateInput.addEventListener('change', function () {
+                if (endDateInput) {
+                    endDateInput.min = this.value;
+                    if (endDateInput.value && endDateInput.value < this.value) {
+                        const s = new Date(this.value); s.setDate(s.getDate() + 7); endDateInput.value = s.toISOString().split('T')[0];
+                    }
+                }
+            });
+        }
+        if (endDateInput && !endDateInput.value) {
+            const defaultEnd = new Date();
+            defaultEnd.setDate(defaultEnd.getDate() + 21);
+            endDateInput.value = defaultEnd.toISOString().split('T')[0];
+        }
+        const form = document.getElementById('travelForm');
+        if (form) {
+            form.addEventListener('submit', function () {
+                const btn = document.getElementById('generateBtn');
+                const spn = document.getElementById('loadingSpinner');
+                const txt = document.getElementById('buttonText');
+                if (btn && spn && txt) { btn.disabled = true; spn.style.display = 'inline-block'; txt.textContent = 'Creating your plan...'; }
+            });
+        }
+
+
+    </script>
+}

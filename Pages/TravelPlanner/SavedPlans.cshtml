@@ -1,0 +1,33 @@
+@page
+@model project.Pages.TravelPlanner.SavedPlansModel
+@{
+    ViewData["Title"] = "Saved travel plans";
+}
+
+<h1>Saved travel plans</h1>
+
+@if (Model.SavedPlans.Count == 0)
+{
+    <div class="alert alert-info">You don't have any saved travel plans yet.</div>
+}
+else
+{
+    <ul class="list-group mb-4">
+        @foreach (var item in Model.SavedPlans)
+        {
+            var plan = item.Plan;
+            var id = item.Id;
+            <li class="list-group-item">
+                <strong>@plan.Destination</strong> <br />
+                <span>@plan.StartDate.ToString("yyyy-MM-dd") - @plan.EndDate.ToString("yyyy-MM-dd")</span><br />
+                <span>Travelers: @plan.NumberOfTravelers, Budget: $@plan.Budget</span><br />
+                <a asp-page="Result" asp-route-id="@id" class="btn btn-sm btn-primary mt-2">View details</a>
+                <form method="post" asp-page-handler="Remove" asp-route-id="@id" style="display:inline">
+                    <button type="submit" class="btn btn-sm btn-danger ms-2">Remove</button>
+                </form>
+            </li>
+        }
+    </ul>
+}
+
+<a asp-page="Index" class="btn btn-secondary">Back to planner</a>

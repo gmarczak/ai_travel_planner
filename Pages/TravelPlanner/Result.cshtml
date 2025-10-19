@@ -1,0 +1,434 @@
+@page "{id?}"
+@model project.Pages.TravelPlanner.ResultModel
+@{
+    ViewData["Title"] = "Your Travel Plan";
+    var plan = Model.TravelPlan;
+    var planId = Model.PlanId ?? (Model.RouteData.Values["id"] as string);
+}
+
+<!-- GLOBAL PROCESSING OVERLAY -->
+<div id="processingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.78); z-index: 10000; display: @((Model.IsProcessing && plan == null) ? "flex" : "none");">
+    <div class="text-center p-3 rounded" style="background: rgba(255,255,255,0.95); box-shadow: 0 6px 18px rgba(0,0,0,0.08);">
+        <div class="spinner-border me-2" role="status" aria-hidden="true"></div>
+        <div class="mt-2"><span id="processingStatus">Generating your plan…</span><div class="small text-muted" id="processingSub">This may take a minute.</div></div>
+    </div>
+    </div>
+
+@if (plan == null)
+{
+    <div class="alert alert-warning">No travel plan data was found. Please create a new plan.</div>
+    <p><a asp-page="Index" class="btn btn-primary">Back to planner</a></p>
+}
+else
+{
+    var days = (plan.EndDate - plan.StartDate).Days + 1;
+    var perPersonPerDay = plan.NumberOfTravelers > 0 && days > 0
+        ? plan.Budget / plan.NumberOfTravelers / days
+        : 0;
+
+    <header class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <h1 class="mb-0">@plan.Destination</h1>
+        <div class="d-flex gap-2">
+            <span class="badge text-bg-primary">@days days</span>
+            <span class="badge text-bg-secondary">@plan.NumberOfTravelers traveler@(plan.NumberOfTravelers == 1 ? "" : "s")</span>
+            <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0") /person/day</span>
+        </div>
+    </header>
+
+    
+
+    <div class="mt-3 d-flex gap-2 flex-wrap">
+        <form method="post" asp-page-handler="Save" asp-route-id="@planId">
+            <button type="submit" class="btn btn-success">Save this plan</button>
+        </form>
+        <button type="button" class="btn btn-outline-secondary" id="copyItineraryBtn">Copy itinerary</button>
+        <a asp-page="SavedPlans" class="btn btn-outline-primary">View saved plans</a>
+    </div>
+
+    <hr />
+
+    <nav class="mb-2 d-flex gap-2" role="tablist" aria-label="Plan views">
+        <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm">Plan</button>
+        <button type="button" data-tab="map" aria-selected="false" class="btn btn-outline-primary btn-sm">Map</button>
+        <button type="button" data-tab="details" aria-selected="false" class="btn btn-outline-primary btn-sm">Details</button>
+    </nav>
+
+    <section id="tab-plan" data-tab-panel>
+        <div class="d-flex justify-content-end gap-2 mb-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="expandAllBtn">Expand all</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="collapseAllBtn">Collapse all</button>
+        </div>
+
+        @if (Model.ParsedDays.Count == 0)
+        {
+            <pre id="itineraryText" class="bg-light p-2 rounded border">@Model.VisibleItinerary</pre>
+        }
+        else
+        {
+            <div id="daysContainer">
+                @for (var i = 0; i < Model.ParsedDays.Count; i++)
+                {
+                    var d = Model.ParsedDays[i];
+                    <details class="mb-2" open>
+                        <summary class="fw-semibold">Day @d.Day @if(!string.IsNullOrWhiteSpace(d.Date)){<text>- @d.Date</text>}</summary>
+                        <pre class="mt-2 bg-light p-2 rounded border">@string.Join("\n", d.Lines)</pre>
+                    </details>
+                }
+            </div>
+        }
+
+        <details class="mt-3">
+            <summary class="fw-semibold">Edit itinerary</summary>
+            <form method="post" asp-page-handler="UpdateItinerary" asp-route-id="@planId" class="mt-2" id="itineraryForm">
+                <div class="position-sticky top-0 bg-white py-2 z-1 border-bottom mb-2 d-flex gap-2 flex-wrap align-items-center">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnDay">+ Day</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnList">� List</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnBold"><strong>B</strong></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnItalic"><em>I</em></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPreview">Preview</button>
+                    <span class="ms-auto small text-muted" id="charCount"></span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                            <textarea name="updatedItinerary" id="itineraryEditor" rows="14" class="form-control" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; white-space: pre;">@Model.VisibleItinerary</textarea>
+                        </div>
+                    <div class="col-12 col-lg-6">
+                        <div id="itineraryPreview" class="border rounded p-2 bg-light" style="min-height: 200px; display:block"></div>
+                    </div>
+                </div>
+
+                <div class="mt-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" id="btnSave">Save changes</button>
+                    <button type="submit" formaction="?handler=ResetItinerary&id=@planId" class="btn btn-outline-secondary">Reset to AI version</button>
+                </div>
+            </form>
+        </details>
+    </section>
+
+    <!-- PLAN DATA FOR CLIENT-SIDE SCRIPTS -->
+    <script id="travel-plan-data" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
+        id = planId,
+        destination = plan.Destination,
+        startDate = plan.StartDate,
+        endDate = plan.EndDate,
+        numberOfTravelers = plan.NumberOfTravelers,
+        budget = plan.Budget,
+        travelPreferences = plan.TravelPreferences,
+        accommodations = plan.Accommodations ?? new List<string>(),
+        activities = plan.Activities ?? new List<string>(),
+        transportation = plan.Transportation ?? new List<string>(),
+        generatedItinerary = plan.GeneratedItinerary ?? string.Empty,
+        createdAt = plan.CreatedAt,
+    parsedDays = (Model.ParsedDays?.Select(d => new { day = d.Day, date = d.Date, lines = d.Lines }).ToArray()) ?? Array.Empty<object>()
+    }, new System.Text.Json.JsonSerializerOptions { WriteIndented = false }))</script>
+    @Html.AntiForgeryToken()
+
+    <section id="tab-map" data-tab-panel hidden>
+        <div class="mb-2" id="map-controls"></div>
+        <div class="row g-2">
+            <div class="col-12 col-lg-8">
+                <div id="plan-map" class="bg-light rounded border" style="height:480px; width:100%;"></div>
+            </div>
+            <div class="col-12 col-lg-4">
+                <!-- SIDE PANEL: populated by client JS -->
+                <div id="side-panel" class="bg-white rounded border p-2" style="min-height:480px; max-height:480px; overflow:auto;">
+                    <div class="d-flex align-items-center mb-2">
+                        <h5 class="mb-0">Day details</h5>
+                        <small class="text-muted ms-auto">Drag to reorder</small>
+                    </div>
+                    <div class="px-1 py-2 text-muted small">Select a day from map controls to view and reorder points. Use the search box to add places to the selected day.</div>
+                    <!-- list populated by results-map.js -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="tab-details" data-tab-panel hidden>
+        <h2 class="h4">Summary</h2>
+        <div class="row g-3">
+            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Dates: @plan.StartDate.ToString("MMM dd, yyyy") - @plan.EndDate.ToString("MMM dd, yyyy") (@days days)</div></div>
+            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Travelers: @plan.NumberOfTravelers</div></div>
+            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Budget: $@plan.Budget (@perPersonPerDay.ToString("F0") per person per day)</div></div>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(plan.TravelPreferences))
+        {
+            <p class="mt-3">Preferences: @plan.TravelPreferences</p>
+        }
+        @if (plan.Accommodations != null && plan.Accommodations.Count > 0)
+        {
+            <h3 class="h5 mt-3">Accommodations</h3>
+            <ul class="list-group">
+                @foreach (var item in plan.Accommodations) { <li class="list-group-item">@item</li> }
+            </ul>
+        }
+        @if (plan.Activities != null && plan.Activities.Count > 0)
+        {
+            <h3 class="h5 mt-3">Activities</h3>
+            <ul class="list-group">
+                @foreach (var item in plan.Activities) { <li class="list-group-item">@item</li> }
+            </ul>
+        }
+        @if (plan.Transportation != null && plan.Transportation.Count > 0)
+        {
+            <h3 class="h5 mt-3">Transportation</h3>
+            <ul class="list-group">
+                @foreach (var t in plan.Transportation) { <li class="list-group-item">@t</li> }
+            </ul>
+        }
+        <details class="mt-3">
+            <summary class="fw-semibold">Edit details</summary>
+            <form id="detailsForm" method="post" asp-page-handler="UpdateDetails" asp-route-id="@planId" class="mt-3">
+                <div class="row g-3">
+                    <div class="col-sm-6 col-md-3">
+                        <label class="form-label">Start</label>
+                        <input type="date" name="startDate" value="@plan.StartDate.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <label class="form-label">End</label>
+                        <input type="date" name="endDate" value="@plan.EndDate.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <label class="form-label">Travelers</label>
+                        <input type="number" name="numberOfTravelers" min="1" max="20" value="@plan.NumberOfTravelers" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <label class="form-label">Budget (USD)</label>
+                        <input type="number" name="budget" min="0" step="1" value="@plan.Budget" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                    </div>
+                </div>
+
+                <hr />
+
+                <div class="mb-3">
+                    <label class="form-label">Additional preferences</label>
+                    <textarea name="travelPreferences" class="form-control" rows="2" @(Model.IsProcessing?"disabled":"")>@plan.TravelPreferences</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Accommodations (one per line)</label>
+                    <textarea name="accommodations" class="form-control" rows="3" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan.Accommodations ?? new List<string>())</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Activities (one per line)</label>
+                    <textarea name="activities" class="form-control" rows="3" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan.Activities ?? new List<string>())</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Transportation (one per line)</label>
+                    <textarea name="transportation" class="form-control" rows="2" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan.Transportation ?? new List<string>())</textarea>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" @(Model.IsProcessing?"disabled":"")>Save details</button>
+                    <a asp-page="Result" asp-route-id="@planId" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </details>
+    </section>
+}
+
+@section Scripts {
+    <script>
+        (function(){
+            // REMOVE OVERLAY IF PLAN DATA PRESENT
+            try {
+                const overlayEarly = document.getElementById('processingOverlay');
+                const hasPlanEarly = document.getElementById('travel-plan-data') != null;
+                if (overlayEarly && hasPlanEarly) {
+                    overlayEarly.remove();
+                }
+            } catch {}
+            // POLL GENERATION STATUS AND RELOAD WHEN READY/FAILED
+            const isProcessing = @(Model.IsProcessing.ToString().ToLower());
+            const currentId = "@(Model.PlanId ?? (Model.RouteData.Values["id"] as string) ?? string.Empty)";
+            if (isProcessing && currentId) {
+                let attempts = 0;
+                const overlay = document.getElementById('processingOverlay');
+                const statusEl = document.getElementById('processingStatus');
+                const subEl = document.getElementById('processingSub');
+                const hasPlanDataEarly = document.getElementById('travel-plan-data') != null;
+                if (overlay) {
+                    overlay.style.display = hasPlanDataEarly ? 'none' : 'flex';
+                    overlay.style.pointerEvents = hasPlanDataEarly ? 'none' : 'auto';
+                    overlay.setAttribute('aria-hidden', hasPlanDataEarly ? 'true' : 'false');
+                }
+                const poll = async () => {
+                    try {
+                        const res = await fetch(`?handler=Status&id=${encodeURIComponent(currentId)}`, { cache: 'no-store' });
+                        if (!res.ok) throw 0;
+                        const data = await res.json();
+                        const s = (data.status || '').toString();
+                        if (statusEl) {
+                            if (s === 'Queued') statusEl.textContent = 'Your plan is queued for generation.';
+                            else if (s === 'InProgress') statusEl.textContent = 'Generating your plan — in progress.';
+                            else if (s === 'Completed') statusEl.textContent = 'Generation complete — reloading...';
+                            else if (s === 'Failed') statusEl.textContent = 'Generation failed.';
+                        }
+                        if (subEl) {
+                            if (s === 'Queued') subEl.textContent = 'Waiting for processing slot.';
+                            else if (s === 'InProgress') subEl.textContent = 'This may take a minute.';
+                            else subEl.textContent = '';
+                        }
+                        if (s !== 'Queued' && s !== 'InProgress') {
+                            // SHOW FINAL MESSAGE THEN RELOAD
+                            setTimeout(() => {
+                                const cleanUrl = window.location.pathname + '?id=' + encodeURIComponent(currentId);
+                                window.location.href = cleanUrl;
+                            }, 700);
+                            return;
+                        }
+                    } catch {}
+                    if (++attempts <= 480) setTimeout(poll, 1500); // up to ~12 minutes
+                };
+                poll();
+            }
+
+            // TOAST HELPER
+            function showToast(message, variant){
+                const cont = document.getElementById('globalToasts'); if(!cont) return;
+                const el = document.createElement('div');
+                el.className = 'toast align-items-center text-bg-' + (variant||'success') + ' border-0 show mb-2';
+                el.setAttribute('role','alert'); el.setAttribute('aria-live','assertive'); el.setAttribute('aria-atomic','true');
+                el.innerHTML = '<div class="d-flex"><div class="toast-body">'+message+'</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+                cont.appendChild(el);
+                setTimeout(()=>{ el.remove(); }, 3500);
+            }
+            const url = new URL(window.location.href);
+            const ok = url.searchParams.get('ok');
+            if(ok==='saved') showToast('Itinerary saved.','success');
+            if(ok==='reset') showToast('Itinerary reset to AI version.','secondary');
+
+            // COPY ITINERARY
+            const copyBtn = document.getElementById('copyItineraryBtn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', async () => {
+                    let text = '';
+                    const pre = document.getElementById('itineraryText');
+                    if (pre) text = pre.textContent || '';
+                    else {
+                        const days = document.querySelectorAll('#daysContainer details pre');
+                        text = Array.from(days).map(x => x.textContent || '').join('\n\n');
+                    }
+                    try { await navigator.clipboard.writeText(text); showToast('Itinerary copied.','primary'); } catch {}
+                });
+            }
+
+            // EXPAND/COLLAPSE ALL
+            const expandBtn = document.getElementById('expandAllBtn');
+            const collapseBtn = document.getElementById('collapseAllBtn');
+            const container = document.getElementById('daysContainer');
+            if (expandBtn && collapseBtn && container) {
+                expandBtn.addEventListener('click', () => { container.querySelectorAll('details').forEach(d => d.open = true); });
+                collapseBtn.addEventListener('click', () => { container.querySelectorAll('details').forEach(d => d.open = false); });
+            }
+
+            // EDITOR HELPERS
+            const ta = document.getElementById('itineraryEditor');
+            const preview = document.getElementById('itineraryPreview');
+            const btnPreview = document.getElementById('btnPreview');
+            const btnDay = document.getElementById('btnDay');
+            const btnList = document.getElementById('btnList');
+            const btnBold = document.getElementById('btnBold');
+            const btnItalic = document.getElementById('btnItalic');
+            const charCount = document.getElementById('charCount');
+            const btnSave = document.getElementById('btnSave');
+
+            function updateCharCount(){ if(!ta||!charCount) return; charCount.textContent = (ta.value.length) + ' chars'; }
+            function autosize(){ if(!ta) return; ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 4) + 'px'; }
+            function wrapSelection(prefix, suffix){
+                if(!ta) return;
+                const start = ta.selectionStart, end = ta.selectionEnd;
+                const v = ta.value;
+                const before = v.slice(0, start), sel = v.slice(start, end), after = v.slice(end);
+                ta.value = before + prefix + sel + suffix + after;
+                ta.selectionStart = start + prefix.length;
+                ta.selectionEnd = end + prefix.length;
+                ta.focus(); autosize(); updateCharCount();
+            }
+            function toggleList(){
+                if(!ta) return;
+                const start = ta.selectionStart, end = ta.selectionEnd;
+                const v = ta.value;
+                const before = v.slice(0, start);
+                const sel = v.slice(start, end);
+                const after = v.slice(end);
+                const lines = sel.split(/\r?\n/).map(l => l.length ? (l.startsWith('- ') ? l.slice(2) : ('- ' + l)) : l);
+                const out = lines.join('\n');
+                ta.value = before + out + after;
+                ta.selectionStart = start;
+                ta.selectionEnd = start + out.length;
+                ta.focus(); autosize(); updateCharCount();
+            }
+            function insertDay(){
+                if(!ta) return;
+                const existing = (ta.value.match(/\bDay\s*(\d+)/gi)||[]).map(x=>parseInt(x.replace(/\D/g,''))).filter(n=>!isNaN(n));
+                const next = existing.length ? Math.max.apply(null, existing)+1 : 1;
+                const n = prompt('Day number:', String(next));
+                if(n===null) return;
+                const d = prompt('Optional date (e.g., Oct 27, 2025):', '');
+                const header = `Day ${n}${d? ' - '+d : ''}` + '\n';
+                const start = ta.selectionStart; const v = ta.value;
+                ta.value = v.slice(0, start) + header + v.slice(start);
+                ta.selectionStart = ta.selectionEnd = start + header.length;
+                ta.focus(); autosize(); updateCharCount();
+            }
+            function renderPreview(){
+                if(!ta || !preview) return;
+                const text = ta.value;
+                const lines = text.split(/\r?\n/);
+                let html = '';
+                const dayRe = /^Day\s*(\d+)\s*[-��:)?]*\s*(.*)$/i;
+                let buf = [];
+                function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+                function flush(){ if(buf.length){ html += '<p>'+buf.map(esc).join('<br/>')+'</p>'; buf=[]; } }
+                for(const l of lines){
+                    if(!l.trim()){ flush(); continue; }
+                    const m = l.match(dayRe);
+                    if(m){ flush(); html += `<h3>Day ${m[1]} ${m[2] ? '- ' + esc(m[2]) : ''}</h3>`; continue; }
+                    if(l.startsWith('- ')){ flush(); html += `<li>${esc(l.substring(2))}</li>`; }
+                    else { buf.push(l); }
+                }
+                flush();
+                // WRAP LOOSE LI INTO UL
+                if(html.includes('<li>')) html = '<ul>'+html.replace(/(<\/li>)(?!\s*<li>)/g,'$1')+'</ul>';
+                preview.innerHTML = html || '<em>Nothing to preview</em>';
+            }
+
+            if(ta){ updateCharCount(); autosize();
+                // Ensure preview is rendered on load when preview pane is visible
+                try { if (preview && preview.style.display !== 'none') { renderPreview(); preview.style.display = 'block'; } } catch(e) {}
+                ta.addEventListener('input', ()=>{ updateCharCount(); autosize(); try { if(preview.style.display!=='none') renderPreview(); } catch{} });
+                ta.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); btnSave?.click(); }});
+            }
+            btnBold?.addEventListener('click', ()=> wrapSelection('**','**'));
+            btnItalic?.addEventListener('click', ()=> wrapSelection('_','_'));
+            btnList?.addEventListener('click', toggleList);
+            btnDay?.addEventListener('click', insertDay);
+            btnPreview?.addEventListener('click', ()=>{
+                if(!preview) return;
+                const visible = preview.style.display !== 'none';
+                if(visible){ preview.style.display = 'none'; }
+                else { renderPreview(); preview.style.display = 'block'; }
+            });
+
+            // TOGGLE OVERLAY AND DISABLE DETAILS FORM WHEN PROCESSING
+            try {
+                const overlay = document.getElementById('processingOverlay');
+                const detailsForm = document.getElementById('detailsForm');
+                const hasPlanData = document.getElementById('travel-plan-data') != null;
+                if (overlay) {
+                    if (isProcessing && !hasPlanData) {
+                        overlay.style.display = 'flex';
+                        overlay.style.pointerEvents = 'auto';
+                        overlay.setAttribute('aria-hidden','false');
+                    } else {
+                        overlay.style.display = 'none';
+                        overlay.style.pointerEvents = 'none';
+                        overlay.setAttribute('aria-hidden','true');
+                    }
+                }
+                if (detailsForm && isProcessing) {
+                    detailsForm.querySelectorAll('input,textarea,button,select').forEach(el => el.disabled = true);
+                }
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
+}

@@ -1,0 +1,165 @@
+/* Custom dark green theme for Travel Planner */
+:root {
+    --primary-color: #1a5d1a;
+    /* Dark green */
+    --primary-hover: #0e4e0e;
+    /* Darker green for hover */
+    --secondary-color: #4d774e;
+    /* Medium green */
+    --accent-color: #9dc88d;
+    /* Light green accent */
+    --dark-text: #263238;
+    /* Dark text color */
+    --light-text: #f8f9fa;
+    /* Light text color */
+    --light-bg: #f5f8f5;
+    /* Light background with green tint */
+    --card-bg: #ffffff;
+    /* Card background */
+    --border-color: #dee2e6;
+    /* Border color */
+}
+
+/* Override Bootstrap's primary color */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover,
+.btn-primary:active,
+.btn-primary:focus {
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+}
+
+.text-bg-primary,
+.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+/* Secondary buttons */
+.btn-outline-secondary {
+    color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.badge.text-bg-secondary {
+    background-color: var(--secondary-color) !important;
+}
+
+/* Success badges/elements */
+.badge.text-bg-success {
+    background-color: var(--primary-color) !important;
+}
+
+/* Card styling */
+.card {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    border-top-left-radius: 8px !important;
+    border-top-right-radius: 8px !important;
+}
+
+/* Form controls with subtle styling */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(26, 93, 26, 0.25);
+}
+
+/* Background colors for pre elements */
+pre,
+.bg-light {
+    background-color: var(--light-bg) !important;
+}
+
+/* Tab buttons - active state */
+[data-tab][aria-selected="true"] {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Itinerary sections */
+#daysContainer details summary {
+    cursor: pointer;
+    color: var(--primary-color);
+    padding: 8px;
+    border-radius: 4px;
+    background-color: var(--light-bg);
+    transition: all 0.2s ease;
+}
+
+#daysContainer details summary:hover {
+    background-color: var(--accent-color);
+    color: var(--dark-text);
+}
+
+#daysContainer details[open] summary {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+/* Editor toolbar */
+.editor-toolbar {
+    background-color: var(--light-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Minimalist styling for buttons */
+.btn {
+    border-radius: 4px;
+}
+
+/* Toast notifications */
+.toast {
+    border-radius: 4px;
+}
+
+/* Minimalist style for the entire app */
+body {
+    color: var(--dark-text);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: 600;
+}
+
+/* Cleaner details/summary styling */
+details {
+    margin-bottom: 1rem;
+}
+
+details summary {
+    font-weight: 500;
+}

@@ -1,0 +1,74 @@
+/* Additional styles for travel form components */
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.alert-info {
+    background-color: rgba(26, 93, 26, 0.1);
+    border-color: rgba(26, 93, 26, 0.2);
+    color: var(--primary-color);
+}
+
+/* Custom styles for the home page */
+.hero-section {
+    background: linear-gradient(to bottom, rgba(26, 93, 26, 0.8), rgba(26, 93, 26, 0.6)),
+        url('/img/travel-bg.jpg') center/cover no-repeat;
+    color: white;
+    padding: 80px 0;
+    text-align: center;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.hero-section h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.hero-section p {
+    font-size: 1.2rem;
+    max-width: 80%;
+    margin: 0 auto 1.5rem;
+}
+
+/* Minimalist date input styling */
+input[type="date"] {
+    border-radius: 4px;
+}
+
+/* Custom styling for form sections */
+fieldset {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
+}
+
+fieldset:last-of-type {
+    border-bottom: none;
+}
+
+/* Minimalist legend styling */
+legend.h6 {
+    letter-spacing: 1px;
+}
+
+/* Save plan button styling */
+.btn-success {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-success:hover,
+.btn-success:focus {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+/* Map container styling */
+#plan-map {
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
