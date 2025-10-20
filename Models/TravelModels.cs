@@ -14,6 +14,9 @@ namespace project.Models
         public string GeneratedItinerary { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
 
+        // External cache id (GUID string) used to link in-memory generated plans to persisted rows
+        public string? ExternalId { get; set; }
+
         // Foreign key to ApplicationUser (nullable for existing plans)
         public string? UserId { get; set; }
 

@@ -9,14 +9,16 @@ namespace project.Pages.Account;
 public class LoginModel : PageModel
 {
     private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly UserManager<ApplicationUser> _user_manager;
     private readonly ILogger<LoginModel> _logger;
+    private readonly project.Services.SavedPlansService _savedPlansService;
 
-    public LoginModel(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, ILogger<LoginModel> logger)
+    public LoginModel(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, ILogger<LoginModel> logger, project.Services.SavedPlansService savedPlansService)
     {
         _signInManager = signInManager;
-        _userManager = userManager;
+        _user_manager = userManager;
         _logger = logger;
+        _savedPlansService = savedPlansService;
     }
 
     [BindProperty]
@@ -61,7 +63,7 @@ public class LoginModel : PageModel
 
             if (result.Succeeded)
             {
-                var user = await _userManager.FindByEmailAsync(Input.Email);
+                var user = await _user_manager.FindByEmailAsync(Input.Email);
                 Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
                 Console.WriteLine("║                  ✅ USER LOGGED IN                         ║");
                 Console.WriteLine("╠════════════════════════════════════════════════════════════╣");
@@ -71,6 +73,20 @@ public class LoginModel : PageModel
                 Console.WriteLine($"║ Time:       {DateTime.Now:yyyy-MM-dd HH:mm:ss}                         ║");
                 Console.WriteLine($"║ Remember:   {(Input.RememberMe ? "Yes" : "No"),-45} ║");
                 Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
+
+                // Merge anonymous saved plans into user's account if present
+                try
+                {
+                    var anonId = Request.Cookies["anon_saved_plans_id"];
+                    if (!string.IsNullOrWhiteSpace(anonId) && user != null)
+                    {
+                        _savedPlansService.MergeAnonymousPlansToUser(user.Id, anonId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to merge anonymous plans for user {Email}", Input.Email);
+                }
 
                 _logger.LogInformation("User {Email} logged in at {Time}.", Input.Email, DateTime.Now);
                 return LocalRedirect(returnUrl);

@@ -11,12 +11,14 @@ public class RegisterModel : PageModel
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly ILogger<RegisterModel> _logger;
+    private readonly project.Services.SavedPlansService _savedPlansService;
 
-    public RegisterModel(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ILogger<RegisterModel> logger)
+    public RegisterModel(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ILogger<RegisterModel> logger, project.Services.SavedPlansService savedPlansService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _logger = logger;
+        _savedPlansService = savedPlansService;
     }
 
     [BindProperty]
@@ -81,6 +83,20 @@ public class RegisterModel : PageModel
                 _logger.LogInformation("User {Email} created a new account with ID {UserId}.", user.Email, user.Id);
 
                 await _signInManager.SignInAsync(user, isPersistent: false);
+
+                // Merge anonymous saved plans into the new user account (if any)
+                try
+                {
+                    var anonId = Request.Cookies["anon_saved_plans_id"];
+                    if (!string.IsNullOrWhiteSpace(anonId))
+                    {
+                        _savedPlansService.MergeAnonymousPlansToUser(user.Id, anonId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to merge anonymous plans for new user {UserId}", user.Id);
+                }
 
                 Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
                 Console.WriteLine("║           ✅ AUTO-LOGIN AFTER REGISTRATION                 ║");

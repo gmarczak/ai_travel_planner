@@ -23,6 +23,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Destination).IsRequired().HasMaxLength(200);
             entity.Property(e => e.GeneratedItinerary).HasMaxLength(10000);
+            entity.Property(e => e.ExternalId).HasMaxLength(100);
 
             // Foreign key to ApplicationUser
             entity.HasOne<ApplicationUser>()

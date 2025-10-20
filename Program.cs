@@ -93,6 +93,9 @@ builder.Services.AddRazorPages();
 // ERROR MONITORING
 builder.Services.AddScoped<IErrorMonitoringService, ErrorMonitoringService>();
 
+// Saved plans service (merging anonymous plans into user account)
+builder.Services.AddScoped<SavedPlansService>();
+
 // REGISTER TRAVEL SERVICE
 if (useClaude)
 {

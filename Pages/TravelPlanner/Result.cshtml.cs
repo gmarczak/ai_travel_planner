@@ -20,15 +20,18 @@ namespace project.Pages.TravelPlanner
         private readonly ITravelService _travelService;
         private readonly IPlanJobQueue _queue;
         private readonly IWebHostEnvironment _env;
-        private const string SavedPlansKey = "SavedPlansList";
+        private readonly project.Data.ApplicationDbContext _db;
+        private const string SavedPlansKeyPrefix = "savedplans:";
+        private const string AnonymousCookieName = "anon_saved_plans_id";
 
-        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env)
+        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env, project.Data.ApplicationDbContext db)
         {
             _logger = logger;
             _cache = cache;
             _travelService = travelService;
             _queue = queue;
             _env = env;
+            _db = db;
         }
 
         public string? PlanId { get; private set; }
@@ -89,7 +92,8 @@ namespace project.Pages.TravelPlanner
                 {
                     _logger.LogWarning(ex, "Failed to load saved plan from disk for id={Id}", id);
                 }
-                var savedIds = _cache.GetOrCreate(SavedPlansKey, entry => new List<string>());
+                var savedIdsKey = GetSavedPlansKey();
+                var savedIds = _cache.GetOrCreate(savedIdsKey, entry => new List<string>());
                 savedIds ??= new List<string>();
                 IsSaved = savedIds.Contains(id);
                 _logger.LogInformation("TravelPlan loaded from cache: ID={Id}, Destination={Destination}", plan.Id, plan.Destination);
@@ -126,6 +130,39 @@ namespace project.Pages.TravelPlanner
             _logger.LogWarning("TravelPlan not found in cache for id: {Id}", id);
             TempData["ErrorMessage"] = "No travel plan found. Please create a new plan.";
             return RedirectToPage("Index");
+        }
+
+        private string GetSavedPlansKey()
+        {
+            // If user is authenticated, scope saved plans to user id
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrWhiteSpace(userId)) return SavedPlansKeyPrefix + "user:" + userId;
+            }
+
+            // Otherwise use an anonymous cookie identifier stored for 1 year
+            var anon = GetOrCreateAnonymousId();
+            return SavedPlansKeyPrefix + "anon:" + anon;
+        }
+
+        private string GetOrCreateAnonymousId()
+        {
+            if (Request.Cookies.TryGetValue(AnonymousCookieName, out var existing) && !string.IsNullOrWhiteSpace(existing))
+            {
+                return existing;
+            }
+
+            var newId = Guid.NewGuid().ToString();
+            var cookieOptions = new Microsoft.AspNetCore.Http.CookieOptions
+            {
+                Expires = DateTimeOffset.UtcNow.AddYears(1),
+                HttpOnly = true,
+                IsEssential = true,
+                Secure = Request.IsHttps
+            };
+            Response.Cookies.Append(AnonymousCookieName, newId, cookieOptions);
+            return newId;
         }
 
         public IActionResult OnPostUpdateItinerary(string id, string updatedItinerary)
@@ -229,17 +266,69 @@ namespace project.Pages.TravelPlanner
         {
             if (string.IsNullOrWhiteSpace(id)) { TempData["ErrorMessage"] = "No travel plan found to save."; return RedirectToPage("Index"); }
             if (!_cache.TryGetValue(id, out TravelPlan? plan) || plan == null) { TempData["ErrorMessage"] = "No travel plan found to save."; return RedirectToPage("Index"); }
-            var savedIds = _cache.GetOrCreate(SavedPlansKey, entry => new List<string>());
-            savedIds ??= new List<string>();
-            if (!savedIds.Contains(id)) { savedIds.Add(id); _cache.Set(SavedPlansKey, savedIds, TimeSpan.FromDays(7)); }
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                // Persist to DB for authenticated users
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrWhiteSpace(userId))
+                {
+                    // check if exists
+                    var existing = _db.TravelPlans.FirstOrDefault(tp => tp.ExternalId == id && tp.UserId == userId);
+                    if (existing == null)
+                    {
+                        var toSave = new TravelPlan
+                        {
+                            Destination = plan.Destination,
+                            StartDate = plan.StartDate,
+                            EndDate = plan.EndDate,
+                            NumberOfTravelers = plan.NumberOfTravelers,
+                            Budget = plan.Budget,
+                            TravelPreferences = plan.TravelPreferences ?? string.Empty,
+                            GeneratedItinerary = plan.GeneratedItinerary ?? string.Empty,
+                            CreatedAt = DateTime.UtcNow,
+                            UserId = userId,
+                            ExternalId = id,
+                            Accommodations = plan.Accommodations,
+                            Activities = plan.Activities,
+                            Transportation = plan.Transportation
+                        };
+                        _db.TravelPlans.Add(toSave);
+                        _db.SaveChanges();
+                    }
+                }
+            }
+            else
+            {
+                var savedIdsKey = GetSavedPlansKey();
+                var savedIds = _cache.GetOrCreate(savedIdsKey, entry => new List<string>());
+                savedIds ??= new List<string>();
+                if (!savedIds.Contains(id)) { savedIds.Add(id); _cache.Set(savedIdsKey, savedIds, TimeSpan.FromDays(7)); }
+            }
             TempData["SuccessMessage"] = "Plan saved."; return RedirectToPage("Result", new { id });
         }
 
         public IActionResult OnPostRemove(string id)
         {
-            var savedIds = _cache.GetOrCreate(SavedPlansKey, entry => new List<string>());
-            savedIds ??= new List<string>();
-            if (savedIds.Contains(id)) { savedIds.Remove(id); _cache.Set(SavedPlansKey, savedIds, TimeSpan.FromDays(7)); }
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrWhiteSpace(userId))
+                {
+                    var existing = _db.TravelPlans.FirstOrDefault(tp => tp.ExternalId == id && tp.UserId == userId);
+                    if (existing != null)
+                    {
+                        _db.TravelPlans.Remove(existing);
+                        _db.SaveChanges();
+                    }
+                }
+            }
+            else
+            {
+                var savedIdsKey = GetSavedPlansKey();
+                var savedIds = _cache.GetOrCreate(savedIdsKey, entry => new List<string>());
+                savedIds ??= new List<string>();
+                if (savedIds.Contains(id)) { savedIds.Remove(id); _cache.Set(savedIdsKey, savedIds, TimeSpan.FromDays(7)); }
+            }
             TempData["SuccessMessage"] = "Plan removed from saved."; return RedirectToPage("Result", new { id });
         }
 
