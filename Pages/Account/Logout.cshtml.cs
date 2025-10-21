@@ -36,6 +36,8 @@ public class LogoutModel : PageModel
 
         _logger.LogInformation("User {Email} logged out at {Time}.", userEmail, DateTime.Now);
 
+        TempData["InfoMessage"] = "You have been logged out successfully.";
+
         if (returnUrl != null)
         {
             return LocalRedirect(returnUrl);

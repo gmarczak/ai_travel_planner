@@ -1,65 +1,47 @@
 using project.Data;
 using project.Models;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace project.Services
 {
     public class SavedPlansService
     {
-        private readonly IMemoryCache _cache;
         private readonly ApplicationDbContext _db;
 
-        public SavedPlansService(IMemoryCache cache, ApplicationDbContext db)
+        public SavedPlansService(ApplicationDbContext db)
         {
-            _cache = cache;
             _db = db;
         }
 
-        // Merge anonymous saved plans from cache (key: savedplans:anon:{anonId}) into DB for given userId
-        public void MergeAnonymousPlansToUser(string userId, string anonId)
+        // Merge anonymous saved plans into user account (simple UPDATE in DB)
+        public void MergeAnonymousPlansToUser(string userId, string anonCookieId)
         {
-            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(anonId)) return;
+            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(anonCookieId)) return;
 
-            var key = $"savedplans:anon:{anonId}";
-            var ids = _cache.GetOrCreate(key, entry => new List<string>());
-            if (ids == null || ids.Count == 0) return;
+            // Find all plans with matching AnonymousCookieId
+            var anonPlans = _db.TravelPlans
+                .Where(tp => tp.AnonymousCookieId == anonCookieId && tp.UserId == null)
+                .ToList();
 
-            foreach (var id in ids)
+            if (anonPlans.Count == 0) return;
+
+            // Update to assign UserId and clear AnonymousCookieId
+            foreach (var plan in anonPlans)
             {
-                try
+                // Check if user already has this plan (by ExternalId)
+                var exists = _db.TravelPlans.Any(tp => tp.ExternalId == plan.ExternalId && tp.UserId == userId);
+                if (!exists)
                 {
-                    if (!_cache.TryGetValue(id, out TravelPlan? plan) || plan == null) continue;
-
-                    // Check duplicate
-                    var exists = _db.TravelPlans.Any(tp => tp.ExternalId == id && tp.UserId == userId);
-                    if (exists) continue;
-
-                    var entity = new TravelPlan
-                    {
-                        Destination = plan.Destination,
-                        StartDate = plan.StartDate,
-                        EndDate = plan.EndDate,
-                        NumberOfTravelers = plan.NumberOfTravelers,
-                        Budget = plan.Budget,
-                        TravelPreferences = plan.TravelPreferences ?? string.Empty,
-                        GeneratedItinerary = plan.GeneratedItinerary ?? string.Empty,
-                        CreatedAt = DateTime.UtcNow,
-                        UserId = userId,
-                        ExternalId = id,
-                        Accommodations = plan.Accommodations,
-                        Activities = plan.Activities,
-                        Transportation = plan.Transportation
-                    };
-
-                    _db.TravelPlans.Add(entity);
+                    plan.UserId = userId;
+                    plan.AnonymousCookieId = null;
                 }
-                catch { /* swallow per-item errors */ }
+                else
+                {
+                    // Duplicate - remove the anonymous version
+                    _db.TravelPlans.Remove(plan);
+                }
             }
 
             _db.SaveChanges();
-
-            // Clear anonymous list after merging
-            _cache.Remove(key);
         }
     }
 }

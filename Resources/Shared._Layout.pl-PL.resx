@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, ...</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, ...</value></resheader>
+  <data name="AppTitle" xml:space="preserve"><value>Planer Podróży (AI)</value></data>
+  <data name="Home" xml:space="preserve"><value>Strona główna</value></data>
+  <data name="PlanTrip" xml:space="preserve"><value>Zaplanować podróż</value></data>
+  <data name="SavedTrips" xml:space="preserve"><value>Zapisane podróże</value></data>
+  <data name="MyPlans" xml:space="preserve"><value>Moje plany</value></data>
+  <data name="Logout" xml:space="preserve"><value>Wyloguj</value></data>
+  <data name="SaveThisPlan" xml:space="preserve"><value>Zapisz plan</value></data>
+  <data name="ViewSavedPlans" xml:space="preserve"><value>Zobacz zapisane plany</value></data>
+  <data name="GoHome" xml:space="preserve"><value>Strona główna</value></data>
+  <data name="Login" xml:space="preserve"><value>Zaloguj</value></data>
+  <data name="SignUp" xml:space="preserve"><value>Zarejestruj się</value></data>
+  <data name="PlanTab" xml:space="preserve"><value>Plan</value></data>
+  <data name="MapTab" xml:space="preserve"><value>Mapa</value></data>
+  <data name="DetailsTab" xml:space="preserve"><value>Szczegóły</value></data>
+  <data name="ExpandAll" xml:space="preserve"><value>Rozwiń wszystkie</value></data>
+  <data name="CollapseAll" xml:space="preserve"><value>Zwiń wszystkie</value></data>
+  <data name="CopyItinerary" xml:space="preserve"><value>Skopiuj plan</value></data>
+  <data name="EditItinerary" xml:space="preserve"><value>Edytuj plan</value></data>
+  <data name="SaveChanges" xml:space="preserve"><value>Zapisz zmiany</value></data>
+  <data name="ResetToAI" xml:space="preserve"><value>Przywróć wersję AI</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Anuluj</value></data>
+  <data name="CreateYourTravelPlan" xml:space="preserve"><value>Utwórz plan podróży</value></data>
+  <data name="MostPopularTrips" xml:space="preserve"><value>NAJBARDZIEJ POPULARNE TRASY</value></data>
+  <data name="NoPopularTripsMessage" xml:space="preserve"><value>Brak popularnych wycieczek — utwórz i zapisz plany, aby wypełnić tę listę.</value></data>
+  <data name="DaysFormat" xml:space="preserve"><value>{0} dni</value></data>
+  <data name="TravelerSingular" xml:space="preserve"><value>{0} podróżny</value></data>
+  <data name="TravelerPlural" xml:space="preserve"><value>{0} podróżnych</value></data>
+  <data name="PerPersonPerDayFormat" xml:space="preserve"><value>{0} $ /os./dzień</value></data>
+  <data name="DayLabel" xml:space="preserve"><value>Dzień</value></data>
+  <data name="Privacy" xml:space="preserve"><value>Polityka prywatności</value></data>
+  <data name="ViewDetails" xml:space="preserve"><value>Szczegóły</value></data>
+  <data name="Remove" xml:space="preserve"><value>Usuń</value></data>
+  <data name="PlanNewTrip" xml:space="preserve"><value>Zaplanować nową podróż</value></data>
+  <data name="StartPlanning" xml:space="preserve"><value>Rozpocznij planowanie podróży</value></data>
+  <data name="Privacy" xml:space="preserve"><value>Polityka prywatności</value></data>
+</root>

@@ -89,6 +89,7 @@ public class LoginModel : PageModel
                 }
 
                 _logger.LogInformation("User {Email} logged in at {Time}.", Input.Email, DateTime.Now);
+                TempData["SuccessMessage"] = $"Welcome back, {user?.FullName ?? user?.Email ?? "User"}!";
                 return LocalRedirect(returnUrl);
             }
             else

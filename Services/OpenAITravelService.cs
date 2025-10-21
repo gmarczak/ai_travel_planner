@@ -39,7 +39,7 @@ namespace project.Services
 
                 var messages = new List<ChatMessage>
                 {
-                    new SystemChatMessage("You are an expert travel planner. Create detailed, personalized travel itineraries based on user preferences. Always respond in JSON format."),
+                    new SystemChatMessage($"You are an expert travel planner. Create detailed, personalized travel itineraries based on user preferences. Always respond in JSON format. Respond in English (en-US)."),
                     new UserChatMessage(prompt)
                 };
 
@@ -189,13 +189,12 @@ Day 1 ({request.StartDate:MMM dd, yyyy}): Brief overview of the day
 Day 2 ({request.StartDate.AddDays(1):MMM dd, yyyy}): Overview
 ...continue for ALL {days} days...
 
-Please respond with a JSON object in this exact format:
-{{{{
-    ""itinerary"": ""Complete day-by-day itinerary for ALL {days} DAYS as a single string with line breaks"",
-    ""accommodations"": [""Hotel name with location and brief description"", ""Alternative hotel option"", ""Budget-friendly option""],
-    ""activities"": [""Must-see attraction 1 with description"", ""Activity 2"", ""Activity 3"", ""Activity 4"", ""Hidden gem or local favorite""],
-    ""transportation"": [""Primary transport option with details"", ""Alternative transport method"", ""Tips for getting around efficiently""]
-}}}}
+
+Please respond with a JSON object. Return a JSON object with the following keys (property names in English):
+- 'itinerary' (complete day-by-day itinerary as a single string with line breaks),
+- 'accommodations' (array of hotel recommendations),
+- 'activities' (array of must-see activities),
+- 'transportation' (array of transport recommendations).
 
 CRITICAL: Include ALL {days} days in the itinerary. Make it detailed and specific with real place names, restaurants, and practical recommendations.";
         }

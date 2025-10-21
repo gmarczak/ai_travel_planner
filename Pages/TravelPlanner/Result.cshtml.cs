@@ -58,7 +58,53 @@ namespace project.Pages.TravelPlanner
 
             var requestedProcessing = processing == true;
 
-            if (_cache.TryGetValue(id, out TravelPlan? plan) && plan != null)
+            // First try cache
+            TravelPlan? plan = null;
+            if (_cache.TryGetValue(id, out TravelPlan? cachedPlan) && cachedPlan != null)
+            {
+                plan = cachedPlan;
+            }
+            // If not in cache, try loading from database
+            else
+            {
+                var userId = User?.Identity?.IsAuthenticated == true
+                    ? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    : null;
+
+                var anonymousCookieId = string.IsNullOrWhiteSpace(userId) && Request.Cookies.TryGetValue(AnonymousCookieName, out var anonId)
+                    ? anonId
+                    : null;
+
+                // Try to find by ExternalId first, then by database Id
+                TravelPlan? dbPlan = null;
+                if (userId != null)
+                {
+                    dbPlan = _db.TravelPlans.FirstOrDefault(tp => tp.ExternalId == id && tp.UserId == userId);
+                    if (dbPlan == null && int.TryParse(id, out var numId))
+                    {
+                        dbPlan = _db.TravelPlans.FirstOrDefault(tp => tp.Id == numId && tp.UserId == userId);
+                    }
+                }
+                else if (anonymousCookieId != null)
+                {
+                    dbPlan = _db.TravelPlans.FirstOrDefault(tp => tp.ExternalId == id && tp.AnonymousCookieId == anonymousCookieId);
+                    if (dbPlan == null && int.TryParse(id, out var numId))
+                    {
+                        dbPlan = _db.TravelPlans.FirstOrDefault(tp => tp.Id == numId && tp.AnonymousCookieId == anonymousCookieId);
+                    }
+                }
+
+                if (dbPlan != null)
+                {
+                    plan = dbPlan;
+                    // Load into cache for subsequent requests
+                    var cacheId = dbPlan.ExternalId ?? dbPlan.Id.ToString();
+                    _cache.Set(cacheId, plan, TimeSpan.FromMinutes(30));
+                    _logger.LogInformation("Loaded plan from database: ExternalId={ExtId}, DbId={DbId}", dbPlan.ExternalId, dbPlan.Id);
+                }
+            }
+
+            if (plan != null)
             {
                 TravelPlan = plan;
                 // If a persisted version exists on disk, prefer its generated itinerary so changes survive restarts
@@ -115,6 +161,61 @@ namespace project.Pages.TravelPlanner
             }
 
             GenerationState = _cache.Get<PlanGenerationState>($"planstatus:{id}");
+            // If plan not in cache, attempt to load a persisted anonymous snapshot from disk
+            if (TravelPlan == null && (_cache.TryGetValue(id, out TravelPlan? tmp) == false || tmp == null))
+            {
+                try
+                {
+                    var dir = Path.Combine(_env.ContentRootPath, "Data", "savedPlans");
+                    var file = Path.Combine(dir, $"{id}.json");
+                    if (global::System.IO.File.Exists(file))
+                    {
+                        var raw = global::System.IO.File.ReadAllText(file, Encoding.UTF8);
+                        using var doc = JsonDocument.Parse(raw);
+                        var dest = doc.RootElement.TryGetProperty("destination", out var d) && d.ValueKind == JsonValueKind.String ? d.GetString() ?? string.Empty : string.Empty;
+                        var gen = doc.RootElement.TryGetProperty("generatedItinerary", out var gi) && gi.ValueKind == JsonValueKind.String ? gi.GetString() ?? string.Empty : string.Empty;
+                        var start = DateTime.TryParse(doc.RootElement.GetProperty("startDate").GetString(), out var sd) ? sd : DateTime.Today;
+                        var end = DateTime.TryParse(doc.RootElement.GetProperty("endDate").GetString(), out var ed) ? ed : DateTime.Today;
+                        var planFromDisk = new TravelPlan
+                        {
+                            Destination = dest,
+                            GeneratedItinerary = gen,
+                            StartDate = start,
+                            EndDate = end,
+                        };
+                        TravelPlan = planFromDisk;
+                        _cache.Set(id, planFromDisk, TimeSpan.FromMinutes(30));
+
+                        // mark saved state if found in anon index
+                        var savedIdsKey = GetSavedPlansKey();
+                        var savedIds = _cache.GetOrCreate(savedIdsKey, entry => new List<string>());
+                        if ((savedIds == null || savedIds.Count == 0) && savedIdsKey.StartsWith(SavedPlansKeyPrefix + "anon:"))
+                        {
+                            try
+                            {
+                                var anonId = savedIdsKey.Substring((SavedPlansKeyPrefix + "anon:").Length);
+                                var indexFile = Path.Combine(dir, $"anon-{anonId}.json");
+                                if (global::System.IO.File.Exists(indexFile))
+                                {
+                                    var rawIndex = global::System.IO.File.ReadAllText(indexFile, Encoding.UTF8);
+                                    var diskIds = JsonSerializer.Deserialize<List<string>>(rawIndex) ?? new List<string>();
+                                    savedIds = diskIds;
+                                    _cache.Set(savedIdsKey, savedIds, TimeSpan.FromDays(7));
+                                }
+                            }
+                            catch { }
+                        }
+                        IsSaved = (savedIds ?? new List<string>()).Contains(id);
+
+                        ParseItinerary(TravelPlan.GeneratedItinerary);
+                        return Page();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to load persisted plan for id={Id}", id);
+                }
+            }
             if (GenerationState != null && (GenerationState.Status == PlanGenerationStatus.Queued || GenerationState.Status == PlanGenerationStatus.InProgress))
             {
                 IsProcessing = true;
@@ -171,7 +272,8 @@ namespace project.Pages.TravelPlanner
             if (!_cache.TryGetValue(id, out TravelPlan? plan) || plan == null) { TempData["ErrorMessage"] = "No travel plan found to update."; return RedirectToPage("Index"); }
             plan.GeneratedItinerary = (updatedItinerary ?? string.Empty).Trim();
             _cache.Set(id, plan, TimeSpan.FromMinutes(30));
-            return RedirectToPage("Result", new { id, ok = "saved" });
+            TempData["SuccessMessage"] = "Itinerary updated successfully.";
+            return RedirectToPage("Result", new { id });
         }
 
         public IActionResult OnPostResetItinerary(string id)
@@ -186,7 +288,8 @@ namespace project.Pages.TravelPlanner
 
             plan.GeneratedItinerary = original;
             _cache.Set(id, plan, TimeSpan.FromMinutes(30));
-            return RedirectToPage("Result", new { id, ok = "reset" });
+            TempData["SuccessMessage"] = "Itinerary reset to original.";
+            return RedirectToPage("Result", new { id });
         }
 
         private void ParseItinerary(string? raw)
@@ -211,8 +314,9 @@ namespace project.Pages.TravelPlanner
             catch { }
 
             var lines = text.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
-            // ACCEPT COMMON DAY HEADER VARIANTS
-            var regex = new System.Text.RegularExpressions.Regex(@"^\s*(?:\d+\.|[Dd]ay)\s*(?<n>\d+)\s*(?:[:\-\)\(]+\s*(?<date>.*))?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            // ACCEPT COMMON DAY HEADER VARIANTS (ENGLISH + POLISH)
+            // Matches: "Day 1", "1.", "Dzień 1", "Dzień 1 - Oct 20" etc.
+            var regex = new System.Text.RegularExpressions.Regex(@"^\s*(?:\d+\.|[Dd]ay|[Dd]zie[nń])\s*(?<n>\d+)\s*(?:[:\-\)\(]+\s*(?<date>.*))?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
             int currentDay = 0; string currentDate = string.Empty; List<string>? buf = null; bool started = false;
             foreach (var l in lines)
             {
@@ -266,70 +370,77 @@ namespace project.Pages.TravelPlanner
         {
             if (string.IsNullOrWhiteSpace(id)) { TempData["ErrorMessage"] = "No travel plan found to save."; return RedirectToPage("Index"); }
             if (!_cache.TryGetValue(id, out TravelPlan? plan) || plan == null) { TempData["ErrorMessage"] = "No travel plan found to save."; return RedirectToPage("Index"); }
-            if (User?.Identity?.IsAuthenticated == true)
+
+            // Always persist to DB (for both authenticated and anonymous users)
+            var userId = User?.Identity?.IsAuthenticated == true
+                ? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                : null;
+
+            var anonymousCookieId = string.IsNullOrWhiteSpace(userId)
+                ? GetOrCreateAnonymousId()
+                : null;
+
+            // Check if already exists (by ExternalId and UserId/AnonymousCookieId)
+            var existing = userId != null
+                ? _db.TravelPlans.FirstOrDefault(tp => tp.ExternalId == id && tp.UserId == userId)
+                : _db.TravelPlans.FirstOrDefault(tp => tp.ExternalId == id && tp.AnonymousCookieId == anonymousCookieId);
+
+            if (existing == null)
             {
-                // Persist to DB for authenticated users
-                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (!string.IsNullOrWhiteSpace(userId))
+                var toSave = new TravelPlan
                 {
-                    // check if exists
-                    var existing = _db.TravelPlans.FirstOrDefault(tp => tp.ExternalId == id && tp.UserId == userId);
-                    if (existing == null)
-                    {
-                        var toSave = new TravelPlan
-                        {
-                            Destination = plan.Destination,
-                            StartDate = plan.StartDate,
-                            EndDate = plan.EndDate,
-                            NumberOfTravelers = plan.NumberOfTravelers,
-                            Budget = plan.Budget,
-                            TravelPreferences = plan.TravelPreferences ?? string.Empty,
-                            GeneratedItinerary = plan.GeneratedItinerary ?? string.Empty,
-                            CreatedAt = DateTime.UtcNow,
-                            UserId = userId,
-                            ExternalId = id,
-                            Accommodations = plan.Accommodations,
-                            Activities = plan.Activities,
-                            Transportation = plan.Transportation
-                        };
-                        _db.TravelPlans.Add(toSave);
-                        _db.SaveChanges();
-                    }
-                }
+                    Destination = plan.Destination,
+                    StartDate = plan.StartDate,
+                    EndDate = plan.EndDate,
+                    NumberOfTravelers = plan.NumberOfTravelers,
+                    Budget = plan.Budget,
+                    TravelPreferences = plan.TravelPreferences ?? string.Empty,
+                    GeneratedItinerary = plan.GeneratedItinerary ?? string.Empty,
+                    CreatedAt = DateTime.UtcNow,
+                    UserId = userId,
+                    AnonymousCookieId = anonymousCookieId,
+                    ExternalId = id,
+                    Accommodations = plan.Accommodations,
+                    Activities = plan.Activities,
+                    Transportation = plan.Transportation
+                };
+                _db.TravelPlans.Add(toSave);
+                _db.SaveChanges();
+                _logger.LogInformation("Plan saved to DB: id={Id}, userId={UserId}, anonId={AnonId}", id, userId ?? "null", anonymousCookieId ?? "null");
             }
             else
             {
-                var savedIdsKey = GetSavedPlansKey();
-                var savedIds = _cache.GetOrCreate(savedIdsKey, entry => new List<string>());
-                savedIds ??= new List<string>();
-                if (!savedIds.Contains(id)) { savedIds.Add(id); _cache.Set(savedIdsKey, savedIds, TimeSpan.FromDays(7)); }
+                _logger.LogInformation("Plan already saved: id={Id}", id);
             }
-            TempData["SuccessMessage"] = "Plan saved."; return RedirectToPage("Result", new { id });
+
+            TempData["SuccessMessage"] = "Plan saved.";
+            return RedirectToPage("Result", new { id });
         }
 
         public IActionResult OnPostRemove(string id)
         {
-            if (User?.Identity?.IsAuthenticated == true)
+            // Remove from DB (for both authenticated and anonymous users)
+            var userId = User?.Identity?.IsAuthenticated == true
+                ? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                : null;
+
+            var anonymousCookieId = string.IsNullOrWhiteSpace(userId)
+                ? GetOrCreateAnonymousId()
+                : null;
+
+            var existing = userId != null
+                ? _db.TravelPlans.FirstOrDefault(tp => tp.ExternalId == id && tp.UserId == userId)
+                : _db.TravelPlans.FirstOrDefault(tp => tp.ExternalId == id && tp.AnonymousCookieId == anonymousCookieId);
+
+            if (existing != null)
             {
-                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (!string.IsNullOrWhiteSpace(userId))
-                {
-                    var existing = _db.TravelPlans.FirstOrDefault(tp => tp.ExternalId == id && tp.UserId == userId);
-                    if (existing != null)
-                    {
-                        _db.TravelPlans.Remove(existing);
-                        _db.SaveChanges();
-                    }
-                }
+                _db.TravelPlans.Remove(existing);
+                _db.SaveChanges();
+                _logger.LogInformation("Plan removed from DB: id={Id}", id);
             }
-            else
-            {
-                var savedIdsKey = GetSavedPlansKey();
-                var savedIds = _cache.GetOrCreate(savedIdsKey, entry => new List<string>());
-                savedIds ??= new List<string>();
-                if (savedIds.Contains(id)) { savedIds.Remove(id); _cache.Set(savedIdsKey, savedIds, TimeSpan.FromDays(7)); }
-            }
-            TempData["SuccessMessage"] = "Plan removed from saved."; return RedirectToPage("Result", new { id });
+
+            TempData["SuccessMessage"] = "Plan removed from saved.";
+            return RedirectToPage("Result", new { id });
         }
 
         public async Task<IActionResult> OnPostUpdateDetails(string id, string? startDate, string? endDate, int? numberOfTravelers, decimal? budget, string? travelPreferences, string? accommodations, string? activities, string? transportation)
@@ -478,7 +589,7 @@ namespace project.Pages.TravelPlanner
                 _logger.LogWarning(ex, "Failed to persist plan to disk for id={Id}", id);
             }
 
-            return new JsonResult(new { ok = true });
+            return new JsonResult(new { ok = true, message = "Day order saved successfully." });
         }
 
         // (seed helper removed for security)

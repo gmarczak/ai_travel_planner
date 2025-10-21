@@ -38,7 +38,7 @@ namespace project.Services
             var tripType = string.IsNullOrWhiteSpace(request.TripType) ? "General" : request.TripType;
 
             // SYSTEM & USER PROMPTS
-            var systemPrompt = "You are an expert travel planner. Create detailed, personalized travel itineraries. Always respond in JSON as specified.";
+            var systemPrompt = $"You are an expert travel planner. Create detailed, personalized travel itineraries. Always respond in JSON as specified. Respond in English (en-US).";
             var userPrompt = $@"Create a detailed {days}-day travel plan for {request.Destination} for {request.NumberOfTravelers} travelers with a budget of ${request.Budget}.
 
 Trip details:
@@ -48,13 +48,7 @@ Trip details:
 - Trip type: {tripType}
 - Additional preferences: {preferences}
 
-Respond with a JSON object exactly like:
-{{
-  ""itinerary"": ""Detailed day-by-day itinerary as a single string with line breaks"",
-  ""accommodations"": [""Hotel 1"", ""Hotel 2"", ""Hotel 3""],
-  ""activities"": [""Activity 1"", ""Activity 2"", ""Activity 3"", ""Activity 4""],
-  ""transportation"": [""Option 1"", ""Option 2"", ""Option 3""]
-}}";
+Respond with a JSON object. Return an object with these keys (names in English): 'itinerary' (the full day-by-day itinerary as a single string with line breaks), 'accommodations' (array of hotels), 'activities' (array of activities), 'transportation' (array of transport tips).";
 
             var payload = new AnthropicMessageRequest
             {

@@ -20,6 +20,9 @@ namespace project.Models
         // Foreign key to ApplicationUser (nullable for existing plans)
         public string? UserId { get; set; }
 
+        // Anonymous user identifier from cookie (for non-authenticated users)
+        public string? AnonymousCookieId { get; set; }
+
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public List<string> Accommodations { get; set; } = new();
 
@@ -60,6 +63,7 @@ namespace project.Models
 
         [Display(Name = "Trip Type")]
         public string? TripType { get; set; }
+
 
     }
 

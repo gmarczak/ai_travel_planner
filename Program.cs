@@ -89,6 +89,9 @@ var useClaude = provider.Equals("Claude", StringComparison.OrdinalIgnoreCase) &&
 
 // RAZOR PAGES
 builder.Services.AddRazorPages();
+// Ensure localization services are available to satisfy any leftover view injections
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddRazorPages();
 
 // ERROR MONITORING
 builder.Services.AddScoped<IErrorMonitoringService, ErrorMonitoringService>();
@@ -120,6 +123,9 @@ else
 }
 
 var app = builder.Build();
+
+// Configure request localization
+// (Localization removed) - app uses default request culture
 
 if (!app.Environment.IsDevelopment())
 {

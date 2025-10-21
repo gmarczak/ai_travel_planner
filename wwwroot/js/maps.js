@@ -48,7 +48,9 @@
             icon: point.icon || undefined,
             label: point.label || undefined
         });
-        if (point.infoHtml) {
+        // Only add InfoWindow if NOT being called from addInteractiveMarker
+        // (addInteractiveMarker will handle its own InfoWindow)
+        if (point.infoHtml && !point._skipAutoInfo) {
             const info = new google.maps.InfoWindow({ content: point.infoHtml });
             marker.addListener("click", () => info.open({ anchor: marker, map }));
         }
@@ -57,7 +59,9 @@
 
     // Create a marker and attach a custom infowindow with action callbacks
     function addInteractiveMarker(map, point, actions) {
-        const marker = addMarker(map, point);
+        // Mark point to skip auto InfoWindow creation in addMarker
+        const modifiedPoint = { ...point, _skipAutoInfo: true };
+        const marker = addMarker(map, modifiedPoint);
         if (point.infoHtml || actions) {
             const content = document.createElement('div');
             if (point.infoHtml) content.innerHTML = point.infoHtml;

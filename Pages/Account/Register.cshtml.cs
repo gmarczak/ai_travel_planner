@@ -105,6 +105,7 @@ public class RegisterModel : PageModel
                 Console.WriteLine($"║ Time:       {DateTime.Now:yyyy-MM-dd HH:mm:ss}                         ║");
                 Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
 
+                TempData["SuccessMessage"] = $"Welcome {user.FullName ?? user.Email}! Your account has been created successfully.";
                 return LocalRedirect(returnUrl);
             }
             else
