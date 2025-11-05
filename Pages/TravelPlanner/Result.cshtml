@@ -6,13 +6,32 @@
     var planId = Model.PlanId ?? (Model.RouteData.Values["id"] as string);
 }
 
-<!-- GLOBAL PROCESSING OVERLAY -->
-<div id="processingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.78); z-index: 10000; display: @((Model.IsProcessing && plan == null) ? "flex" : "none");">
-    <div class="text-center p-3 rounded" style="background: rgba(255,255,255,0.95); box-shadow: 0 6px 18px rgba(0,0,0,0.08);">
-        <div class="spinner-border me-2" role="status" aria-hidden="true"></div>
-        <div class="mt-2"><span id="processingStatus">Generating your plan…</span><div class="small text-muted" id="processingSub">This may take a minute.</div></div>
+<!-- GLOBAL PROCESSING OVERLAY WITH PROGRESS BAR -->
+<div id="processingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.95); z-index: 10000; display: @((Model.IsProcessing && plan == null) ? "flex" : "none");">
+    <div class="text-center p-4 rounded" style="background: white; box-shadow: 0 6px 18px rgba(0,0,0,0.1); max-width: 500px; width: 90%;">
+        <div class="mb-3">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        <h5 class="mb-3" id="processingStatus">Generating your plan…</h5>
+        
+        <!-- Progress Bar -->
+        <div class="progress mb-3" style="height: 30px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                 role="progressbar" 
+                 id="overlayProgressBar" 
+                 style="width: 10%;" 
+                 aria-valuenow="10" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100">
+                <span id="overlayProgressText" class="fw-bold">10%</span>
+            </div>
+        </div>
+        
+        <div class="small text-muted" id="processingSub">Initializing...</div>
     </div>
-    </div>
+</div>
 
 @if (plan == null)
 {
@@ -38,8 +57,11 @@ else
     
 
     <div class="mt-3 d-flex gap-2 flex-wrap">
-        <form method="post" asp-page-handler="Save" asp-route-id="@planId">
-            <button type="submit" class="btn btn-success">Save this plan</button>
+        <form method="post" asp-page-handler="Save" asp-route-id="@planId" id="savePlanForm">
+            <button type="submit" class="btn btn-success" id="savePlanBtn">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="savePlanSpinner"></span>
+                <span id="savePlanText">Save this plan</span>
+            </button>
         </form>
         <button type="button" class="btn btn-outline-secondary" id="copyItineraryBtn">Copy itinerary</button>
         <a asp-page="SavedPlans" class="btn btn-outline-primary">View saved plans</a>
@@ -69,9 +91,37 @@ else
                 @for (var i = 0; i < Model.ParsedDays.Count; i++)
                 {
                     var d = Model.ParsedDays[i];
-                    <details class="mb-2" open>
-                        <summary class="fw-semibold">Day @d.Day @if(!string.IsNullOrWhiteSpace(d.Date)){<text>- @d.Date</text>}</summary>
-                        <pre class="mt-2 bg-light p-2 rounded border">@string.Join("\n", d.Lines)</pre>
+                    <details class="mb-3 border rounded" open>
+                        <summary class="fw-semibold p-3 bg-light">Day @d.Day @if(!string.IsNullOrWhiteSpace(d.Date)){<text>- @d.Date</text>}</summary>
+                        <div class="p-3">
+                            @foreach (var line in d.Lines)
+                            {
+                                if (string.IsNullOrWhiteSpace(line))
+                                {
+                                    <div class="mb-1"></div>
+                                }
+                                else if (line.TrimStart().StartsWith("🌅") || line.TrimStart().StartsWith("☀️") || line.TrimStart().StartsWith("🌆"))
+                                {
+                                    <h6 class="mt-3 mb-2 text-primary">@line</h6>
+                                }
+                                else if (line.TrimStart().StartsWith("📍"))
+                                {
+                                    <div class="ms-2 mb-1"><strong>@line</strong></div>
+                                }
+                                else if (line.TrimStart().StartsWith("�"))
+                                {
+                                    <div class="ms-3 mb-1 text-secondary" style="font-size: 0.95rem;">@line</div>
+                                }
+                                else if (line.TrimStart().StartsWith("ℹ️"))
+                                {
+                                    <div class="ms-3 mb-1" style="font-size: 0.9rem;">@line</div>
+                                }
+                                else
+                                {
+                                    <div class="ms-2 mb-1">@line</div>
+                                }
+                            }
+                        </div>
                     </details>
                 }
             </div>
@@ -99,8 +149,14 @@ else
                 </div>
 
                     <div class="mt-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary" id="btnSave">Save changes</button>
-                    <button type="submit" formaction="?handler=ResetItinerary&id=@planId" class="btn btn-outline-secondary">Reset to AI version</button>
+                    <button type="submit" class="btn btn-primary" id="btnSave">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="btnSaveSpinner"></span>
+                        <span id="btnSaveText">Save changes</span>
+                    </button>
+                    <button type="submit" formaction="?handler=ResetItinerary&id=@planId" class="btn btn-outline-secondary" id="btnReset">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="btnResetSpinner"></span>
+                        <span id="btnResetText">Reset to AI version</span>
+                    </button>
                 </div>
             </form>
         </details>
@@ -125,20 +181,59 @@ else
     @Html.AntiForgeryToken()
 
     <section id="tab-map" data-tab-panel hidden>
-        <div class="mb-2" id="map-controls"></div>
+        <div class="mb-2 d-flex justify-content-between align-items-center">
+            <div id="map-controls"></div>
+            <button class="btn btn-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#planOffcanvas" aria-controls="planOffcanvas">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+                </svg>
+                Show Plan
+            </button>
+        </div>
+        
         <div class="row g-2">
-            <div class="col-12 col-lg-8">
-                <div id="plan-map" class="bg-light rounded border" style="height:480px; width:100%;"></div>
-            </div>
-            <div class="col-12 col-lg-4">
-                <!-- SIDE PANEL: populated by client JS -->
-                <div id="side-panel" class="bg-white rounded border p-2" style="min-height:480px; max-height:480px; overflow:auto;">
-                    <div class="d-flex align-items-center mb-2">
-                        <h5 class="mb-0">Day details</h5>
-                        <small class="text-muted ms-auto">Drag to reorder</small>
+            <!-- Map on the right (or full width on mobile) -->
+            <div class="col-12 col-lg-8 order-lg-2">
+                <div id="plan-map" data-map-container class="bg-light rounded border position-relative" style="height:600px; width:100%;">
+                    <!-- Map loading indicator -->
+                    <div id="map-loading" class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 1;">
+                        <div class="spinner-border text-primary mb-2" role="status">
+                            <span class="visually-hidden">Loading map...</span>
+                        </div>
+                        <div class="small text-muted">Loading map...</div>
                     </div>
-                    <div class="px-1 py-2 text-muted small">Select a day from map controls to view and reorder points. Use the search box to add places to the selected day.</div>
-                    <!-- list populated by results-map.js -->
+                </div>
+            </div>
+            
+            <!-- Plan sidebar on the left (desktop) / Offcanvas (mobile) -->
+            <div class="col-12 col-lg-4 order-lg-1">
+                <!-- Desktop sidebar (visible on lg+) -->
+                <div class="d-none d-lg-block">
+                    <div id="side-panel" class="bg-white rounded border p-3" style="height:600px; overflow-y:auto;">
+                        <div class="d-flex align-items-center mb-3">
+                            <h5 class="mb-0">Day Details</h5>
+                            <small class="text-muted ms-auto">Drag to reorder</small>
+                        </div>
+                        <div class="px-1 py-2 text-muted small">Select a day from map controls to view and reorder points. Use the search box to add places to the selected day.</div>
+                        <!-- list populated by results-map.js -->
+                    </div>
+                </div>
+                
+                <!-- Mobile offcanvas (visible on <lg) -->
+                <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="planOffcanvas" aria-labelledby="planOffcanvasLabel">
+                    <div class="offcanvas-header">
+                        <h5 class="offcanvas-title" id="planOffcanvasLabel">Day Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                    </div>
+                    <div class="offcanvas-body">
+                        <div id="side-panel-mobile" class="bg-white">
+                            <div class="mb-3">
+                                <small class="text-muted">Drag to reorder</small>
+                            </div>
+                            <div class="px-1 py-2 text-muted small">Select a day from map controls to view and reorder points. Use the search box to add places to the selected day.</div>
+                            <!-- list populated by results-map.js -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -226,6 +321,7 @@ else
 }
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@@7.0.14/dist/browser/signalr.min.js"></script>
     <script>
         (function(){
             // REMOVE OVERLAY IF PLAN DATA PRESENT
@@ -236,65 +332,178 @@ else
                     overlayEarly.remove();
                 }
             } catch {}
-            // POLL GENERATION STATUS AND RELOAD WHEN READY/FAILED
+            
             const isProcessing = @(Model.IsProcessing.ToString().ToLower());
             const currentId = "@(Model.PlanId ?? (Model.RouteData.Values["id"] as string) ?? string.Empty)";
+            
             if (isProcessing && currentId) {
-                let attempts = 0;
                 const overlay = document.getElementById('processingOverlay');
                 const statusEl = document.getElementById('processingStatus');
                 const subEl = document.getElementById('processingSub');
                 const hasPlanDataEarly = document.getElementById('travel-plan-data') != null;
+                
                 if (overlay) {
                     overlay.style.display = hasPlanDataEarly ? 'none' : 'flex';
                     overlay.style.pointerEvents = hasPlanDataEarly ? 'none' : 'auto';
                     overlay.setAttribute('aria-hidden', hasPlanDataEarly ? 'true' : 'false');
                 }
-                const poll = async () => {
-                    try {
-                        const res = await fetch(`?handler=Status&id=${encodeURIComponent(currentId)}`, { cache: 'no-store' });
-                        if (!res.ok) throw 0;
-                        const data = await res.json();
-                        const s = (data.status || '').toString();
-                        if (statusEl) {
-                            if (s === 'Queued') statusEl.textContent = 'Your plan is queued for generation.';
-                            else if (s === 'InProgress') statusEl.textContent = 'Generating your plan — in progress.';
-                            else if (s === 'Completed') statusEl.textContent = 'Generation complete — reloading...';
-                            else if (s === 'Failed') statusEl.textContent = 'Generation failed.';
+
+                // Initialize SignalR
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/hubs/planGeneration")
+                    .withAutomaticReconnect()
+                    .build();
+
+                connection.on("ProgressUpdate", function (data) {
+                    console.log("Progress update received:", data);
+                    
+                    // Update overlay progress bar
+                    const overlayProgressBar = document.getElementById('overlayProgressBar');
+                    const overlayProgressText = document.getElementById('overlayProgressText');
+                    
+                    if (overlayProgressBar && data.progress) {
+                        overlayProgressBar.style.width = data.progress + '%';
+                        overlayProgressBar.setAttribute('aria-valuenow', data.progress);
+                    }
+                    
+                    if (overlayProgressText && data.progress) {
+                        overlayProgressText.textContent = data.progress + '%';
+                    }
+                    
+                    if (statusEl) {
+                        if (data.status === 'Queued') {
+                            statusEl.textContent = 'Your plan is queued for generation';
+                        } else if (data.status === 'InProgress') {
+                            statusEl.textContent = data.message || 'Generating your plan...';
+                        } else if (data.status === 'Completed') {
+                            statusEl.textContent = 'Generation complete!';
+                        } else if (data.status === 'Failed') {
+                            statusEl.textContent = 'Generation failed';
                         }
-                        if (subEl) {
-                            if (s === 'Queued') subEl.textContent = 'Waiting for processing slot.';
-                            else if (s === 'InProgress') subEl.textContent = 'This may take a minute.';
-                            else subEl.textContent = '';
+                    }
+                    
+                    if (subEl) {
+                        if (data.status === 'Queued') {
+                            subEl.textContent = 'Waiting for processing slot...';
+                        } else if (data.status === 'InProgress') {
+                            subEl.textContent = data.message || 'Processing...';
+                        } else if (data.status === 'Completed') {
+                            subEl.textContent = 'Redirecting...';
+                        } else if (data.status === 'Failed') {
+                            subEl.textContent = 'Please try again';
                         }
-                        if (s !== 'Queued' && s !== 'InProgress') {
-                            // SHOW FINAL MESSAGE THEN RELOAD
-                            setTimeout(() => {
-                                const cleanUrl = window.location.pathname + '?id=' + encodeURIComponent(currentId);
-                                window.location.href = cleanUrl;
-                            }, 700);
-                            return;
-                        }
-                    } catch {}
-                    if (++attempts <= 480) setTimeout(poll, 1500); // up to ~12 minutes
-                };
-                poll();
+                    }
+                    
+                    // Reload page when completed or failed
+                    // Reload page when completed, failed, or progress reaches 100%
+                    if (data.status === 'Completed' || data.status === 'Failed' || data.progress === 100) {
+                        setTimeout(() => {
+                            const cleanUrl = window.location.pathname + '?id=' + encodeURIComponent(currentId);
+                            window.location.href = cleanUrl;
+                        }, 1000);
+                    }
+                });
+
+                // NEW: Handle PlanCompleted event from backend
+                connection.on("PlanCompleted", function (data) {
+                    console.log("PlanCompleted event received:", data);
+                    setTimeout(() => {
+                        const cleanUrl = window.location.pathname + '?id=' + encodeURIComponent(currentId);
+                        window.location.href = cleanUrl;
+                    }, 1000);
+                });
+
+                connection.start()
+                    .then(() => {
+                        console.log("SignalR connected");
+                        // Join the plan group
+                        return connection.invoke("JoinPlanGeneration", currentId);
+                    })
+                    .catch(err => {
+                        console.error("SignalR connection error:", err);
+                        // Fallback to polling if SignalR fails
+                        startPolling();
+                    });
+
+                // Fallback polling function (in case SignalR fails)
+                function startPolling() {
+                    let attempts = 0;
+                    const poll = async () => {
+                        try {
+                            const res = await fetch(`?handler=Status&id=${encodeURIComponent(currentId)}`, { cache: 'no-store' });
+                            if (!res.ok) throw 0;
+                            const data = await res.json();
+                            const s = (data.status || '').toString();
+                            if (statusEl) {
+                                if (s === 'Queued') statusEl.textContent = 'Your plan is queued for generation.';
+                                else if (s === 'InProgress') statusEl.textContent = 'Generating your plan — in progress.';
+                                else if (s === 'Completed') statusEl.textContent = 'Generation complete — reloading...';
+                                else if (s === 'Failed') statusEl.textContent = 'Generation failed.';
+                            }
+                            if (subEl) {
+                                if (s === 'Queued') subEl.textContent = 'Waiting for processing slot.';
+                                else if (s === 'InProgress') subEl.textContent = 'This may take a minute.';
+                                else subEl.textContent = '';
+                            }
+                            if (s !== 'Queued' && s !== 'InProgress') {
+                                setTimeout(() => {
+                                    const cleanUrl = window.location.pathname + '?id=' + encodeURIComponent(currentId);
+                                    window.location.href = cleanUrl;
+                                }, 700);
+                                return;
+                            }
+                        } catch {}
+                        if (++attempts <= 480) setTimeout(poll, 1500); // up to ~12 minutes
+                    };
+                    poll();
+                }
             }
 
             // TOAST HELPER
+            // Use global Toast helper if available, otherwise fallback to simple toast
             function showToast(message, variant){
-                const cont = document.getElementById('globalToasts'); if(!cont) return;
-                const el = document.createElement('div');
-                el.className = 'toast align-items-center text-bg-' + (variant||'success') + ' border-0 show mb-2';
-                el.setAttribute('role','alert'); el.setAttribute('aria-live','assertive'); el.setAttribute('aria-atomic','true');
-                el.innerHTML = '<div class="d-flex"><div class="toast-body">'+message+'</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
-                cont.appendChild(el);
-                setTimeout(()=>{ el.remove(); }, 3500);
+                if (window.Toast) {
+                    const typeMap = {
+                        'success': 'success',
+                        'danger': 'error',
+                        'warning': 'warning',
+                        'info': 'info',
+                        'primary': 'info',
+                        'secondary': 'info'
+                    };
+                    const type = typeMap[variant] || 'info';
+                    Toast.show(message, type);
+                } else {
+                    // Fallback to simple toast
+                    const cont = document.getElementById('globalToasts'); if(!cont) return;
+                    const el = document.createElement('div');
+                    el.className = 'toast align-items-center text-bg-' + (variant||'success') + ' border-0 show mb-2';
+                    el.setAttribute('role','alert'); el.setAttribute('aria-live','assertive'); el.setAttribute('aria-atomic','true');
+                    el.innerHTML = '<div class="d-flex"><div class="toast-body">'+message+'</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+                    cont.appendChild(el);
+                    setTimeout(()=>{ el.remove(); }, 3500);
+                }
             }
+            
             const url = new URL(window.location.href);
             const ok = url.searchParams.get('ok');
             if(ok==='saved') showToast('Itinerary saved.','success');
             if(ok==='reset') showToast('Itinerary reset to AI version.','secondary');
+
+            // SAVE PLAN BUTTON SPINNER
+            const savePlanForm = document.getElementById('savePlanForm');
+            if (savePlanForm) {
+                savePlanForm.addEventListener('submit', function() {
+                    const btn = document.getElementById('savePlanBtn');
+                    const spinner = document.getElementById('savePlanSpinner');
+                    const text = document.getElementById('savePlanText');
+                    if (btn && spinner && text) {
+                        btn.disabled = true;
+                        spinner.style.display = 'inline-block';
+                        text.textContent = 'Saving...';
+                    }
+                });
+            }
 
             // COPY ITINERARY
             const copyBtn = document.getElementById('copyItineraryBtn');
@@ -307,7 +516,12 @@ else
                         const days = document.querySelectorAll('#daysContainer details pre');
                         text = Array.from(days).map(x => x.textContent || '').join('\n\n');
                     }
-                    try { await navigator.clipboard.writeText(text); showToast('Itinerary copied.','primary'); } catch {}
+                    try { 
+                        await navigator.clipboard.writeText(text); 
+                        showToast('Itinerary copied to clipboard!','success'); 
+                    } catch {
+                        showToast('Failed to copy itinerary','error');
+                    }
                 });
             }
 
@@ -409,6 +623,33 @@ else
                 else { renderPreview(); preview.style.display = 'block'; }
             });
 
+            // ITINERARY FORM SUBMIT SPINNERS
+            const itineraryForm = document.getElementById('itineraryForm');
+            if (itineraryForm) {
+                itineraryForm.addEventListener('submit', function(e) {
+                    const submitBtn = e.submitter;
+                    if (submitBtn) {
+                        if (submitBtn.id === 'btnSave') {
+                            const spinner = document.getElementById('btnSaveSpinner');
+                            const text = document.getElementById('btnSaveText');
+                            if (spinner && text) {
+                                submitBtn.disabled = true;
+                                spinner.style.display = 'inline-block';
+                                text.textContent = 'Saving...';
+                            }
+                        } else if (submitBtn.id === 'btnReset') {
+                            const spinner = document.getElementById('btnResetSpinner');
+                            const text = document.getElementById('btnResetText');
+                            if (spinner && text) {
+                                submitBtn.disabled = true;
+                                spinner.style.display = 'inline-block';
+                                text.textContent = 'Resetting...';
+                            }
+                        }
+                    }
+                });
+            }
+
             // TOGGLE OVERLAY AND DISABLE DETAILS FORM WHEN PROCESSING
             try {
                 const overlay = document.getElementById('processingOverlay');
@@ -431,4 +672,39 @@ else
             } catch (e) { /* ignore */ }
         })();
     </script>
+    
+    <style>
+        /* Improved itinerary formatting */
+        #daysContainer details {
+            transition: all 0.2s ease;
+        }
+        
+        #daysContainer details summary {
+            cursor: pointer;
+            user-select: none;
+            font-size: 1.1rem;
+        }
+        
+        #daysContainer details summary:hover {
+            background-color: #e9ecef !important;
+        }
+        
+        #daysContainer details[open] {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        #daysContainer h6 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        #daysContainer .ms-2 {
+            line-height: 1.6;
+        }
+        
+        #daysContainer .ms-4 {
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+    </style>
 }

@@ -76,4 +76,17 @@ namespace project.Models
         public string? Location { get; set; }
         public int Priority { get; set; }
     }
+    // Multi-step AI: Etap 1 - lista miejsc
+    public class PlaceListResponse
+    {
+        public List<PlaceInfo> Places { get; set; } = new();
+    }
+
+    public class PlaceInfo
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Type { get; set; }
+        public string? Location { get; set; }
+        public string? Description { get; set; }
+    }
 }

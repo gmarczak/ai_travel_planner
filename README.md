@@ -2,6 +2,20 @@
 
 AI-powered travel itinerary generator using OpenAI GPT-3.5-turbo and Google Maps.
 
+## 🔐 NEW: Secure API Key Storage
+
+**This project now uses User Secrets for secure key management!**
+
+Instead of `.env` files, use:
+```bash
+dotnet user-secrets set "OpenAI:ApiKey" "your-key-here"
+dotnet user-secrets set "GoogleMaps:ApiKey" "your-key-here"
+```
+
+📖 **Full guide**: [SECRETS_SETUP.md](SECRETS_SETUP.md)
+
+---
+
 ## ✨ Features
 
 - 🤖 AI-Generated Itineraries

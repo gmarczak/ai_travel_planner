@@ -1,21 +1,35 @@
 using OpenAI;
 using OpenAI.Chat;
-using project.Models;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using project.Models;
 
 namespace project.Services
 {
-    public class OpenAITravelService : ITravelService
+    public class OpenAITravelService : ITravelService, IAiService
     {
         private readonly OpenAIClient _openAIClient;
         private readonly ILogger<OpenAITravelService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IAiCacheService _cacheService;
+        private readonly JsonSerializerOptions _jsonOptions;
 
-        public OpenAITravelService(ILogger<OpenAITravelService> logger, IConfiguration configuration)
+        public string ProviderName => "OpenAI";
+
+        public OpenAITravelService(ILogger<OpenAITravelService> logger, IConfiguration configuration, IAiCacheService cacheService)
         {
             _logger = logger;
             _configuration = configuration;
+            _cacheService = cacheService;
+
+            // Configure JSON options for better parsing
+            _jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                AllowTrailingCommas = true,
+                ReadCommentHandling = JsonCommentHandling.Skip,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
 
             var apiKey = _configuration["OpenAI:ApiKey"];
             if (string.IsNullOrWhiteSpace(apiKey))
@@ -26,59 +40,271 @@ namespace project.Services
             _openAIClient = new OpenAIClient(apiKey);
         }
 
+        public async Task<bool> IsAvailableAsync()
+        {
+            try
+            {
+                // Simple health check: try to get models or make a minimal request
+                var chatClient = _openAIClient.GetChatClient("gpt-3.5-turbo");
+                var messages = new List<ChatMessage>
+                {
+                    new SystemChatMessage("Respond with 'OK'"),
+                    new UserChatMessage("Test")
+                };
+                var completion = await chatClient.CompleteChatAsync(messages);
+                return !string.IsNullOrEmpty(completion.Value.Content[0].Text);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "OpenAI service is not available");
+                return false;
+            }
+        }
+
+        // Multi-step AI: Etap 1 - generowanie listy miejsc
+        public async Task<PlaceListResponse?> GeneratePlaceListAsync(TravelPlanRequest request)
+        {
+            _logger.LogInformation("Generating place list for {Destination}", request.Destination);
+            var prompt = CreatePlaceListPrompt(request);
+
+            // Sprawdź cache
+            var cachedResponse = await _cacheService.GetCachedResponseAsync(prompt, "gpt-3.5-turbo-places");
+            if (cachedResponse != null)
+            {
+                try
+                {
+                    var cleanedJson = CleanJsonResponse(cachedResponse);
+                    var cachedResult = JsonSerializer.Deserialize<PlaceListResponse>(cleanedJson, _jsonOptions);
+                    if (cachedResult != null)
+                    {
+                        _logger.LogInformation("Returning cached place list for {Destination}", request.Destination);
+                        return cachedResult;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to deserialize cached place list, fetching new one");
+                }
+            }
+
+            var chatClient = _openAIClient.GetChatClient("gpt-3.5-turbo");
+            var messages = new List<ChatMessage>
+            {
+                new SystemChatMessage("You are a JSON-only API. You must respond with valid JSON only. No markdown, no code blocks, no additional text. Always use double quotes for JSON strings."),
+                new UserChatMessage(prompt)
+            };
+            var completion = await chatClient.CompleteChatAsync(messages);
+            var responseContent = completion.Value.Content[0].Text;
+            _logger.LogInformation("Received place list response: {Response}", responseContent);
+
+            // Cache response (7 dni expiry)
+            await _cacheService.CacheResponseAsync(prompt, responseContent, "gpt-3.5-turbo-places", 0, TimeSpan.FromDays(7));
+
+            try
+            {
+                var cleanedJson = CleanJsonResponse(responseContent);
+                var result = JsonSerializer.Deserialize<PlaceListResponse>(cleanedJson, _jsonOptions);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to parse place list JSON");
+                return null;
+            }
+        }
+
+        private string CreatePlaceListPrompt(TravelPlanRequest request)
+        {
+            var days = (request.EndDate - request.StartDate).Days + 1;
+            var tripType = !string.IsNullOrWhiteSpace(request.TripType) ? request.TripType : "General";
+            var preferences = !string.IsNullOrWhiteSpace(request.TravelPreferences) ? request.TravelPreferences : "None specified";
+            return $@"You must respond with ONLY valid JSON. No additional text, no markdown formatting, no code blocks.
+
+Task: Suggest the top {days * 4} must-see places for a {days}-day trip to {request.Destination}.
+- Travelers: {request.NumberOfTravelers}
+- Trip type: {tripType}
+- Preferences: {preferences}
+
+Required JSON format:
+{{
+  ""places"": [
+    {{
+      ""name"": ""Place name"",
+      ""type"": ""attraction/restaurant/museum/etc"",
+      ""location"": ""Specific area or address"",
+      ""description"": ""Brief description (1-2 sentences)""
+    }}
+  ]
+}}
+
+Return ONLY the JSON object above. No extra text before or after.";
+        }
+
+        // Multi-step AI: Etap 2 - generowanie szczegółów dla miejsca
+        public async Task<string?> GeneratePlaceDetailsAsync(PlaceInfo place, TravelPlanRequest request)
+        {
+            _logger.LogInformation("Generating details for place: {PlaceName}", place.Name);
+            var prompt = CreatePlaceDetailsPrompt(place, request);
+
+            // Sprawdź cache
+            var cachedResponse = await _cacheService.GetCachedResponseAsync(prompt, "gpt-3.5-turbo-details");
+            if (cachedResponse != null)
+            {
+                _logger.LogInformation("Returning cached details for {PlaceName}", place.Name);
+                return cachedResponse;
+            }
+
+            var chatClient = _openAIClient.GetChatClient("gpt-3.5-turbo");
+            var messages = new List<ChatMessage>
+            {
+                new SystemChatMessage("You are an expert travel guide. Provide detailed information about specific places. Be concise but informative."),
+                new UserChatMessage(prompt)
+            };
+
+            try
+            {
+                var completion = await chatClient.CompleteChatAsync(messages);
+                var responseContent = completion.Value.Content[0].Text;
+                _logger.LogInformation("Received place details for {PlaceName}", place.Name);
+
+                // Cache response (30 dni expiry)
+                await _cacheService.CacheResponseAsync(prompt, responseContent, "gpt-3.5-turbo-details", 0, TimeSpan.FromDays(30));
+
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to generate details for place: {PlaceName}", place.Name);
+                return $"{place.Name}: {place.Description ?? "A must-see attraction in the area."}";
+            }
+        }
+
+        private string CreatePlaceDetailsPrompt(PlaceInfo place, TravelPlanRequest request)
+        {
+            return $@"Provide a brief, structured description for '{place.Name}' in {request.Destination}.
+Format your response as a single paragraph with 1-2 short sentences.
+Focus on: what makes it special, best time to visit, and one practical tip.
+Keep it under 100 words total.";
+        }
+
         public async Task<TravelPlan> GenerateTravelPlanAsync(TravelPlanRequest request)
         {
             try
             {
-                _logger.LogInformation("Generating AI travel plan for {Destination}", request.Destination);
+                _logger.LogInformation("Generating AI travel plan for {Destination} using MULTI-STEP approach", request.Destination);
 
-                // CREATE PROMPT FOR OPENAI
-                var prompt = CreateTravelPlanPrompt(request);
+                // MULTI-STEP: Etap 1 - Generuj listę miejsc
+                var placeList = await GeneratePlaceListAsync(request);
 
-                var chatClient = _openAIClient.GetChatClient("gpt-3.5-turbo");
+                string itineraryText;
+                List<string> activities = new();
 
-                var messages = new List<ChatMessage>
+                if (placeList != null && placeList.Places.Any())
                 {
-                    new SystemChatMessage($"You are an expert travel planner. Create detailed, personalized travel itineraries based on user preferences. Always respond in JSON format. Respond in English (en-US)."),
-                    new UserChatMessage(prompt)
-                };
+                    _logger.LogInformation("Generated {Count} places, now fetching details...", placeList.Places.Count);
 
-                var completion = await chatClient.CompleteChatAsync(messages);
+                    // MULTI-STEP: Etap 2 - Generuj szczegóły dla każdego miejsca (parallel dla szybkości)
+                    var detailsTasks = placeList.Places.Take(10).Select(place => GeneratePlaceDetailsAsync(place, request));
+                    var details = await Task.WhenAll(detailsTasks);
 
-                var responseContent = completion.Value.Content[0].Text;
-                _logger.LogInformation("Received response from OpenAI: {Response}", responseContent);
+                    // Buduj itinerary z miejsc i ich szczegółów
+                    var days = (request.EndDate - request.StartDate).Days + 1;
+                    var placesPerDay = Math.Max(1, placeList.Places.Count / days);
 
-                // PARSE JSON RESPONSE
-                TravelPlanResponse? aiResponse = null;
-                try
-                {
-                    _logger.LogInformation("Attempting to deserialize JSON response");
+                    var itineraryBuilder = new System.Text.StringBuilder();
+                    itineraryBuilder.AppendLine($"🗺️ {days}-Day Travel Plan for {request.Destination}");
+                    itineraryBuilder.AppendLine($"📅 {request.StartDate:MMM dd} - {request.EndDate:MMM dd, yyyy}");
+                    itineraryBuilder.AppendLine();
 
-                    // CLEAN JSON: extract first complete JSON object (handle extra closing braces)
-                    var cleanedJson = CleanJsonResponse(responseContent);
-
-                    aiResponse = JsonSerializer.Deserialize<TravelPlanResponse>(cleanedJson);
-
-                    if (aiResponse != null)
+                    int placeIndex = 0;
+                    for (int day = 1; day <= days && placeIndex < placeList.Places.Count; day++)
                     {
-                        _logger.LogInformation("JSON deserialized successfully. Itinerary length: {Length}, Accommodations: {AccommodationCount}, Activities: {ActivityCount}",
-                            aiResponse.Itinerary?.Length ?? 0,
-                            aiResponse.Accommodations?.Count ?? 0,
-                            aiResponse.Activities?.Count ?? 0);
+                        var dayDate = request.StartDate.AddDays(day - 1);
+                        itineraryBuilder.AppendLine($"Day {day} - {dayDate:dddd, MMMM dd, yyyy}");
+                        itineraryBuilder.AppendLine();
+
+                        for (int i = 0; i < placesPerDay && placeIndex < placeList.Places.Count; i++, placeIndex++)
+                        {
+                            var place = placeList.Places[placeIndex];
+                            var detail = placeIndex < details.Length ? details[placeIndex] : place.Description;
+
+                            // Format place with type/category
+                            var timeOfDay = i == 0 ? "🌅 Morning" : (i == 1 ? "☀️ Afternoon" : "🌆 Evening");
+                            itineraryBuilder.AppendLine($"{timeOfDay}:");
+                            itineraryBuilder.AppendLine($"📍 {place.Name}");
+
+                            if (!string.IsNullOrWhiteSpace(place.Location))
+                            {
+                                itineraryBuilder.AppendLine($"   📌 Location: {place.Location}");
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(detail))
+                            {
+                                // Split long descriptions into multiple lines for readability
+                                var sentences = detail.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                                foreach (var sentence in sentences)
+                                {
+                                    if (!string.IsNullOrWhiteSpace(sentence))
+                                    {
+                                        itineraryBuilder.AppendLine($"   ℹ️  {sentence.Trim()}.");
+                                    }
+                                }
+                            }
+                            itineraryBuilder.AppendLine();
+
+                            activities.Add(place.Name);
+                        }
                     }
-                    else
-                    {
-                        _logger.LogWarning("JSON deserialized to null");
-                    }
+
+                    itineraryText = itineraryBuilder.ToString();
                 }
-                catch (JsonException ex)
+                else
                 {
-                    _logger.LogWarning("Failed to parse AI response as JSON: {Error}. Raw response: {Response}", ex.Message, responseContent);
-                    // FALLBACK: CREATE PLAN FROM TEXT
-                    return CreateFallbackPlan(request, responseContent);
+                    _logger.LogWarning("Failed to generate place list, falling back to single-step generation");
+
+                    // FALLBACK: użyj starej metody (single-step)
+                    var prompt = CreateTravelPlanPrompt(request);
+                    var chatClient = _openAIClient.GetChatClient("gpt-3.5-turbo");
+                    var messages = new List<ChatMessage>
+                    {
+                        new SystemChatMessage("You are a JSON-only API. You must respond with valid JSON only. No markdown, no code blocks, no additional text. Always use double quotes for JSON strings."),
+                        new UserChatMessage(prompt)
+                    };
+                    var completion = await chatClient.CompleteChatAsync(messages);
+                    var responseContent = completion.Value.Content[0].Text;
+                    _logger.LogInformation("Received response from OpenAI: {Response}", responseContent);
+
+                    // PARSE JSON RESPONSE
+                    TravelPlanResponse? aiResponse = null;
+                    try
+                    {
+                        _logger.LogInformation("Attempting to deserialize JSON response");
+                        var cleanedJson = CleanJsonResponse(responseContent);
+                        aiResponse = JsonSerializer.Deserialize<TravelPlanResponse>(cleanedJson, _jsonOptions);
+
+                        if (aiResponse != null)
+                        {
+                            _logger.LogInformation("JSON deserialized successfully. Itinerary length: {Length}, Accommodations: {AccommodationCount}, Activities: {ActivityCount}",
+                                aiResponse.Itinerary?.Length ?? 0,
+                                aiResponse.Accommodations?.Count ?? 0,
+                                aiResponse.Activities?.Count ?? 0);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("JSON deserialized to null");
+                        }
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogWarning("Failed to parse AI response as JSON: {Error}. Raw response: {Response}", ex.Message, responseContent);
+                        return CreateFallbackPlan(request, responseContent);
+                    }
+
+                    itineraryText = aiResponse?.Itinerary ?? responseContent;
+                    activities = aiResponse?.Activities ?? GetFallbackActivities(request.Destination);
                 }
 
-                // BUILD TRAVELPLAN FROM AI RESPONSE
+                // BUILD TRAVELPLAN (works for both multi-step and fallback paths)
                 return new TravelPlan
                 {
                     Id = new Random().Next(1, 10000),
@@ -89,10 +315,10 @@ namespace project.Services
                     Budget = request.Budget,
                     TravelPreferences = request.TravelPreferences ?? "",
                     CreatedAt = DateTime.Now,
-                    GeneratedItinerary = aiResponse?.Itinerary ?? responseContent,
-                    Accommodations = aiResponse?.Accommodations ?? GetFallbackAccommodations(request.Destination),
-                    Activities = aiResponse?.Activities ?? GetFallbackActivities(request.Destination),
-                    Transportation = aiResponse?.Transportation ?? GetFallbackTransportation()
+                    GeneratedItinerary = itineraryText,
+                    Accommodations = GetFallbackAccommodations(request.Destination),
+                    Activities = activities,
+                    Transportation = GetFallbackTransportation()
                 };
             }
             catch (Exception ex)
@@ -111,13 +337,23 @@ namespace project.Services
             {
                 var chatClient = _openAIClient.GetChatClient("gpt-3.5-turbo");
 
-                var prompt = $"Suggest 5 travel destinations that match the query '{query}'. " +
-                           "Respond with a JSON array of objects with 'name' and 'description' properties. " +
-                           "Keep descriptions short (under 50 characters).";
+                var prompt = $@"You must respond with ONLY valid JSON. No additional text, no markdown, no code blocks.
+
+Task: Suggest 5 travel destinations matching the query: '{query}'
+
+Required JSON format:
+[
+  {{
+    ""name"": ""Destination name"",
+    ""description"": ""Short description (max 50 chars)""
+  }}
+]
+
+Return ONLY the JSON array above.";
 
                 var messages = new List<ChatMessage>
                 {
-                    new SystemChatMessage("You are a travel destination expert. Always respond with valid JSON."),
+                    new SystemChatMessage("You are a JSON-only API. Respond with valid JSON only. No markdown, no code blocks, no additional text."),
                     new UserChatMessage(prompt)
                 };
 
@@ -127,7 +363,8 @@ namespace project.Services
 
                 try
                 {
-                    var suggestions = JsonSerializer.Deserialize<List<DestinationSuggestion>>(responseContent);
+                    var cleanedJson = CleanJsonResponse(responseContent);
+                    var suggestions = JsonSerializer.Deserialize<List<DestinationSuggestion>>(cleanedJson, _jsonOptions);
                     return suggestions?.Select(s => new TravelSuggestion
                     {
                         Type = "Destination",
@@ -152,51 +389,37 @@ namespace project.Services
         private string CreateTravelPlanPrompt(TravelPlanRequest request)
         {
             var days = (request.EndDate - request.StartDate).Days + 1;
-            // DEFAULT INTERESTS: GENERAL SIGHTSEEING
             var interestsText = "general sightseeing";
             var tripType = !string.IsNullOrWhiteSpace(request.TripType) ? request.TripType : "General";
             var preferences = !string.IsNullOrWhiteSpace(request.TravelPreferences) ? request.TravelPreferences : "None specified";
 
-            return $@"Create a detailed {days}-day travel plan for {request.Destination} for {request.NumberOfTravelers} travelers with a budget of ${request.Budget}.
+            return $@"You must respond with ONLY valid JSON. No additional text, no markdown formatting, no code blocks.
 
-Trip details:
+Task: Create a detailed {days}-day travel plan for {request.Destination}.
 - Dates: {request.StartDate:MMM dd, yyyy} to {request.EndDate:MMM dd, yyyy}
 - Travelers: {request.NumberOfTravelers}
 - Budget: ${request.Budget} (approximately ${request.Budget / request.NumberOfTravelers / days:F0} per person per day)
 - Interests: {interestsText}
 - Trip type: {tripType}
-- Additional preferences: {preferences}
+- Preferences: {preferences}
 
-IMPORTANT: You MUST create a plan for ALL {days} DAYS. Do not skip any days!
+Required JSON format:
+{{
+  ""itinerary"": ""Day 1 ({request.StartDate:MMM dd, yyyy}): Overview\n- Morning: ...\n- Lunch: ...\nDay 2: ...[continue for ALL {days} days]"",
+  ""accommodations"": [""Hotel 1"", ""Hotel 2"", ""Hotel 3""],
+  ""activities"": [""Activity 1"", ""Activity 2"", ""Activity 3""],
+  ""transportation"": [""Transport option 1"", ""Transport option 2""]
+}}
 
-For each day, include:
-- Specific attractions, museums, or landmarks to visit (with actual names)
-- Restaurant recommendations for lunch and dinner (with names and cuisine types)
-- Activities or experiences unique to that location
-- Transportation tips between major locations
-- Practical tips or insider advice
-- Estimated costs for major activities when relevant
+For the itinerary string, include for EACH day:
+- Morning: Specific place/attraction with description
+- Lunch: Restaurant name, cuisine type, price range
+- Afternoon: Activity or location with details
+- Dinner: Restaurant name, cuisine type
+- Evening: Optional activity
+- Tips: Practical advice
 
-Format each day clearly as:
-Day 1 ({request.StartDate:MMM dd, yyyy}): Brief overview of the day
-- Morning: Visit [specific place/attraction name], description of what to see
-- Lunch: [Restaurant name], [cuisine type], [price range]
-- Afternoon: Explore [specific location], what to do there
-- Dinner: [Restaurant name], [cuisine type], atmosphere
-- Evening: Optional activity or recommendation
-- Tips: Practical advice for this day
-
-Day 2 ({request.StartDate.AddDays(1):MMM dd, yyyy}): Overview
-...continue for ALL {days} days...
-
-
-Please respond with a JSON object. Return a JSON object with the following keys (property names in English):
-- 'itinerary' (complete day-by-day itinerary as a single string with line breaks),
-- 'accommodations' (array of hotel recommendations),
-- 'activities' (array of must-see activities),
-- 'transportation' (array of transport recommendations).
-
-CRITICAL: Include ALL {days} days in the itinerary. Make it detailed and specific with real place names, restaurants, and practical recommendations.";
+CRITICAL: Include ALL {days} days. Use \\n for line breaks in the itinerary string. Return ONLY the JSON object.";
         }
 
         private TravelPlan CreateFallbackPlan(TravelPlanRequest request, string aiResponse = "")
@@ -288,22 +511,62 @@ CRITICAL: Include ALL {days} days in the itinerary. Make it detailed and specifi
         }
 
         /// <summary>
-        /// Cleans AI JSON response by extracting the first complete JSON object,
-        /// handling cases where extra closing braces or whitespace appear after valid JSON.
+        /// Cleans AI JSON response by extracting valid JSON from various formats:
+        /// - Markdown code blocks (```json ... ```)
+        /// - Plain text with JSON embedded
+        /// - Extra whitespace or text before/after JSON
         /// </summary>
         private string CleanJsonResponse(string rawJson)
         {
             if (string.IsNullOrWhiteSpace(rawJson))
                 return rawJson;
 
-            // Trim whitespace
             var trimmed = rawJson.Trim();
 
-            // Find first { and track brace depth to extract complete object
-            int start = trimmed.IndexOf('{');
+            // Remove markdown code blocks: ```json ... ``` or ``` ... ```
+            if (trimmed.StartsWith("```"))
+            {
+                var lines = trimmed.Split('\n');
+                var jsonLines = new List<string>();
+                bool inCodeBlock = false;
+
+                foreach (var line in lines)
+                {
+                    if (line.Trim().StartsWith("```"))
+                    {
+                        inCodeBlock = !inCodeBlock;
+                        continue;
+                    }
+                    if (inCodeBlock)
+                    {
+                        jsonLines.Add(line);
+                    }
+                }
+
+                if (jsonLines.Any())
+                {
+                    trimmed = string.Join("\n", jsonLines).Trim();
+                }
+            }
+
+            // Find first { or [ and track depth to extract complete JSON
+            int start = -1;
+            char startChar = '\0';
+
+            for (int i = 0; i < trimmed.Length; i++)
+            {
+                if (trimmed[i] == '{' || trimmed[i] == '[')
+                {
+                    start = i;
+                    startChar = trimmed[i];
+                    break;
+                }
+            }
+
             if (start == -1)
                 return trimmed;
 
+            char endChar = startChar == '{' ? '}' : ']';
             int depth = 0;
             bool inString = false;
             bool escaped = false;
@@ -333,21 +596,21 @@ CRITICAL: Include ALL {days} days in the itinerary. Make it detailed and specifi
                 if (inString)
                     continue;
 
-                if (c == '{')
+                if (c == startChar)
                     depth++;
-                else if (c == '}')
+                else if (c == endChar)
                 {
                     depth--;
                     if (depth == 0)
                     {
-                        // Found complete JSON object
+                        // Found complete JSON object/array
                         return trimmed.Substring(start, i - start + 1);
                     }
                 }
             }
 
-            // If we didn't find matching braces, return original
-            return trimmed;
+            // If we didn't find matching braces, return from start to end
+            return trimmed.Substring(start);
         }
     }
 

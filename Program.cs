@@ -7,17 +7,68 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using project.Services.Background;
 using Microsoft.Extensions.Logging;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// LOAD ENVIRONMENT VARIABLES
+// ═══════════════════════════════════════════════════════════
+// SECURE KEY STORAGE CONFIGURATION
+// ═══════════════════════════════════════════════════════════
+// Priority order:
+// 1. Azure Key Vault (Production)
+// 2. User Secrets (Development - most secure for dev)
+// 3. Environment Variables from .env (Fallback)
+// 4. appsettings.json (Last resort - placeholder values only)
+// ═══════════════════════════════════════════════════════════
+
+if (builder.Environment.IsProduction())
+{
+    // PRODUCTION: Use Azure Key Vault
+    var keyVaultName = builder.Configuration["KeyVault:Name"];
+    if (!string.IsNullOrEmpty(keyVaultName) && keyVaultName != "your-keyvault-name")
+    {
+        var keyVaultUri = new Uri($"https://{keyVaultName}.vault.azure.net/");
+
+        // Use DefaultAzureCredential which tries multiple auth methods:
+        // - Environment variables (for Azure deployment)
+        // - Managed Identity (for Azure App Service/Functions)
+        // - Azure CLI (for local development)
+        builder.Configuration.AddAzureKeyVault(
+            keyVaultUri,
+            new DefaultAzureCredential()
+        );
+
+        Console.WriteLine($"✅ Loaded secrets from Azure Key Vault: {keyVaultName}");
+    }
+    else
+    {
+        Console.WriteLine("⚠️  KeyVault:Name not configured. Add to appsettings.Production.json");
+    }
+}
+else if (builder.Environment.IsDevelopment())
+{
+    // DEVELOPMENT: Use User Secrets (secure, not in source control)
+    // Secrets are stored in: %APPDATA%\Microsoft\UserSecrets\<UserSecretsId>\secrets.json
+    // To set secrets, use: dotnet user-secrets set "OpenAI:ApiKey" "your-key-here"
+    Console.WriteLine("📌 Development mode: Using User Secrets for API keys");
+    Console.WriteLine("   Set secrets with: dotnet user-secrets set \"OpenAI:ApiKey\" \"your-key\"");
+}
+
+// FALLBACK: Load .env file (backward compatibility)
 try
 {
     var envPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
-    if (File.Exists(envPath)) Env.Load(envPath);
-    else Env.Load();
+    if (File.Exists(envPath))
+    {
+        Env.Load(envPath);
+        Console.WriteLine("📁 Loaded environment variables from .env file");
+    }
 }
-catch { }
+catch (Exception ex)
+{
+    Console.WriteLine($"⚠️  Failed to load .env file: {ex.Message}");
+}
 
 // ADD ENVIRONMENT VARIABLES TO CONFIG
 builder.Configuration.AddEnvironmentVariables();
@@ -79,6 +130,7 @@ builder.Services.AddMemoryCache();
 // BACKGROUND PLAN GENERATION QUEUE + WORKER
 builder.Services.AddSingleton<IPlanJobQueue, PlanGenerationQueue>();
 builder.Services.AddHostedService<PlanGenerationWorker>();
+builder.Services.AddHostedService<CacheCleanupWorker>();
 
 // PROVIDER SELECTION (OPENAI OR CLAUDE)
 var provider = builder.Configuration["AI:Provider"] ?? "OpenAI";
@@ -87,20 +139,71 @@ var claudeApiKey = builder.Configuration["ANTHROPIC_API_KEY"] ?? builder.Configu
 var useOpenAI = provider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(openAiApiKey);
 var useClaude = provider.Equals("Claude", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(claudeApiKey);
 
+// SIGNALR
+builder.Services.AddSignalR();
+
 // RAZOR PAGES
 builder.Services.AddRazorPages();
 // Ensure localization services are available to satisfy any leftover view injections
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-builder.Services.AddRazorPages();
 
 // ERROR MONITORING
 builder.Services.AddScoped<IErrorMonitoringService, ErrorMonitoringService>();
 
+// AI CACHE SERVICE
+builder.Services.AddScoped<IAiCacheService, AiCacheService>();
+
+// PLAN STATUS SERVICE (for persistent status tracking with SignalR)
+builder.Services.AddScoped<IPlanStatusService, PlanStatusService>();
+
 // Saved plans service (merging anonymous plans into user account)
 builder.Services.AddScoped<SavedPlansService>();
 
-// REGISTER TRAVEL SERVICE
-if (useClaude)
+// ADD HTTP CLIENT FACTORY (for OpenRouter and other HTTP-based services)
+builder.Services.AddHttpClient();
+
+// REGISTER AI SERVICES (with fallback support)
+var enableFallback = builder.Configuration.GetValue<bool>("AI:EnableFallback", true);
+
+// Register individual AI providers as IAiService
+builder.Services.AddScoped<OpenAITravelService>();
+builder.Services.AddScoped<IAiService>(sp => sp.GetRequiredService<OpenAITravelService>());
+
+// Register OpenRouter as additional fallback
+builder.Services.AddScoped<OpenRouterAiService>();
+
+// REGISTER TRAVEL SERVICE with fallback logic
+if (enableFallback && (useOpenAI || useClaude))
+{
+    Console.WriteLine("+ Using AI Service with Fallback Support");
+    Console.WriteLine($"  Primary: {(useOpenAI ? "OpenAI" : "Claude")}");
+    Console.WriteLine("  Fallback: OpenRouter");
+
+    // Register primary service
+    if (useClaude)
+    {
+        builder.Services.AddScoped<ITravelService, ClaudeTravelService>();
+    }
+    else if (useOpenAI)
+    {
+        builder.Services.AddScoped<ITravelService>(sp =>
+        {
+            var aiServices = new List<IAiService>
+            {
+                sp.GetRequiredService<OpenAITravelService>(),
+                sp.GetRequiredService<OpenRouterAiService>()
+            };
+            return new FallbackAiService(aiServices, sp.GetRequiredService<ILogger<FallbackAiService>>());
+        });
+
+        // ADD OPENAI API KEY TO CONFIG
+        if (!string.IsNullOrWhiteSpace(builder.Configuration["OPENAI_API_KEY"]))
+        {
+            builder.Configuration["OpenAI:ApiKey"] = builder.Configuration["OPENAI_API_KEY"];
+        }
+    }
+}
+else if (useClaude)
 {
     Console.WriteLine("+ Using Claude (Anthropic) Travel Service");
     builder.Services.AddScoped<ITravelService, ClaudeTravelService>();
@@ -139,6 +242,9 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// MAP SIGNALR HUBS
+app.MapHub<project.Hubs.PlanGenerationHub>("/hubs/planGeneration");
 
 app.MapRazorPages();
 

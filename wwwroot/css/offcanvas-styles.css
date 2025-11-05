@@ -1,0 +1,59 @@
+/* Offcanvas sidebar styling */
+#side-panel,
+#side-panel-mobile {
+    scrollbar-width: thin;
+    scrollbar-color: #4d774e #f5f8f5;
+}
+
+#side-panel::-webkit-scrollbar,
+#side-panel-mobile::-webkit-scrollbar {
+    width: 8px;
+}
+
+#side-panel::-webkit-scrollbar-track,
+#side-panel-mobile::-webkit-scrollbar-track {
+    background: #f5f8f5;
+}
+
+#side-panel::-webkit-scrollbar-thumb,
+#side-panel-mobile::-webkit-scrollbar-thumb {
+    background-color: #4d774e;
+    border-radius: 4px;
+}
+
+/* Drag & Drop styling */
+.list-group-item.dragging {
+    opacity: 0.5;
+}
+
+.list-group-item.dragover {
+    border-top: 2px solid #1a5d1a;
+    border-bottom: 2px solid #1a5d1a;
+}
+
+.list-group-item[draggable="true"] {
+    cursor: move;
+}
+
+.list-group-item[draggable="true"]:hover {
+    background-color: #f5f8f5;
+}
+
+/* Map container responsive height */
+@media (max-width: 991.98px) {
+    #plan-map {
+        height: 400px !important;
+    }
+}
+
+/* Offcanvas enhancements */
+.offcanvas-start {
+    width: 85% !important;
+    max-width: 400px;
+}
+
+@media (min-width: 576px) {
+    .offcanvas-start {
+        width: 70% !important;
+    }
+}

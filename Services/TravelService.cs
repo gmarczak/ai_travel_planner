@@ -13,7 +13,7 @@ namespace project.Services
 
         public async Task<TravelPlan> GenerateTravelPlanAsync(TravelPlanRequest request)
         {
-            await Task.Delay(1000); // Simulate AI processing
+            // Usunięto sztuczne opóźnienie
 
             var days = (request.EndDate - request.StartDate).Days + 1;
 

@@ -5,6 +5,7 @@ using project.Services;
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
 using project.Services.Background;
+using System.Security.Claims;
 
 namespace project.Pages.TravelPlanner
 {
@@ -14,13 +15,20 @@ namespace project.Pages.TravelPlanner
         private readonly ILogger<IndexModel> _logger;
         private readonly IMemoryCache _cache;
         private readonly IPlanJobQueue _queue;
+        private readonly IPlanStatusService _planStatusService;
 
-        public IndexModel(ITravelService travelService, ILogger<IndexModel> logger, IMemoryCache cache, IPlanJobQueue queue)
+        public IndexModel(
+            ITravelService travelService,
+            ILogger<IndexModel> logger,
+            IMemoryCache cache,
+            IPlanJobQueue queue,
+            IPlanStatusService planStatusService)
         {
             _travelService = travelService;
             _logger = logger;
             _cache = cache;
             _queue = queue;
+            _planStatusService = planStatusService;
         }
 
         [BindProperty]
@@ -75,6 +83,30 @@ namespace project.Pages.TravelPlanner
 
             // Async generation: enqueue job and redirect to result page
             var planId = Guid.NewGuid().ToString();
+
+            // Get user ID (authenticated or anonymous cookie)
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var anonymousCookieId = Request.Cookies["AnonymousUserId"];
+
+            if (string.IsNullOrEmpty(anonymousCookieId))
+            {
+                anonymousCookieId = Guid.NewGuid().ToString();
+                Response.Cookies.Append("AnonymousUserId", anonymousCookieId, new CookieOptions
+                {
+                    Expires = DateTimeOffset.UtcNow.AddYears(1),
+                    HttpOnly = true,
+                    SameSite = SameSiteMode.Lax
+                });
+            }
+
+            // Create persistent status record in database
+            await _planStatusService.CreateStatusAsync(
+                planId,
+                TravelRequest.Destination,
+                TravelRequest.NumberOfTravelers,
+                days,
+                userId,
+                anonymousCookieId);
 
             _cache.Set(PlanGenerationWorker.StateKey(planId), new PlanGenerationState
             {
