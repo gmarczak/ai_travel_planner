@@ -95,6 +95,9 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 
+// Log the resolved DB path for diagnostics (avoid printing secrets)
+Console.WriteLine($"🔍 Using connection string for DB: {connectionString}");
+
 // ADD IDENTITY
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
@@ -299,24 +302,27 @@ try
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         try
         {
-            Console.WriteLine("🔧 Applying EF Core migrations (if any)...");
-            db.Database.Migrate();
-            Console.WriteLine("🔧 Migrations applied (if any).");
-        }
-        catch (Exception migEx)
-        {
-            // Migrate may throw if migrations are not configured in the deployment.
-            Console.WriteLine($"⚠️  Migrate failed or no migrations present: {migEx.Message}");
-            try
+            // If there are migrations in the assembly, apply them. If there are no
+            // migrations (common for simple SQLite deployments), use EnsureCreated()
+            // to create the schema.
+            var availableMigrations = db.Database.GetMigrations();
+            if (availableMigrations != null && availableMigrations.Any())
             {
-                Console.WriteLine("🔧 Ensuring database is created (EnsureCreated)...");
+                Console.WriteLine("🔧 Applying EF Core migrations (if any)...");
+                db.Database.Migrate();
+                Console.WriteLine("🔧 Migrations applied (if any).");
+            }
+            else
+            {
+                Console.WriteLine("🔧 No migrations found. Ensuring database is created (EnsureCreated)...");
                 db.Database.EnsureCreated();
                 Console.WriteLine("🔧 Database ensured/created.");
             }
-            catch (Exception ensureEx)
-            {
-                Console.WriteLine($"❌ Failed to create/ensure database: {ensureEx.Message}");
-            }
+        }
+        catch (Exception migEx)
+        {
+            // Catch-all for migration/ensure errors
+            Console.WriteLine($"⚠️  Migration/Ensure step failed: {migEx.Message}");
         }
     }
 }
