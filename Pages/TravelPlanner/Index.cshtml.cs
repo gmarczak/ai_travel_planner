@@ -99,24 +99,34 @@ namespace project.Pages.TravelPlanner
                 });
             }
 
-            // Create persistent status record in database
-            await _planStatusService.CreateStatusAsync(
-                planId,
-                TravelRequest.Destination,
-                TravelRequest.NumberOfTravelers,
-                days,
-                userId,
-                anonymousCookieId);
-
-            _cache.Set(PlanGenerationWorker.StateKey(planId), new PlanGenerationState
+            try
             {
-                Status = PlanGenerationStatus.Queued,
-                StartedAt = DateTimeOffset.UtcNow
-            }, TimeSpan.FromMinutes(40));
+                // Create persistent status record in database
+                await _planStatusService.CreateStatusAsync(
+                    planId,
+                    TravelRequest.Destination,
+                    TravelRequest.NumberOfTravelers,
+                    days,
+                    userId,
+                    anonymousCookieId);
 
-            await _queue.EnqueueAsync(new PlanGenerationJob(planId, TravelRequest), HttpContext.RequestAborted);
+                _cache.Set(PlanGenerationWorker.StateKey(planId), new PlanGenerationState
+                {
+                    Status = PlanGenerationStatus.Queued,
+                    StartedAt = DateTimeOffset.UtcNow
+                }, TimeSpan.FromMinutes(40));
 
-            return RedirectToPage("Result", new { id = planId });
+                await _queue.EnqueueAsync(new PlanGenerationJob(planId, TravelRequest), HttpContext.RequestAborted);
+
+                return RedirectToPage("Result", new { id = planId });
+            }
+            catch (Exception ex)
+            {
+                // Log and show a friendly message instead of letting an exception bubble to the global error page
+                _logger.LogError(ex, "Failed to enqueue plan generation job for destination {Destination}", TravelRequest.Destination);
+                TempData["ErrorMessage"] = "Wystąpił błąd podczas tworzenia planu. Spróbuj ponownie później.";
+                return Page();
+            }
         }
 
         public async Task<IActionResult> OnGetDestinationSuggestionsAsync(string query)

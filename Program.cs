@@ -289,6 +289,44 @@ Console.WriteLine("║ Register:    http://localhost:5000/Account/Register      
 Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
 Console.WriteLine();
 
+// Ensure the database schema exists on startup. On Azure the DB file may exist
+// but not have tables applied. Try applying EF migrations if present, and
+// fall back to EnsureCreated() when migrations are not available.
+try
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        try
+        {
+            Console.WriteLine("🔧 Applying EF Core migrations (if any)...");
+            db.Database.Migrate();
+            Console.WriteLine("🔧 Migrations applied (if any).");
+        }
+        catch (Exception migEx)
+        {
+            // Migrate may throw if migrations are not configured in the deployment.
+            Console.WriteLine($"⚠️  Migrate failed or no migrations present: {migEx.Message}");
+            try
+            {
+                Console.WriteLine("🔧 Ensuring database is created (EnsureCreated)...");
+                db.Database.EnsureCreated();
+                Console.WriteLine("🔧 Database ensured/created.");
+            }
+            catch (Exception ensureEx)
+            {
+                Console.WriteLine($"❌ Failed to create/ensure database: {ensureEx.Message}");
+            }
+        }
+    }
+}
+catch (Exception ex)
+{
+    // Log to console - avoid throwing so startup can continue and the app can surface
+    // friendly errors rather than crashing during host start in Azure.
+    Console.WriteLine($"⚠️  Unexpected error while preparing database: {ex.Message}");
+}
+
 if (!useOpenAI && !useClaude)
 {
     Console.WriteLine("⚠️  WARNING: AI provider not configured!");
