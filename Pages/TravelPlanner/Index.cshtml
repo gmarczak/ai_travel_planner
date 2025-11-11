@@ -24,6 +24,7 @@
                     }
 
                     <form method="post" id="travelForm">
+                        @Html.AntiForgeryToken()
                         <!-- DESTINATION & DATES -->
                         <fieldset class="mb-4">
                             <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">Destination & Dates
@@ -275,7 +276,7 @@
                         
                         // Join SignalR group for this plan
                         if (connection && connection.state === signalR.HubConnectionState.Connected) {
-                            await connection.invoke("JoinPlanGroup", currentPlanId);
+                            await connection.invoke("JoinPlanGeneration", currentPlanId);
                         }
                     } else {
                         showError(result.error || 'Failed to start plan generation');
