@@ -59,41 +59,22 @@ namespace project.Services.Background
                     var planStatusService = scope.ServiceProvider.GetRequiredService<IPlanStatusService>();
 
                     // Update progress: Starting plan generation
+                    // Batched progress updates (reduce DB writes for performance)
                     await planStatusService.UpdateProgressAsync(
                         job.PlanId,
-                        10,
-                        "Starting plan generation...");
-
-                    await planStatusService.UpdateProgressAsync(
-                        job.PlanId,
-                        20,
-                        "Analyzing destination and preferences...");
-
-                    await planStatusService.UpdateProgressAsync(
-                        job.PlanId,
-                        35,
-                        "Discovering top attractions and places...");
+                        25,
+                        "Analyzing destination and discovering attractions...");
 
                     await planStatusService.UpdateProgressAsync(
                         job.PlanId,
                         50,
-                        "Gathering detailed information about each place...");
+                        "Generating itinerary with AI...");
 
                     var plan = await travelService.GenerateTravelPlanAsync(job.Request);
 
                     await planStatusService.UpdateProgressAsync(
                         job.PlanId,
-                        70,
-                        "Building your day-by-day itinerary...");
-
-                    await planStatusService.UpdateProgressAsync(
-                        job.PlanId,
-                        85,
-                        "Adding accommodation and transport options...");
-
-                    await planStatusService.UpdateProgressAsync(
-                        job.PlanId,
-                        95,
+                        75,
                         "Finalizing your travel plan...");
 
                     _cache.Set(job.PlanId, plan, TimeSpan.FromMinutes(30));

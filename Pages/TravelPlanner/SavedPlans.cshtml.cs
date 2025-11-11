@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using project.Models;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,7 @@ namespace project.Pages.TravelPlanner
                 if (!string.IsNullOrWhiteSpace(userId))
                 {
                     var plans = _db.TravelPlans
+                        .AsNoTracking()  // Performance: read-only query
                         .Where(tp => tp.UserId == userId)
                         .OrderByDescending(tp => tp.CreatedAt)
                         .ToList();
@@ -46,6 +48,7 @@ namespace project.Pages.TravelPlanner
             if (Request.Cookies.TryGetValue(AnonymousCookieName, out var anonCookieId) && !string.IsNullOrWhiteSpace(anonCookieId))
             {
                 var plans = _db.TravelPlans
+                    .AsNoTracking()  // Performance: read-only query
                     .Where(tp => tp.AnonymousCookieId == anonCookieId)
                     .OrderByDescending(tp => tp.CreatedAt)
                     .ToList();

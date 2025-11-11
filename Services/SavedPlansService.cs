@@ -1,5 +1,6 @@
 using project.Data;
 using project.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace project.Services
 {
@@ -19,6 +20,7 @@ namespace project.Services
 
             // Find all plans with matching AnonymousCookieId
             var anonPlans = _db.TravelPlans
+                .AsNoTracking()  // Performance: don't track these reads
                 .Where(tp => tp.AnonymousCookieId == anonCookieId && tp.UserId == null)
                 .ToList();
 
