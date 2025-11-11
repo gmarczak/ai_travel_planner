@@ -19,45 +19,46 @@ else
         ? plan.Budget / plan.NumberOfTravelers / days
         : 0;
 
-    <header class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <h1 class="mb-0">@plan.Destination</h1>
-        <div class="d-flex gap-2">
+    <header class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <h1 class="mb-0 fs-2 fs-md-1">@plan.Destination</h1>
+        <div class="d-flex gap-2 flex-wrap">
             <span class="badge text-bg-primary">@days days</span>
-            <span class="badge text-bg-secondary">@plan.NumberOfTravelers traveler@(plan.NumberOfTravelers == 1 ? "" : "s")</span>
-            <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0") /person/day</span>
+            <span class="badge text-bg-secondary d-none d-sm-inline">@plan.NumberOfTravelers traveler@(plan.NumberOfTravelers == 1 ? "" : "s")</span>
+            <span class="badge text-bg-secondary d-inline d-sm-none">@plan.NumberOfTravelers 👥</span>
+            <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">/person/day</span><span class="d-inline d-sm-none">/p/d</span></span>
         </div>
     </header>
 
     
 
     <div class="mt-3 d-flex gap-2 flex-wrap">
-        <form method="post" asp-page-handler="Save" asp-route-id="@planId" id="savePlanForm">
-            <button type="submit" class="btn btn-success" id="savePlanBtn">
+        <form method="post" asp-page-handler="Save" asp-route-id="@planId" id="savePlanForm" class="flex-fill flex-sm-grow-0">
+            <button type="submit" class="btn btn-success w-100 w-sm-auto" id="savePlanBtn" style="min-height: 44px;">
                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="savePlanSpinner"></span>
-                <span id="savePlanText">Save this plan</span>
+                <span id="savePlanText">Save</span>
             </button>
         </form>
-        <button type="button" class="btn btn-outline-secondary" id="copyItineraryBtn">Copy itinerary</button>
-        <a asp-page="SavedPlans" class="btn btn-outline-primary">View saved plans</a>
+        <button type="button" class="btn btn-outline-secondary flex-fill flex-sm-grow-0" id="copyItineraryBtn" style="min-height: 44px;">Copy</button>
+        <a asp-page="SavedPlans" class="btn btn-outline-primary flex-fill flex-sm-grow-0 d-flex align-items-center justify-content-center" style="min-height: 44px;">Saved</a>
     </div>
 
-    <hr />
+    <hr class="my-3" />
 
-    <nav class="mb-2 d-flex gap-2" role="tablist" aria-label="Plan views">
-        <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm">Plan</button>
-        <button type="button" data-tab="map" aria-selected="false" class="btn btn-outline-primary btn-sm">Map</button>
-        <button type="button" data-tab="details" aria-selected="false" class="btn btn-outline-primary btn-sm">Details</button>
+    <nav class="mb-3 d-flex gap-2 flex-wrap" role="tablist" aria-label="Plan views">
+        <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm flex-fill flex-sm-grow-0" style="min-height: 44px;">Plan</button>
+        <button type="button" data-tab="map" aria-selected="false" class="btn btn-outline-primary btn-sm flex-fill flex-sm-grow-0" style="min-height: 44px;">Map</button>
+        <button type="button" data-tab="details" aria-selected="false" class="btn btn-outline-primary btn-sm flex-fill flex-sm-grow-0" style="min-height: 44px;">Details</button>
     </nav>
 
     <section id="tab-plan" data-tab-panel>
-        <div class="d-flex justify-content-end gap-2 mb-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="expandAllBtn">Expand all</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="collapseAllBtn">Collapse all</button>
+        <div class="d-flex justify-content-end gap-2 mb-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="expandAllBtn" style="min-height: 36px;">Expand all</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="collapseAllBtn" style="min-height: 36px;">Collapse all</button>
         </div>
 
         @if (Model.ParsedDays.Count == 0)
         {
-            <pre id="itineraryText" class="bg-light p-2 rounded border">@Model.VisibleItinerary</pre>
+            <pre id="itineraryText" class="bg-light p-2 p-md-3 rounded border small">@Model.VisibleItinerary</pre>
         }
         else
         {
@@ -66,8 +67,8 @@ else
                 {
                     var d = Model.ParsedDays[i];
                     <details class="mb-3 border rounded" open>
-                        <summary class="fw-semibold p-3 bg-light">Day @d.Day @if(!string.IsNullOrWhiteSpace(d.Date)){<text>- @d.Date</text>}</summary>
-                        <div class="p-3">
+                        <summary class="fw-semibold p-2 p-md-3 bg-light" style="cursor: pointer; min-height: 44px; display: flex; align-items: center;">Day @d.Day @if(!string.IsNullOrWhiteSpace(d.Date)){<text>- @d.Date</text>}</summary>
+                        <div class="p-2 p-md-3">
                             @foreach (var line in d.Lines)
                             {
                                 if (string.IsNullOrWhiteSpace(line))
@@ -101,35 +102,35 @@ else
             </div>
         }
 
-            <details class="mt-3">
-            <summary class="fw-semibold">Edit itinerary</summary>
-            <form method="post" asp-page-handler="UpdateItinerary" asp-route-id="@planId" class="mt-2" id="itineraryForm">
-                <div class="position-sticky top-0 bg-white py-2 z-1 border-bottom mb-2 d-flex gap-2 flex-wrap align-items-center">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnDay">+ Day</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnList">� List</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnBold"><strong>B</strong></button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnItalic"><em>I</em></button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPreview">Preview</button>
+            <details class="mt-3 border rounded">
+            <summary class="fw-semibold p-2 p-md-3 bg-light" style="cursor: pointer; min-height: 44px; display: flex; align-items: center;">Edit itinerary</summary>
+            <form method="post" asp-page-handler="UpdateItinerary" asp-route-id="@planId" class="mt-2 p-2 p-md-3" id="itineraryForm">
+                <div class="position-sticky top-0 bg-white py-2 z-1 border-bottom mb-2 d-flex gap-1 gap-md-2 flex-wrap align-items-center">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnDay" style="min-height: 36px;">+ Day</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnList" style="min-height: 36px;">• List</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnBold" style="min-height: 36px;"><strong>B</strong></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnItalic" style="min-height: 36px;"><em>I</em></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPreview" style="min-height: 36px;">Preview</button>
                     <span class="ms-auto small text-muted" id="charCount"></span>
                 </div>
 
-                <div class="row g-3">
+                <div class="row g-2 g-md-3">
                     <div class="col-12 col-lg-6">
-                            <textarea name="updatedItinerary" id="itineraryEditor" rows="14" class="form-control" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; white-space: pre;">@Model.VisibleItinerary</textarea>
+                            <textarea name="updatedItinerary" id="itineraryEditor" rows="12" class="form-control small" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; white-space: pre;">@Model.VisibleItinerary</textarea>
                         </div>
                     <div class="col-12 col-lg-6">
-                        <div id="itineraryPreview" class="border rounded p-2 bg-light" style="min-height: 200px; display:block"></div>
+                        <div id="itineraryPreview" class="border rounded p-2 bg-light small" style="min-height: 200px; display:block"></div>
                     </div>
                 </div>
 
-                    <div class="mt-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary" id="btnSave">
+                    <div class="mt-2 mt-md-3 d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-primary flex-fill flex-sm-grow-0" id="btnSave" style="min-height: 44px;">
                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="btnSaveSpinner"></span>
                         <span id="btnSaveText">Save changes</span>
                     </button>
-                    <button type="submit" formaction="?handler=ResetItinerary&id=@planId" class="btn btn-outline-secondary" id="btnReset">
+                    <button type="submit" formaction="?handler=ResetItinerary&id=@planId" class="btn btn-outline-secondary flex-fill flex-sm-grow-0" id="btnReset" style="min-height: 44px;">
                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="btnResetSpinner"></span>
-                        <span id="btnResetText">Reset to AI version</span>
+                        <span id="btnResetText"><span class="d-none d-sm-inline">Reset to AI version</span><span class="d-inline d-sm-none">Reset</span></span>
                     </button>
                 </div>
             </form>
@@ -155,9 +156,9 @@ else
     @Html.AntiForgeryToken()
 
     <section id="tab-map" data-tab-panel hidden>
-        <div class="mb-2 d-flex justify-content-between align-items-center">
-            <div id="map-controls"></div>
-            <button class="btn btn-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#planOffcanvas" aria-controls="planOffcanvas">
+        <div class="mb-2 mb-md-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div id="map-controls" class="flex-fill"></div>
+            <button class="btn btn-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#planOffcanvas" aria-controls="planOffcanvas" style="min-height: 44px;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
                 </svg>
@@ -168,7 +169,7 @@ else
         <div class="row g-2">
             <!-- Map on the right (or full width on mobile) -->
             <div class="col-12 col-lg-8 order-lg-2">
-                <div id="plan-map" data-map-container class="bg-light rounded border position-relative" style="height:600px; width:100%;">
+                <div id="plan-map" data-map-container class="bg-light rounded border position-relative" style="height:400px; width:100%;">
                     <!-- Map loading indicator -->
                     <div id="map-loading" class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 1;">
                         <div class="spinner-border text-primary mb-2" role="status">
