@@ -28,6 +28,44 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(builder);
 
+        // Configure Identity string key columns for SQL Server compatibility
+        // SQL Server cannot use nvarchar(max) in indexes/primary keys, so we limit to 450
+        builder.Entity<ApplicationUser>(entity =>
+        {
+            entity.Property(e => e.Id).HasMaxLength(450);
+        });
+
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityRole>(entity =>
+        {
+            entity.Property(e => e.Id).HasMaxLength(450);
+        });
+
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserRole<string>>(entity =>
+        {
+            entity.Property(e => e.UserId).HasMaxLength(450);
+            entity.Property(e => e.RoleId).HasMaxLength(450);
+        });
+
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserClaim<string>>(entity =>
+        {
+            entity.Property(e => e.UserId).HasMaxLength(450);
+        });
+
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserLogin<string>>(entity =>
+        {
+            entity.Property(e => e.UserId).HasMaxLength(450);
+        });
+
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserToken<string>>(entity =>
+        {
+            entity.Property(e => e.UserId).HasMaxLength(450);
+        });
+
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>>(entity =>
+        {
+            entity.Property(e => e.RoleId).HasMaxLength(450);
+        });
+
         // Configure TravelPlan entity
         builder.Entity<TravelPlan>(entity =>
         {
