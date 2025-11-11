@@ -44,8 +44,8 @@ namespace project.Pages.TravelPlanner
         public PlanGenerationState? GenerationState { get; set; }
         public List<ParsedDay> ParsedDays { get; private set; } = new();
         public string? RawItinerary { get; private set; }
-    public string VisibleItinerary { get; private set; } = string.Empty;
-    public (string? PhotographerName, string? PhotographerUrl, string? Source)? DestinationImageAttribution { get; private set; }
+        public string VisibleItinerary { get; private set; } = string.Empty;
+        public (string? PhotographerName, string? PhotographerUrl, string? Source)? DestinationImageAttribution { get; private set; }
 
         private static string OriginalKey(string id) => $"plan:orig:{id}";
 

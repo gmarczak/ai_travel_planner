@@ -15,7 +15,7 @@ namespace project.Services
         private readonly string? _googleMapsApiKey;
 
         public UnsplashImageService(
-            HttpClient httpClient, 
+            HttpClient httpClient,
             ApplicationDbContext context,
             IConfiguration configuration,
             ILogger<UnsplashImageService> logger)
@@ -24,12 +24,19 @@ namespace project.Services
             _context = context;
             _configuration = configuration;
             _logger = logger;
-            _unsplashAccessKey = configuration["Unsplash:AccessKey"];
-            _googleMapsApiKey = configuration["GoogleMaps:ApiKey"];
+
+            // Azure App Settings don't allow ':' in key names, so check both formats
+            _unsplashAccessKey = configuration["Unsplash_AccessKey"] ?? configuration["Unsplash:AccessKey"];
+            _googleMapsApiKey = configuration["GoogleMaps_ApiKey"] ?? configuration["GoogleMaps:ApiKey"];
 
             if (!string.IsNullOrEmpty(_unsplashAccessKey))
             {
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Client-ID {_unsplashAccessKey}");
+                _logger.LogInformation("Unsplash API key configured successfully");
+            }
+            else
+            {
+                _logger.LogWarning("Unsplash API key not found (checked Unsplash_AccessKey and Unsplash:AccessKey)");
             }
         }
 
@@ -55,7 +62,7 @@ namespace project.Services
             if (cachedImage != null)
             {
                 _logger.LogInformation("Using cached image for {Destination} from {Source}", destination, cachedImage.Source);
-                
+
                 // Update usage count
                 cachedImage.UsageCount++;
                 await _context.SaveChangesAsync();
@@ -67,7 +74,7 @@ namespace project.Services
             var unsplashResult = await TryGetUnsplashImageAsync(destination);
             if (unsplashResult != null)
             {
-                await CacheImageAsync(normalizedDestination, unsplashResult.Value.ImageUrl, "Unsplash", 
+                await CacheImageAsync(normalizedDestination, unsplashResult.Value.ImageUrl, "Unsplash",
                     unsplashResult.Value.PhotographerName, unsplashResult.Value.PhotographerUrl);
                 return unsplashResult;
             }
@@ -99,7 +106,7 @@ namespace project.Services
                 var url = $"https://api.unsplash.com/search/photos?query={query}&per_page=1&orientation=landscape";
 
                 var response = await _httpClient.GetAsync(url);
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogWarning("Unsplash API returned {StatusCode} for {Destination}", response.StatusCode, destination);
@@ -107,7 +114,7 @@ namespace project.Services
                 }
 
                 var result = await response.Content.ReadFromJsonAsync<UnsplashSearchResponse>();
-                
+
                 if (result?.Results == null || result.Results.Count == 0)
                 {
                     _logger.LogInformation("No Unsplash images found for {Destination}", destination);
@@ -117,8 +124,8 @@ namespace project.Services
                 var photo = result.Results[0];
                 _logger.LogInformation("Found Unsplash image for {Destination} by {Photographer}", destination, photo.User?.Name);
 
-                return (photo.Urls?.Regular ?? photo.Urls?.Small ?? string.Empty, 
-                        photo.User?.Name, 
+                return (photo.Urls?.Regular ?? photo.Urls?.Small ?? string.Empty,
+                        photo.User?.Name,
                         photo.User?.Links?.Html);
             }
             catch (Exception ex)

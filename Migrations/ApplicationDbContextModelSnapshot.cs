@@ -356,49 +356,49 @@ namespace project.Migrations
                     b.ToTable("PlanGenerationStates");
                 });
 
-                modelBuilder.Entity("project.Models.DestinationImage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            modelBuilder.Entity("project.Models.DestinationImage", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    b.Property<DateTime>("CachedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CachedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Destination")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                b.Property<string>("Destination")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                b.Property<string>("ImageUrl")
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("PhotographerName")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                b.Property<string>("PhotographerName")
+                    .HasMaxLength(200)
+                    .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("PhotographerUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                b.Property<string>("PhotographerUrl")
+                    .HasMaxLength(500)
+                    .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("Source")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                b.Property<string>("Source")
+                    .HasMaxLength(50)
+                    .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("UsageCount")
-                        .HasColumnType("int");
+                b.Property<int>("UsageCount")
+                    .HasColumnType("int");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("CachedAt");
+                b.HasIndex("CachedAt");
 
-                    b.HasIndex("Destination")
-                        .IsUnique();
+                b.HasIndex("Destination")
+                    .IsUnique();
 
-                    b.ToTable("DestinationImages");
-                });
+                b.ToTable("DestinationImages");
+            });
 
             modelBuilder.Entity("project.Models.TravelPlan", b =>
                 {
