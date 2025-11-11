@@ -9,6 +9,7 @@ using project.Services.Background;
 using Microsoft.Extensions.Logging;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -99,7 +100,15 @@ if (builder.Environment.IsProduction())
         throw new InvalidOperationException("Production requires DefaultConnection connection string for Azure SQL Database");
     }
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlServer(connectionString));
+        options.UseSqlServer(connectionString, sql =>
+        {
+            // Enable resilient SQL connections in Azure
+            sql.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorNumbersToAdd: null);
+            sql.CommandTimeout(120);
+        }));
     Console.WriteLine("🔍 Using SQL Server (Azure SQL Database)");
 }
 else
@@ -329,8 +338,26 @@ try
             if (availableMigrations != null && availableMigrations.Any())
             {
                 Console.WriteLine("🔧 Applying EF Core migrations (if any)...");
-                db.Database.Migrate();
-                Console.WriteLine("🔧 Migrations applied (if any).");
+                // Use explicit retry for migration step (not covered by execution strategy automatically pre-connection)
+                var attempt = 0;
+                const int maxAttempts = 5;
+                while (true)
+                {
+                    try
+                    {
+                        db.Database.Migrate();
+                        Console.WriteLine("🔧 Migrations applied (if any).");
+                        break;
+                    }
+                    catch (SqlException sx) when (attempt < maxAttempts)
+                    {
+                        attempt++;
+                        var delay = TimeSpan.FromSeconds(2 * attempt);
+                        Console.WriteLine($"⚠️  Migration transient failure (attempt {attempt}/{maxAttempts}): {sx.Message}. Retrying in {delay.TotalSeconds}s...");
+                        Thread.Sleep(delay);
+                        continue;
+                    }
+                }
             }
             else
             {
