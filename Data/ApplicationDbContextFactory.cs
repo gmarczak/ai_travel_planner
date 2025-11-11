@@ -11,11 +11,11 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
     public ApplicationDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-        
+
         // Use a dummy SQL Server connection string for design-time migrations
         // The actual connection string will be used at runtime
         optionsBuilder.UseSqlServer("Server=.;Database=DesignTimeDb;Integrated Security=true");
-        
+
         return new ApplicationDbContext(optionsBuilder.Options);
     }
 }

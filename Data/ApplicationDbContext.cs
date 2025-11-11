@@ -15,14 +15,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AiResponseCache> AiResponseCaches { get; set; } = null!;
     public DbSet<PlanGenerationState> PlanGenerationStates { get; set; } = null!;
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            base.OnConfiguring(optionsBuilder);
-        
-            // Ignore pending model changes warning to allow migrations to run in production
-            optionsBuilder.ConfigureWarnings(warnings =>
-                warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
-        }
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+
+        // Ignore pending model changes warning to allow migrations to run in production
+        optionsBuilder.ConfigureWarnings(warnings =>
+            warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -71,7 +71,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Destination).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Budget).HasPrecision(18, 2); // Fix SQL Server decimal warning
+            entity.Property(e => e.Budget).HasPrecision(18, 2); // Fix SQL Server decimal warning
             entity.Property(e => e.GeneratedItinerary).HasMaxLength(10000);
             entity.Property(e => e.ExternalId).HasMaxLength(100);
 
