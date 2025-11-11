@@ -90,13 +90,26 @@ if (!string.IsNullOrWhiteSpace(mapsApiKey))
 }
 
 // ADD DATABASE CONTEXT
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Data Source=travelplanner.db";
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
-
-// Log the resolved DB path for diagnostics (avoid printing secrets)
-Console.WriteLine($"🔍 Using connection string for DB: {connectionString}");
+// Use SQL Server in production, SQLite in development
+if (builder.Environment.IsProduction())
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        throw new InvalidOperationException("Production requires DefaultConnection connection string for Azure SQL Database");
+    }
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlServer(connectionString));
+    Console.WriteLine("🔍 Using SQL Server (Azure SQL Database)");
+}
+else
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? "Data Source=travelplanner.db";
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlite(connectionString));
+    Console.WriteLine($"🔍 Using SQLite: {connectionString}");
+}
 
 // ADD IDENTITY
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -284,7 +297,14 @@ else
 }
 
 Console.WriteLine("║ Auth System: ASP.NET Core Identity ✅                      ║");
-Console.WriteLine("║ Database:    SQLite (travelplanner.db) ✅                  ║");
+if (app.Environment.IsProduction())
+{
+    Console.WriteLine("║ Database:    Azure SQL Database ✅                         ║");
+}
+else
+{
+    Console.WriteLine("║ Database:    SQLite (Development) ✅                       ║");
+}
 Console.WriteLine("╠════════════════════════════════════════════════════════════╣");
 Console.WriteLine("║ URL:         http://localhost:5000                         ║");
 Console.WriteLine("║ Login:       http://localhost:5000/Account/Login          ║");
