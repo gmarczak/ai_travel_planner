@@ -159,7 +159,7 @@
         let connection = null;
         let currentPlanId = null;
 
-        function initializeSignalR() {
+        async function initializeSignalR() {
             connection = new signalR.HubConnectionBuilder()
                 .withUrl("/hubs/planGeneration")
                 .withAutomaticReconnect()
@@ -167,21 +167,29 @@
 
             connection.on("ProgressUpdate", function (data) {
                 console.log("Progress update received:", data);
-                updateProgress(data.progress, data.message);
                 
-                if (data.status === "Completed") {
-                    // Redirect to result page
-                    setTimeout(() => {
-                        window.location.href = `/TravelPlanner/Result?id=${data.planId}`;
-                    }, 1000);
-                } else if (data.status === "Failed") {
-                    showError(data.message);
+                // Only update if this is our plan
+                if (!currentPlanId || data.planId === currentPlanId) {
+                    updateProgress(data.progress, data.message);
+                    
+                    if (data.status === "Completed") {
+                        // Redirect to result page after completion
+                        updateProgress(100, "Plan completed! Redirecting...");
+                        setTimeout(() => {
+                            window.location.href = `/TravelPlanner/Result?id=${data.planId}`;
+                        }, 1000);
+                    } else if (data.status === "Failed") {
+                        showError(data.message || "Failed to generate plan");
+                    }
                 }
             });
 
-            connection.start()
-                .then(() => console.log("SignalR connected"))
-                .catch(err => console.error("SignalR connection error:", err));
+            try {
+                await connection.start();
+                console.log("SignalR connected");
+            } catch (err) {
+                console.error("SignalR connection error:", err);
+            }
         }
 
         function updateProgress(percentage, message) {
@@ -204,11 +212,17 @@
             const btn = document.getElementById('generateBtn');
             const spn = document.getElementById('loadingSpinner');
             const txt = document.getElementById('buttonText');
+            const progressContainer = document.getElementById('progressContainer');
             
             if (btn && spn && txt) {
                 btn.disabled = false;
                 spn.style.display = 'none';
                 txt.textContent = 'Generate Travel Plan';
+            }
+            
+            // Hide progress bar
+            if (progressContainer) {
+                progressContainer.style.display = 'none';
             }
             
             // Show error toast
@@ -222,8 +236,8 @@
         const form = document.getElementById('travelForm');
         if (form) {
             form.addEventListener('submit', async function (e) {
-                // Check if this is a regular form submit (will redirect to result page)
-                // We'll show the progress UI immediately
+                e.preventDefault(); // Prevent normal form submission
+                
                 const btn = document.getElementById('generateBtn');
                 const spn = document.getElementById('loadingSpinner');
                 const txt = document.getElementById('buttonText');
@@ -236,10 +250,40 @@
 
                 // Initialize SignalR if not already connected
                 if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
-                    initializeSignalR();
+                    await initializeSignalR();
                 }
                 
                 updateProgress(5, "Preparing to generate your travel plan...");
+
+                // Submit form via AJAX
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action || window.location.href, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                        }
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        currentPlanId = result.planId;
+                        console.log('Plan generation started:', currentPlanId);
+                        updateProgress(10, "Plan queued for generation...");
+                        
+                        // Join SignalR group for this plan
+                        if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                            await connection.invoke("JoinPlanGroup", currentPlanId);
+                        }
+                    } else {
+                        showError(result.error || 'Failed to start plan generation');
+                    }
+                } catch (error) {
+                    console.error('Error submitting form:', error);
+                    showError('Network error. Please check your connection and try again.');
+                }
             });
         }
 

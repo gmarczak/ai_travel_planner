@@ -118,14 +118,15 @@ namespace project.Pages.TravelPlanner
 
                 await _queue.EnqueueAsync(new PlanGenerationJob(planId, TravelRequest), HttpContext.RequestAborted);
 
-                return RedirectToPage("Result", new { id = planId });
+                // Return JSON with planId instead of redirecting
+                // The client-side JavaScript will handle the redirect after completion
+                return new JsonResult(new { success = true, planId = planId });
             }
             catch (Exception ex)
             {
                 // Log and show a friendly message instead of letting an exception bubble to the global error page
                 _logger.LogError(ex, "Failed to enqueue plan generation job for destination {Destination}", TravelRequest.Destination);
-                TempData["ErrorMessage"] = "Wystąpił błąd podczas tworzenia planu. Spróbuj ponownie później.";
-                return Page();
+                return new JsonResult(new { success = false, error = "Wystąpił błąd podczas tworzenia planu. Spróbuj ponownie później." });
             }
         }
 
