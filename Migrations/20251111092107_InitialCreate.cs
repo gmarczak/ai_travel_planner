@@ -215,7 +215,7 @@ namespace project.Migrations
                     StartDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     EndDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     NumberOfTravelers = table.Column<int>(type: "INTEGER", nullable: false),
-                    Budget = table.Column<decimal>(type: "TEXT", nullable: false),
+                    Budget = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
                     TravelPreferences = table.Column<string>(type: "TEXT", nullable: false),
                     GeneratedItinerary = table.Column<string>(type: "TEXT", maxLength: 10000, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),

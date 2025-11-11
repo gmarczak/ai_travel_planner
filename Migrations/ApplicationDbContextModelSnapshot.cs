@@ -351,6 +351,7 @@ namespace project.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Budget")
+                        .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")

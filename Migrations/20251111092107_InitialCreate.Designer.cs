@@ -11,7 +11,7 @@ using project.Data;
 namespace project.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251111083139_InitialCreate")]
+    [Migration("20251111092107_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -354,6 +354,7 @@ namespace project.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Budget")
+                        .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
