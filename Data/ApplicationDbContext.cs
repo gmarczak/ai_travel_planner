@@ -14,6 +14,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<TravelPlan> TravelPlans { get; set; } = null!;
     public DbSet<AiResponseCache> AiResponseCaches { get; set; } = null!;
     public DbSet<PlanGenerationState> PlanGenerationStates { get; set; } = null!;
+    public DbSet<DestinationImage> DestinationImages { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -109,6 +110,19 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.AnonymousCookieId);
             entity.HasIndex(e => e.CreatedAt);
+        });
+
+        // Configure DestinationImage entity (cache for Unsplash images)
+        builder.Entity<DestinationImage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Destination).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ImageUrl).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.PhotographerName).HasMaxLength(200);
+            entity.Property(e => e.PhotographerUrl).HasMaxLength(500);
+            entity.Property(e => e.Source).HasMaxLength(50);
+            entity.HasIndex(e => e.Destination).IsUnique();
+            entity.HasIndex(e => e.CachedAt);
         });
     }
 }

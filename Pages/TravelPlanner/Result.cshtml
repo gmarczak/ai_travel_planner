@@ -19,17 +19,36 @@ else
         ? plan.Budget / plan.NumberOfTravelers / days
         : 0;
 
-    <header class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-        <h1 class="mb-0 fs-2 fs-md-1">@plan.Destination</h1>
-        <div class="d-flex gap-2 flex-wrap">
-            <span class="badge text-bg-primary">@days days</span>
-            <span class="badge text-bg-secondary d-none d-sm-inline">@plan.NumberOfTravelers traveler@(plan.NumberOfTravelers == 1 ? "" : "s")</span>
-            <span class="badge text-bg-secondary d-inline d-sm-none">@plan.NumberOfTravelers 👥</span>
-            <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">/person/day</span><span class="d-inline d-sm-none">/p/d</span></span>
+    <!-- Destination Hero Image -->
+    @if (!string.IsNullOrEmpty(plan?.DestinationImageUrl))
+    {
+        <div class="mb-3 mb-md-4 position-relative">
+            <img src="@plan.DestinationImageUrl" alt="@plan.Destination" 
+                 class="img-fluid rounded w-100" 
+                 style="max-height: 300px; object-fit: cover;" />
+            <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-50 text-white p-2 p-md-3 rounded-bottom">
+                <h1 class="mb-0 fs-2 fs-md-1">@plan?.Destination</h1>
+                <div class="d-flex gap-2 flex-wrap mt-2">
+                    <span class="badge text-bg-primary">@days days</span>
+                    <span class="badge text-bg-secondary d-none d-sm-inline">@plan?.NumberOfTravelers traveler@((plan?.NumberOfTravelers ?? 0) == 1 ? "" : "s")</span>
+                    <span class="badge text-bg-secondary d-inline d-sm-none">@(plan?.NumberOfTravelers ?? 0) 👥</span>
+                    <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">/person/day</span><span class="d-inline d-sm-none">/p/d</span></span>
+                </div>
+            </div>
         </div>
-    </header>
-
-    
+    }
+    else
+    {
+        <header class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <h1 class="mb-0 fs-2 fs-md-1">@plan?.Destination</h1>
+            <div class="d-flex gap-2 flex-wrap">
+                <span class="badge text-bg-primary">@days days</span>
+                <span class="badge text-bg-secondary d-none d-sm-inline">@plan?.NumberOfTravelers traveler@((plan?.NumberOfTravelers ?? 0) == 1 ? "" : "s")</span>
+                <span class="badge text-bg-secondary d-inline d-sm-none">@(plan?.NumberOfTravelers ?? 0) 👥</span>
+                <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">/person/day</span><span class="d-inline d-sm-none">/p/d</span></span>
+            </div>
+        </header>
+    }
 
     <div class="mt-3 d-flex gap-2 flex-wrap">
         <form method="post" asp-page-handler="Save" asp-route-id="@planId" id="savePlanForm" class="flex-fill flex-sm-grow-0">
@@ -140,17 +159,17 @@ else
     <!-- PLAN DATA FOR CLIENT-SIDE SCRIPTS -->
     <script id="travel-plan-data" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
         id = planId,
-        destination = plan.Destination,
-        startDate = plan.StartDate,
-        endDate = plan.EndDate,
-        numberOfTravelers = plan.NumberOfTravelers,
-        budget = plan.Budget,
-        travelPreferences = plan.TravelPreferences,
-        accommodations = plan.Accommodations ?? new List<string>(),
-        activities = plan.Activities ?? new List<string>(),
-        transportation = plan.Transportation ?? new List<string>(),
-        generatedItinerary = plan.GeneratedItinerary ?? string.Empty,
-        createdAt = plan.CreatedAt,
+        destination = plan?.Destination ?? string.Empty,
+        startDate = plan?.StartDate ?? DateTime.MinValue,
+        endDate = plan?.EndDate ?? DateTime.MinValue,
+        numberOfTravelers = plan?.NumberOfTravelers ?? 0,
+        budget = plan?.Budget ?? 0,
+        travelPreferences = plan?.TravelPreferences,
+        accommodations = (plan?.Accommodations ?? new List<string>()),
+        activities = (plan?.Activities ?? new List<string>()),
+        transportation = (plan?.Transportation ?? new List<string>()),
+        generatedItinerary = plan?.GeneratedItinerary ?? string.Empty,
+        createdAt = plan?.CreatedAt ?? DateTime.MinValue,
     parsedDays = (Model.ParsedDays?.Select(d => new { day = d.Day, date = d.Date, lines = d.Lines }).ToArray()) ?? Array.Empty<object>()
     }, new System.Text.Json.JsonSerializerOptions { WriteIndented = false }))</script>
     @Html.AntiForgeryToken()
@@ -217,29 +236,29 @@ else
     <section id="tab-details" data-tab-panel hidden>
         <h2 class="h4">Summary</h2>
         <div class="row g-3">
-            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Dates: @plan.StartDate.ToString("MMM dd, yyyy") - @plan.EndDate.ToString("MMM dd, yyyy") (@days days)</div></div>
-            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Travelers: @plan.NumberOfTravelers</div></div>
-            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Budget: $@plan.Budget (@perPersonPerDay.ToString("F0") per person per day)</div></div>
+            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Dates: @plan?.StartDate.ToString("MMM dd, yyyy") - @plan?.EndDate.ToString("MMM dd, yyyy") (@days days)</div></div>
+            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Travelers: @(plan?.NumberOfTravelers ?? 0)</div></div>
+            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Budget: $@(plan?.Budget ?? 0) (@perPersonPerDay.ToString("F0") per person per day)</div></div>
         </div>
-        @if (!string.IsNullOrWhiteSpace(plan.TravelPreferences))
+    @if (!string.IsNullOrWhiteSpace(plan?.TravelPreferences))
         {
-            <p class="mt-3">Preferences: @plan.TravelPreferences</p>
+            <p class="mt-3">Preferences: @plan?.TravelPreferences</p>
         }
-        @if (plan.Accommodations != null && plan.Accommodations.Count > 0)
+    @if ((plan?.Accommodations) != null && plan.Accommodations.Count > 0)
         {
             <h3 class="h5 mt-3">Accommodations</h3>
             <ul class="list-group">
                 @foreach (var item in plan.Accommodations) { <li class="list-group-item">@item</li> }
             </ul>
         }
-        @if (plan.Activities != null && plan.Activities.Count > 0)
+    @if ((plan?.Activities) != null && plan.Activities.Count > 0)
         {
             <h3 class="h5 mt-3">Activities</h3>
             <ul class="list-group">
                 @foreach (var item in plan.Activities) { <li class="list-group-item">@item</li> }
             </ul>
         }
-        @if (plan.Transportation != null && plan.Transportation.Count > 0)
+    @if ((plan?.Transportation) != null && plan.Transportation.Count > 0)
         {
             <h3 class="h5 mt-3">Transportation</h3>
             <ul class="list-group">
@@ -252,19 +271,19 @@ else
                 <div class="row g-3">
                     <div class="col-sm-6 col-md-3">
                         <label class="form-label">Start</label>
-                        <input type="date" name="startDate" value="@plan.StartDate.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                        <input type="date" name="startDate" value="@plan?.StartDate.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
                     </div>
                     <div class="col-sm-6 col-md-3">
                         <label class="form-label">End</label>
-                        <input type="date" name="endDate" value="@plan.EndDate.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                        <input type="date" name="endDate" value="@plan?.EndDate.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
                     </div>
                     <div class="col-sm-6 col-md-3">
                         <label class="form-label">Travelers</label>
-                        <input type="number" name="numberOfTravelers" min="1" max="20" value="@plan.NumberOfTravelers" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                        <input type="number" name="numberOfTravelers" min="1" max="20" value="@(plan?.NumberOfTravelers ?? 0)" class="form-control" @(Model.IsProcessing?"disabled":"") />
                     </div>
                     <div class="col-sm-6 col-md-3">
                         <label class="form-label">Budget (USD)</label>
-                        <input type="number" name="budget" min="0" step="1" value="@plan.Budget" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                        <input type="number" name="budget" min="0" step="1" value="@(plan?.Budget ?? 0)" class="form-control" @(Model.IsProcessing?"disabled":"") />
                     </div>
                 </div>
 
@@ -272,19 +291,19 @@ else
 
                 <div class="mb-3">
                     <label class="form-label">Additional preferences</label>
-                    <textarea name="travelPreferences" class="form-control" rows="2" @(Model.IsProcessing?"disabled":"")>@plan.TravelPreferences</textarea>
+                    <textarea name="travelPreferences" class="form-control" rows="2" @(Model.IsProcessing?"disabled":"")>@(plan?.TravelPreferences)</textarea>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Accommodations (one per line)</label>
-                    <textarea name="accommodations" class="form-control" rows="3" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan.Accommodations ?? new List<string>())</textarea>
+                    <textarea name="accommodations" class="form-control" rows="3" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan?.Accommodations ?? new List<string>())</textarea>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Activities (one per line)</label>
-                    <textarea name="activities" class="form-control" rows="3" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan.Activities ?? new List<string>())</textarea>
+                    <textarea name="activities" class="form-control" rows="3" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan?.Activities ?? new List<string>())</textarea>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Transportation (one per line)</label>
-                    <textarea name="transportation" class="form-control" rows="2" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan.Transportation ?? new List<string>())</textarea>
+                    <textarea name="transportation" class="form-control" rows="2" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan?.Transportation ?? new List<string>())</textarea>
                 </div>
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary" @(Model.IsProcessing?"disabled":"")>Save details</button>
@@ -681,5 +700,33 @@ else
             line-height: 1.5;
             font-size: 0.9rem;
         }
+        
+            .image-attribution {
+                font-size: 0.75rem;
+                opacity: 0.8;
+            }
     </style>
 }
+
+    @* Unsplash Attribution (required by API terms) - uses preloaded property *@
+    @if (Model.DestinationImageAttribution != null && Model.DestinationImageAttribution.Value.Source == "Unsplash")
+    {
+        var attrib = Model.DestinationImageAttribution.Value;
+        <div class="text-center mt-4 image-attribution text-muted">
+            Photo by 
+            @if (!string.IsNullOrEmpty(attrib.PhotographerUrl))
+            {
+                <a href="@(attrib.PhotographerUrl)?utm_source=ai_travel_planner&utm_medium=referral" 
+                   target="_blank" rel="noopener" class="text-decoration-none">
+                    @(attrib.PhotographerName ?? "Unsplash")
+                </a>
+            }
+            else
+            {
+                <span>@(attrib.PhotographerName ?? "Unsplash")</span>
+            }
+            on 
+            <a href="https://unsplash.com?utm_source=ai_travel_planner&utm_medium=referral" 
+               target="_blank" rel="noopener" class="text-decoration-none">Unsplash</a>
+        </div>
+    }

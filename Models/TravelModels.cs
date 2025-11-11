@@ -31,6 +31,9 @@ namespace project.Models
 
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public List<string> Transportation { get; set; } = new();
+
+        // Destination image URL from Unsplash or fallback
+        public string? DestinationImageUrl { get; set; }
     }
 
     public class TravelPlanRequest

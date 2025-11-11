@@ -187,6 +187,9 @@ builder.Services.AddScoped<SavedPlansService>();
 // ADD HTTP CLIENT FACTORY (for OpenRouter and other HTTP-based services)
 builder.Services.AddHttpClient();
 
+// Register Image Service with HttpClient for Unsplash API
+builder.Services.AddHttpClient<IImageService, UnsplashImageService>();
+
 // REGISTER AI SERVICES (with fallback support)
 var enableFallback = builder.Configuration.GetValue<bool>("AI:EnableFallback", true);
 

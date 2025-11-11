@@ -57,6 +57,7 @@ namespace project.Services.Background
                     using var scope = _serviceProvider.CreateScope();
                     var travelService = scope.ServiceProvider.GetRequiredService<ITravelService>();
                     var planStatusService = scope.ServiceProvider.GetRequiredService<IPlanStatusService>();
+                    var imageService = scope.ServiceProvider.GetRequiredService<IImageService>();
 
                     // Update progress: Starting plan generation
                     // Batched progress updates (reduce DB writes for performance)
@@ -76,6 +77,18 @@ namespace project.Services.Background
                         job.PlanId,
                         75,
                         "Finalizing your travel plan...");
+
+                    // Fetch destination image from Unsplash (with cache and fallback)
+                    try
+                    {
+                        plan.DestinationImageUrl = await imageService.GetDestinationImageAsync(plan.Destination);
+                        _logger.LogInformation("Fetched image for {Destination}", plan.Destination);
+                    }
+                    catch (Exception imgEx)
+                    {
+                        _logger.LogWarning(imgEx, "Failed to fetch image for {Destination}", plan.Destination);
+                        // Continue without image - not critical
+                    }
 
                     _cache.Set(job.PlanId, plan, TimeSpan.FromMinutes(30));
 

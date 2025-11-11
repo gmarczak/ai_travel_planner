@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text;
 using project.Services;
 using project.Services.Background;
+using Microsoft.EntityFrameworkCore;
 
 namespace project.Pages.TravelPlanner
 {
@@ -21,10 +22,11 @@ namespace project.Pages.TravelPlanner
         private readonly IPlanJobQueue _queue;
         private readonly IWebHostEnvironment _env;
         private readonly project.Data.ApplicationDbContext _db;
+        private readonly IImageService _imageService;
         private const string SavedPlansKeyPrefix = "savedplans:";
         private const string AnonymousCookieName = "anon_saved_plans_id";
 
-        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env, project.Data.ApplicationDbContext db)
+        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env, project.Data.ApplicationDbContext db, IImageService imageService)
         {
             _logger = logger;
             _cache = cache;
@@ -32,6 +34,7 @@ namespace project.Pages.TravelPlanner
             _queue = queue;
             _env = env;
             _db = db;
+            _imageService = imageService;
         }
 
         public string? PlanId { get; private set; }
@@ -41,7 +44,8 @@ namespace project.Pages.TravelPlanner
         public PlanGenerationState? GenerationState { get; set; }
         public List<ParsedDay> ParsedDays { get; private set; } = new();
         public string? RawItinerary { get; private set; }
-        public string VisibleItinerary { get; private set; } = string.Empty;
+    public string VisibleItinerary { get; private set; } = string.Empty;
+    public (string? PhotographerName, string? PhotographerUrl, string? Source)? DestinationImageAttribution { get; private set; }
 
         private static string OriginalKey(string id) => $"plan:orig:{id}";
 
@@ -107,6 +111,23 @@ namespace project.Pages.TravelPlanner
             if (plan != null)
             {
                 TravelPlan = plan;
+                // Load image attribution if destination image present
+                if (!string.IsNullOrEmpty(TravelPlan.DestinationImageUrl))
+                {
+                    try
+                    {
+                        var normalized = TravelPlan.Destination.Trim().ToLowerInvariant();
+                        var img = _db.DestinationImages.FirstOrDefault(d => d.Destination == normalized);
+                        if (img != null)
+                        {
+                            DestinationImageAttribution = (img.PhotographerName, img.PhotographerUrl, img.Source);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to set attribution for {Destination}", TravelPlan.Destination);
+                    }
+                }
                 // If a persisted version exists on disk, prefer its generated itinerary so changes survive restarts
                 try
                 {
@@ -231,6 +252,30 @@ namespace project.Pages.TravelPlanner
             _logger.LogWarning("TravelPlan not found in cache for id: {Id}", id);
             TempData["ErrorMessage"] = "No travel plan found. Please create a new plan.";
             return RedirectToPage("Index");
+        }
+
+        /// <summary>
+        /// Provides image attribution details for Unsplash image if cached
+        /// </summary>
+        public async Task<(string? PhotographerName, string? PhotographerUrl, string Source)?> GetImageAttributionAsync()
+        {
+            if (TravelPlan == null || string.IsNullOrEmpty(TravelPlan.DestinationImageUrl)) return null;
+
+            try
+            {
+                // Normalize destination to match cache key
+                var normalized = TravelPlan.Destination.Trim().ToLowerInvariant();
+                var img = await _db.DestinationImages
+                    .Where(d => d.Destination == normalized)
+                    .FirstOrDefaultAsync();
+                if (img == null) return null;
+                return (img.PhotographerName, img.PhotographerUrl, img.Source);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load image attribution for {Destination}", TravelPlan.Destination);
+                return null;
+            }
         }
 
         private string GetSavedPlansKey()
