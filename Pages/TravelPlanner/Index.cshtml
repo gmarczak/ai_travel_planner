@@ -213,6 +213,23 @@
                 }
             });
 
+            // Handle explicit completion event from backend
+            connection.on("PlanCompleted", function (data) {
+                if (!currentPlanId || data.planId === currentPlanId) {
+                    updateProgress(100, "Plan completed! Redirecting...");
+                    setTimeout(() => {
+                        window.location.href = `/TravelPlanner/Result?id=${data.planId}`;
+                    }, 800);
+                }
+            });
+
+            // Handle explicit failure event from backend
+            connection.on("PlanFailed", function (data) {
+                if (!currentPlanId || data.planId === currentPlanId) {
+                    showError(data.message || "Failed to generate plan");
+                }
+            });
+
             try {
                 await connection.start();
                 console.log("SignalR connected");
