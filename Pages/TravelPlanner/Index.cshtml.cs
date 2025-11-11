@@ -116,7 +116,7 @@ namespace project.Pages.TravelPlanner
                     StartedAt = DateTimeOffset.UtcNow
                 }, TimeSpan.FromMinutes(40));
 
-                await _queue.EnqueueAsync(new PlanGenerationJob(planId, TravelRequest), HttpContext.RequestAborted);
+                await _queue.EnqueueAsync(new PlanGenerationJob(planId, TravelRequest, userId, anonymousCookieId), HttpContext.RequestAborted);
 
                 // Return JSON with planId instead of redirecting
                 // The client-side JavaScript will handle the redirect after completion

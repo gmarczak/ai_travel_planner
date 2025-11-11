@@ -58,6 +58,7 @@ namespace project.Services.Background
                     var travelService = scope.ServiceProvider.GetRequiredService<ITravelService>();
                     var planStatusService = scope.ServiceProvider.GetRequiredService<IPlanStatusService>();
                     var imageService = scope.ServiceProvider.GetRequiredService<IImageService>();
+                    var dbContext = scope.ServiceProvider.GetRequiredService<project.Data.ApplicationDbContext>();
 
                     // Update progress: Starting plan generation
                     // Batched progress updates (reduce DB writes for performance)
@@ -82,12 +83,44 @@ namespace project.Services.Background
                     try
                     {
                         plan.DestinationImageUrl = await imageService.GetDestinationImageAsync(plan.Destination);
-                        _logger.LogInformation("Fetched image for {Destination}", plan.Destination);
+                        _logger.LogInformation("Fetched image for {Destination}: {ImageUrl}", plan.Destination, plan.DestinationImageUrl ?? "null");
                     }
                     catch (Exception imgEx)
                     {
                         _logger.LogWarning(imgEx, "Failed to fetch image for {Destination}", plan.Destination);
                         // Continue without image - not critical
+                    }
+
+                    // Save plan to database with image URL
+                    try
+                    {
+                        var dbPlan = new project.Models.TravelPlan
+                        {
+                            Destination = plan.Destination,
+                            StartDate = plan.StartDate,
+                            EndDate = plan.EndDate,
+                            NumberOfTravelers = plan.NumberOfTravelers,
+                            Budget = plan.Budget,
+                            TravelPreferences = plan.TravelPreferences ?? string.Empty,
+                            GeneratedItinerary = plan.GeneratedItinerary ?? string.Empty,
+                            DestinationImageUrl = plan.DestinationImageUrl,
+                            CreatedAt = DateTime.UtcNow,
+                            UserId = job.UserId,
+                            AnonymousCookieId = job.AnonymousCookieId,
+                            ExternalId = job.PlanId,
+                            Accommodations = plan.Accommodations,
+                            Activities = plan.Activities,
+                            Transportation = plan.Transportation
+                        };
+                        dbContext.TravelPlans.Add(dbPlan);
+                        await dbContext.SaveChangesAsync();
+                        _logger.LogInformation("Plan auto-saved to DB: id={PlanId}, userId={UserId}, anonId={AnonId}, imageUrl={ImageUrl}", 
+                            job.PlanId, job.UserId ?? "null", job.AnonymousCookieId ?? "null", plan.DestinationImageUrl ?? "null");
+                    }
+                    catch (Exception dbEx)
+                    {
+                        _logger.LogError(dbEx, "Failed to save plan to DB for {PlanId}", job.PlanId);
+                        // Continue - plan is still in cache
                     }
 
                     _cache.Set(job.PlanId, plan, TimeSpan.FromMinutes(30));

@@ -9,7 +9,7 @@ namespace project.Services.Background
         ValueTask<PlanGenerationJob> DequeueAsync(CancellationToken cancellationToken);
     }
 
-    public record PlanGenerationJob(string PlanId, TravelPlanRequest Request);
+    public record PlanGenerationJob(string PlanId, TravelPlanRequest Request, string? UserId, string? AnonymousCookieId);
 
     public class PlanGenerationQueue : IPlanJobQueue
     {

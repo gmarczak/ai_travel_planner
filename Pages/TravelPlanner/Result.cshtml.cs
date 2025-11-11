@@ -464,15 +464,27 @@ namespace project.Pages.TravelPlanner
                     ExternalId = id,
                     Accommodations = plan.Accommodations,
                     Activities = plan.Activities,
-                    Transportation = plan.Transportation
+                    Transportation = plan.Transportation,
+                    DestinationImageUrl = plan.DestinationImageUrl
                 };
                 _db.TravelPlans.Add(toSave);
                 _db.SaveChanges();
-                _logger.LogInformation("Plan saved to DB: id={Id}, userId={UserId}, anonId={AnonId}", id, userId ?? "null", anonymousCookieId ?? "null");
+                _logger.LogInformation("Plan saved to DB: id={Id}, userId={UserId}, anonId={AnonId}, imageUrl={ImageUrl}", id, userId ?? "null", anonymousCookieId ?? "null", plan.DestinationImageUrl ?? "null");
             }
             else
             {
-                _logger.LogInformation("Plan already saved: id={Id}", id);
+                // Plan already exists (auto-saved by worker) - just update if needed
+                if (existing.GeneratedItinerary != plan.GeneratedItinerary || existing.DestinationImageUrl != plan.DestinationImageUrl)
+                {
+                    existing.GeneratedItinerary = plan.GeneratedItinerary ?? string.Empty;
+                    existing.DestinationImageUrl = plan.DestinationImageUrl;
+                    _db.SaveChanges();
+                    _logger.LogInformation("Plan updated in DB: id={Id}", id);
+                }
+                else
+                {
+                    _logger.LogInformation("Plan already saved and up-to-date: id={Id}", id);
+                }
             }
 
             TempData["SuccessMessage"] = "Plan saved.";
@@ -565,8 +577,14 @@ namespace project.Pages.TravelPlanner
                     StartedAt = DateTimeOffset.UtcNow
                 }, TimeSpan.FromMinutes(40));
 
+                // Get user/anon ID for regeneration
+                var userId = User?.Identity?.IsAuthenticated == true
+                    ? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    : null;
+                var anonymousCookieId = GetOrCreateAnonymousId();
+
                 // Enqueue job (fire-and-forget)
-                _ = _queue.EnqueueAsync(new PlanGenerationJob(id, req));
+                _ = _queue.EnqueueAsync(new PlanGenerationJob(id, req, userId, anonymousCookieId));
 
                 TempData["SuccessMessage"] = "Regeneration enqueued. Please wait a moment while the plan is regenerated.";
                 return RedirectToPage("Result", new { id, processing = true });
