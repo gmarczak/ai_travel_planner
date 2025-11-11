@@ -229,6 +229,23 @@ namespace project.Pages.TravelPlanner
                         IsSaved = (savedIds ?? new List<string>()).Contains(id);
 
                         ParseItinerary(TravelPlan.GeneratedItinerary);
+                        // Load attribution also for disk/anon path
+                        if (!string.IsNullOrEmpty(TravelPlan.DestinationImageUrl))
+                        {
+                            try
+                            {
+                                var normalized2 = TravelPlan.Destination.Trim().ToLowerInvariant();
+                                var img2 = _db.DestinationImages.FirstOrDefault(d => d.Destination == normalized2);
+                                if (img2 != null)
+                                {
+                                    DestinationImageAttribution = (img2.PhotographerName, img2.PhotographerUrl, img2.Source);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to set attribution (disk path) for {Destination}", TravelPlan.Destination);
+                            }
+                        }
                         return Page();
                     }
                 }
