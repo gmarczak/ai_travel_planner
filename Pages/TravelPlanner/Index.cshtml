@@ -107,7 +107,8 @@
                         <div id="progressContainer" class="mt-4" style="display:none;">
                             <div class="progress mb-2" style="height: 30px;">
                                 <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                                    id="formProgressBar" role="progressbar" style="width: 10%;" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100">
+                                    id="formProgressBar" role="progressbar" style="width: 10%;" aria-valuenow="10"
+                                    aria-valuemin="0" aria-valuemax="100">
                                     <span id="formProgressText" class="fw-bold">10%</span>
                                 </div>
                             </div>
@@ -129,8 +130,33 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/%40microsoft/signalr@7.0.14/dist/browser/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/%40microsoft/signalr@7.0.14/dist/browser/signalr.min.js" onerror="console.warn('Primary SignalR CDN failed');"></script>
     <script>
+        // Ensure signalR is available (fallback loaders if initial CDN missing)
+        async function ensureSignalRLoaded() {
+            if (window.signalR) return true;
+            const fallbacks = [
+                'https://unpkg.com/%40microsoft/signalr@7.0.14/dist/browser/signalr.min.js',
+                'https://cdn.jsdelivr.net/npm/%40microsoft/signalr@7.0.14/dist/browser/signalr.min.js'
+            ];
+            for (const url of fallbacks) {
+                try {
+                    await new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = url;
+                        s.async = true;
+                        s.onload = resolve;
+                        s.onerror = reject;
+                        document.head.appendChild(s);
+                    });
+                    if (window.signalR) return true;
+                } catch (e) {
+                    console.warn('Failed loading fallback', url);
+                }
+            }
+            console.error('SignalR script could not be loaded.');
+            return false;
+        }
         const today = new Date().toISOString().split('T')[0];
         const startDateInput = document.querySelector('input[name="TravelRequest.StartDate"]');
         const endDateInput = document.querySelector('input[name="TravelRequest.EndDate"]');
@@ -161,6 +187,8 @@
         let currentPlanId = null;
 
         async function initializeSignalR() {
+            const ok = await ensureSignalRLoaded();
+            if (!ok) return;
             connection = new signalR.HubConnectionBuilder()
                 .withUrl("/hubs/planGeneration")
                 .withAutomaticReconnect()
@@ -168,11 +196,11 @@
 
             connection.on("ProgressUpdate", function (data) {
                 console.log("Progress update received:", data);
-                
+
                 // Only update if this is our plan
                 if (!currentPlanId || data.planId === currentPlanId) {
                     updateProgress(data.progress, data.message);
-                    
+
                     if (data.status === "Completed") {
                         // Redirect to result page after completion
                         updateProgress(100, "Plan completed! Redirecting...");
@@ -214,18 +242,18 @@
             const spn = document.getElementById('loadingSpinner');
             const txt = document.getElementById('buttonText');
             const progressContainer = document.getElementById('progressContainer');
-            
+
             if (btn && spn && txt) {
                 btn.disabled = false;
                 spn.style.display = 'none';
                 txt.textContent = 'Generate Travel Plan';
             }
-            
+
             // Hide progress bar
             if (progressContainer) {
                 progressContainer.style.display = 'none';
             }
-            
+
             // Show error toast
             if (window.Toast) {
                 Toast.error(message || 'Failed to generate plan. Please try again.');
@@ -238,11 +266,11 @@
         if (form) {
             form.addEventListener('submit', async function (e) {
                 e.preventDefault(); // Prevent normal form submission
-                
+
                 const btn = document.getElementById('generateBtn');
                 const spn = document.getElementById('loadingSpinner');
                 const txt = document.getElementById('buttonText');
-                
+
                 if (btn && spn && txt) {
                     btn.disabled = true;
                     spn.style.display = 'inline-block';
@@ -253,7 +281,7 @@
                 if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
                     await initializeSignalR();
                 }
-                
+
                 updateProgress(5, "Preparing to generate your travel plan...");
 
                 // Submit form via AJAX
@@ -268,12 +296,12 @@
                     });
 
                     const result = await response.json();
-                    
+
                     if (result.success) {
                         currentPlanId = result.planId;
                         console.log('Plan generation started:', currentPlanId);
                         updateProgress(10, "Plan queued for generation...");
-                        
+
                         // Join SignalR group for this plan
                         if (connection && connection.state === signalR.HubConnectionState.Connected) {
                             await connection.invoke("JoinPlanGeneration", currentPlanId);
@@ -289,8 +317,8 @@
         }
 
         // Initialize SignalR on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeSignalR();
+        document.addEventListener('DOMContentLoaded', async function () {
+            await initializeSignalR();
         });
     </script>
 }
