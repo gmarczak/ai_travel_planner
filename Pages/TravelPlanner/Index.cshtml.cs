@@ -34,12 +34,18 @@ namespace project.Pages.TravelPlanner
         [BindProperty]
         public TravelPlanRequest TravelRequest { get; set; } = new();
 
-        public void OnGet()
+        public void OnGet(string? destination)
         {
             // SET DEFAULT VALUES
             TravelRequest.StartDate = DateTime.Today.AddDays(14);
             TravelRequest.EndDate = DateTime.Today.AddDays(21);
             TravelRequest.NumberOfTravelers = 2;
+
+            // SET DESTINATION FROM QUERY STRING IF PROVIDED
+            if (!string.IsNullOrWhiteSpace(destination))
+            {
+                TravelRequest.Destination = destination;
+            }
         }
 
         public async Task<IActionResult> OnPostAsync()

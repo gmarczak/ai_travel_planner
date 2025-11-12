@@ -337,36 +337,47 @@ try
             // If there are migrations in the assembly, apply them. If there are no
             // migrations (common for simple SQLite deployments), use EnsureCreated()
             // to create the schema.
-            var availableMigrations = db.Database.GetMigrations();
-            if (availableMigrations != null && availableMigrations.Any())
+            // In Development mode (SQLite), use EnsureCreated() to avoid migration issues
+            // In Production mode (Azure SQL), use Migrate() for proper schema versioning
+            if (app.Environment.IsDevelopment())
             {
-                Console.WriteLine("[MIGRATION] Applying EF Core migrations...");
-                // Use explicit retry for migration step (not covered by execution strategy automatically pre-connection)
-                var attempt = 0;
-                const int maxAttempts = 5;
-                while (true)
-                {
-                    try
-                    {
-                        db.Database.Migrate();
-                        Console.WriteLine("[MIGRATION] Migrations applied successfully.");
-                        break;
-                    }
-                    catch (SqlException sx) when (attempt < maxAttempts)
-                    {
-                        attempt++;
-                        var delay = TimeSpan.FromSeconds(2 * attempt);
-                        Console.WriteLine($"[WARN] Migration transient failure (attempt {attempt}/{maxAttempts}): {sx.Message}. Retrying in {delay.TotalSeconds}s...");
-                        Thread.Sleep(delay);
-                        continue;
-                    }
-                }
+                Console.WriteLine("[DATABASE] Creating SQLite database schema...");
+                db.Database.EnsureCreated();
+                Console.WriteLine("[DATABASE] SQLite database created successfully.");
             }
             else
             {
-                Console.WriteLine("[MIGRATION] No migrations found. Ensuring database is created...");
-                db.Database.EnsureCreated();
-                Console.WriteLine("[MIGRATION] Database created successfully.");
+                var availableMigrations = db.Database.GetMigrations();
+                if (availableMigrations != null && availableMigrations.Any())
+                {
+                    Console.WriteLine("[MIGRATION] Applying EF Core migrations...");
+                    // Use explicit retry for migration step (not covered by execution strategy automatically pre-connection)
+                    var attempt = 0;
+                    const int maxAttempts = 5;
+                    while (true)
+                    {
+                        try
+                        {
+                            db.Database.Migrate();
+                            Console.WriteLine("[MIGRATION] Migrations applied successfully.");
+                            break;
+                        }
+                        catch (SqlException sx) when (attempt < maxAttempts)
+                        {
+                            attempt++;
+                            var delay = TimeSpan.FromSeconds(2 * attempt);
+                            Console.WriteLine($"[WARN] Migration transient failure (attempt {attempt}/{maxAttempts}): {sx.Message}. Retrying in {delay.TotalSeconds}s...");
+                            Thread.Sleep(delay);
+                            continue;
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[MIGRATION] No migrations found. Ensuring database is created...");
+                    db.Database.EnsureCreated();
+                    Console.WriteLine("[MIGRATION] Database created successfully.");
+                }
             }
         }
         catch (Exception migEx)
