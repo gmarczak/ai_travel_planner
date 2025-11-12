@@ -60,6 +60,7 @@
                                     <label asp-for="TravelRequest.NumberOfTravelers" class="form-label small">Travelers
                                         *</label>
                                     <input asp-for="TravelRequest.NumberOfTravelers" type="number" min="1" max="20"
+                                        inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" autocomplete="off"
                                         class="form-control form-control-sm form-control-md-normal" required />
                                     <span asp-validation-for="TravelRequest.NumberOfTravelers"
                                         class="text-danger small"></span>
@@ -68,6 +69,7 @@
                                     <label asp-for="TravelRequest.Budget" class="form-label small">Budget (USD)
                                         *</label>
                                     <input asp-for="TravelRequest.Budget" type="number" min="100" step="50"
+                                        inputmode="decimal" enterkeyhint="done" autocomplete="off"
                                         class="form-control form-control-sm form-control-md-normal" placeholder="2500" required />
                                     <span asp-validation-for="TravelRequest.Budget" class="text-danger small"></span>
                                 </div>
