@@ -40,11 +40,11 @@ if (builder.Environment.IsProduction())
             new DefaultAzureCredential()
         );
 
-        Console.WriteLine($"✅ Loaded secrets from Azure Key Vault: {keyVaultName}");
+        Console.WriteLine($"[INFO] Loaded secrets from Azure Key Vault: {keyVaultName}");
     }
     else
     {
-        Console.WriteLine("⚠️  KeyVault:Name not configured. Add to appsettings.Production.json");
+        Console.WriteLine("[WARN] KeyVault:Name not configured. Add to appsettings.Production.json");
     }
 }
 else if (builder.Environment.IsDevelopment())
@@ -52,8 +52,8 @@ else if (builder.Environment.IsDevelopment())
     // DEVELOPMENT: Use User Secrets (secure, not in source control)
     // Secrets are stored in: %APPDATA%\Microsoft\UserSecrets\<UserSecretsId>\secrets.json
     // To set secrets, use: dotnet user-secrets set "OpenAI:ApiKey" "your-key-here"
-    Console.WriteLine("📌 Development mode: Using User Secrets for API keys");
-    Console.WriteLine("   Set secrets with: dotnet user-secrets set \"OpenAI:ApiKey\" \"your-key\"");
+    Console.WriteLine("[INFO] Development mode: Using User Secrets for API keys");
+    Console.WriteLine("[INFO] Set secrets with: dotnet user-secrets set \"OpenAI:ApiKey\" \"your-key\"");
 }
 
 // FALLBACK: Load .env file (backward compatibility)
@@ -63,12 +63,12 @@ try
     if (File.Exists(envPath))
     {
         Env.Load(envPath);
-        Console.WriteLine("📁 Loaded environment variables from .env file");
+        Console.WriteLine("[INFO] Loaded environment variables from .env file");
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"⚠️  Failed to load .env file: {ex.Message}");
+    Console.WriteLine($"[WARN] Failed to load .env file: {ex.Message}");
 }
 
 // ADD ENVIRONMENT VARIABLES TO CONFIG
@@ -109,7 +109,7 @@ if (builder.Environment.IsProduction())
                 errorNumbersToAdd: null);
             sql.CommandTimeout(120);
         }));
-    Console.WriteLine("🔍 Using SQL Server (Azure SQL Database)");
+    Console.WriteLine("[INFO] Using SQL Server (Azure SQL Database)");
 }
 else
 {
@@ -117,7 +117,7 @@ else
         ?? "Data Source=travelplanner.db";
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseSqlite(connectionString));
-    Console.WriteLine($"🔍 Using SQLite: {connectionString}");
+    Console.WriteLine($"[INFO] Using SQLite: {connectionString}");
 }
 
 // ADD IDENTITY
@@ -203,9 +203,9 @@ builder.Services.AddScoped<OpenRouterAiService>();
 // REGISTER TRAVEL SERVICE with fallback logic
 if (enableFallback && (useOpenAI || useClaude))
 {
-    Console.WriteLine("+ Using AI Service with Fallback Support");
-    Console.WriteLine($"  Primary: {(useOpenAI ? "OpenAI" : "Claude")}");
-    Console.WriteLine("  Fallback: OpenRouter");
+    Console.WriteLine("[INFO] Using AI Service with Fallback Support");
+    Console.WriteLine($"[INFO] Primary: {(useOpenAI ? "OpenAI" : "Claude")}");
+    Console.WriteLine("[INFO] Fallback: OpenRouter");
 
     // Register primary service
     if (useClaude)
@@ -233,12 +233,12 @@ if (enableFallback && (useOpenAI || useClaude))
 }
 else if (useClaude)
 {
-    Console.WriteLine("+ Using Claude (Anthropic) Travel Service");
+    Console.WriteLine("[INFO] Using Claude (Anthropic) Travel Service");
     builder.Services.AddScoped<ITravelService, ClaudeTravelService>();
 }
 else if (useOpenAI)
 {
-    Console.WriteLine("+ Using OpenAI Travel Service");
+    Console.WriteLine("[INFO] Using OpenAI Travel Service");
     builder.Services.AddScoped<ITravelService, OpenAITravelService>();
 
     // ADD OPENAI API KEY TO CONFIG
@@ -249,7 +249,7 @@ else if (useOpenAI)
 }
 else
 {
-    Console.WriteLine("* Using Mock Travel Service (no provider or API key)");
+    Console.WriteLine("[INFO] Using Mock Travel Service (no provider or API key)");
     builder.Services.AddScoped<ITravelService, TravelService>();
 }
 
@@ -286,42 +286,42 @@ app.MapGet("/__config/maps", (IConfiguration config) =>
 
 // STARTUP INFO
 Console.WriteLine();
-Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
-Console.WriteLine("║          🚀 AI TRAVEL PLANNER STARTED                      ║");
-Console.WriteLine("╠════════════════════════════════════════════════════════════╣");
-Console.WriteLine($"║ Time:       {DateTime.Now:yyyy-MM-dd HH:mm:ss}                         ║");
-Console.WriteLine($"║ Environment: {app.Environment.EnvironmentName,-43} ║");
+Console.WriteLine("============================================================");
+Console.WriteLine("           AI TRAVEL PLANNER STARTED                        ");
+Console.WriteLine("============================================================");
+Console.WriteLine($"Time:        {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
 
 if (useClaude)
 {
-    Console.WriteLine("║ AI Provider: Claude (Anthropic) ✅                         ║");
-    Console.WriteLine("║ API Status:  Configured                                    ║");
+    Console.WriteLine("AI Provider: Claude (Anthropic) [CONFIGURED]");
+    Console.WriteLine("API Status:  Ready");
 }
 else if (useOpenAI)
 {
-    Console.WriteLine("║ AI Provider: OpenAI ✅                                     ║");
-    Console.WriteLine("║ API Status:  Configured                                    ║");
+    Console.WriteLine("AI Provider: OpenAI [CONFIGURED]");
+    Console.WriteLine("API Status:  Ready");
 }
 else
 {
-    Console.WriteLine("║ AI Provider: DEMO MODE (Mock) ⚠️                          ║");
-    Console.WriteLine("║ API Status:  Not configured                                ║");
+    Console.WriteLine("AI Provider: DEMO MODE (Mock) [NOT CONFIGURED]");
+    Console.WriteLine("API Status:  Not configured");
 }
 
-Console.WriteLine("║ Auth System: ASP.NET Core Identity ✅                      ║");
+Console.WriteLine("Auth System: ASP.NET Core Identity");
 if (app.Environment.IsProduction())
 {
-    Console.WriteLine("║ Database:    Azure SQL Database ✅                         ║");
+    Console.WriteLine("Database:    Azure SQL Database");
 }
 else
 {
-    Console.WriteLine("║ Database:    SQLite (Development) ✅                       ║");
+    Console.WriteLine("Database:    SQLite (Development)");
 }
-Console.WriteLine("╠════════════════════════════════════════════════════════════╣");
-Console.WriteLine("║ URL:         http://localhost:5000                         ║");
-Console.WriteLine("║ Login:       http://localhost:5000/Account/Login          ║");
-Console.WriteLine("║ Register:    http://localhost:5000/Account/Register       ║");
-Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
+Console.WriteLine("------------------------------------------------------------");
+Console.WriteLine("URL:         http://localhost:5000");
+Console.WriteLine("Login:       http://localhost:5000/Account/Login");
+Console.WriteLine("Register:    http://localhost:5000/Account/Register");
+Console.WriteLine("============================================================");
 Console.WriteLine();
 
 // Ensure the database schema exists on startup. On Azure the DB file may exist
@@ -340,7 +340,7 @@ try
             var availableMigrations = db.Database.GetMigrations();
             if (availableMigrations != null && availableMigrations.Any())
             {
-                Console.WriteLine("🔧 Applying EF Core migrations (if any)...");
+                Console.WriteLine("[MIGRATION] Applying EF Core migrations...");
                 // Use explicit retry for migration step (not covered by execution strategy automatically pre-connection)
                 var attempt = 0;
                 const int maxAttempts = 5;
@@ -349,14 +349,14 @@ try
                     try
                     {
                         db.Database.Migrate();
-                        Console.WriteLine("🔧 Migrations applied (if any).");
+                        Console.WriteLine("[MIGRATION] Migrations applied successfully.");
                         break;
                     }
                     catch (SqlException sx) when (attempt < maxAttempts)
                     {
                         attempt++;
                         var delay = TimeSpan.FromSeconds(2 * attempt);
-                        Console.WriteLine($"⚠️  Migration transient failure (attempt {attempt}/{maxAttempts}): {sx.Message}. Retrying in {delay.TotalSeconds}s...");
+                        Console.WriteLine($"[WARN] Migration transient failure (attempt {attempt}/{maxAttempts}): {sx.Message}. Retrying in {delay.TotalSeconds}s...");
                         Thread.Sleep(delay);
                         continue;
                     }
@@ -364,15 +364,15 @@ try
             }
             else
             {
-                Console.WriteLine("🔧 No migrations found. Ensuring database is created (EnsureCreated)...");
+                Console.WriteLine("[MIGRATION] No migrations found. Ensuring database is created...");
                 db.Database.EnsureCreated();
-                Console.WriteLine("🔧 Database ensured/created.");
+                Console.WriteLine("[MIGRATION] Database created successfully.");
             }
         }
         catch (Exception migEx)
         {
             // Catch-all for migration/ensure errors
-            Console.WriteLine($"⚠️  Migration/Ensure step failed: {migEx.Message}");
+            Console.WriteLine($"[ERROR] Migration/Ensure step failed: {migEx.Message}");
         }
     }
 }
@@ -380,15 +380,15 @@ catch (Exception ex)
 {
     // Log to console - avoid throwing so startup can continue and the app can surface
     // friendly errors rather than crashing during host start in Azure.
-    Console.WriteLine($"⚠️  Unexpected error while preparing database: {ex.Message}");
+    Console.WriteLine($"[ERROR] Unexpected error while preparing database: {ex.Message}");
 }
 
 if (!useOpenAI && !useClaude)
 {
-    Console.WriteLine("⚠️  WARNING: AI provider not configured!");
-    Console.WriteLine("   To enable AI features:");
-    Console.WriteLine("   - For Claude: set ANTHROPIC_API_KEY");
-    Console.WriteLine("   - For OpenAI: set OPENAI_API_KEY");
+    Console.WriteLine("[WARN] WARNING: AI provider not configured!");
+    Console.WriteLine("[WARN] To enable AI features:");
+    Console.WriteLine("[WARN] - For Claude: set ANTHROPIC_API_KEY");
+    Console.WriteLine("[WARN] - For OpenAI: set OPENAI_API_KEY");
     Console.WriteLine();
 }
 
