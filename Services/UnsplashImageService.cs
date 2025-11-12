@@ -49,9 +49,15 @@ namespace project.Services
         public async Task<(string? ImageUrl, string? PhotographerName, string? PhotographerUrl)?> GetDestinationImageWithAttributionAsync(string destination)
         {
             if (string.IsNullOrWhiteSpace(destination))
+                {
+                    _logger.LogWarning("GetDestinationImageWithAttributionAsync called with empty destination");
                 return null;
+                }
+
+                _logger.LogInformation("Fetching image for destination: {Destination}", destination);
 
             var normalizedDestination = NormalizeDestination(destination);
+                _logger.LogDebug("Normalized destination: {Normalized}", normalizedDestination);
 
             // 1. Check cache first (expires after 90 days)
             var cachedImage = await _context.DestinationImages
@@ -71,6 +77,7 @@ namespace project.Services
             }
 
             // 2. Try Unsplash API
+            _logger.LogInformation("No cached image found, trying Unsplash API for {Destination}", destination);
             var unsplashResult = await TryGetUnsplashImageAsync(destination);
             if (unsplashResult != null)
             {
@@ -80,6 +87,7 @@ namespace project.Services
             }
 
             // 3. Fallback to Google Maps Static API
+            _logger.LogInformation("Unsplash returned null, trying Google Maps fallback for {Destination}", destination);
             var googleMapsUrl = TryGetGoogleMapsStaticImage(destination);
             if (googleMapsUrl != null)
             {
@@ -96,20 +104,25 @@ namespace project.Services
         {
             if (string.IsNullOrEmpty(_unsplashAccessKey))
             {
-                _logger.LogDebug("Unsplash API key not configured");
+                    _logger.LogWarning("Unsplash API key not configured - cannot fetch images");
                 return null;
             }
+
+                _logger.LogInformation("Calling Unsplash API for {Destination} with key length: {KeyLength}", destination, _unsplashAccessKey.Length);
 
             try
             {
                 var query = Uri.EscapeDataString(destination);
                 var url = $"https://api.unsplash.com/search/photos?query={query}&per_page=1&orientation=landscape";
+                _logger.LogDebug("Unsplash API URL: {Url}", url);
 
                 var response = await _httpClient.GetAsync(url);
+                _logger.LogInformation("Unsplash API response status: {StatusCode} for {Destination}", response.StatusCode, destination);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning("Unsplash API returned {StatusCode} for {Destination}", response.StatusCode, destination);
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Unsplash API returned {StatusCode} for {Destination}. Response: {Response}", response.StatusCode, destination, responseBody);
                     return null;
                 }
 
@@ -122,9 +135,10 @@ namespace project.Services
                 }
 
                 var photo = result.Results[0];
-                _logger.LogInformation("Found Unsplash image for {Destination} by {Photographer}", destination, photo.User?.Name);
+                var imageUrl = photo.Urls?.Regular ?? photo.Urls?.Small ?? string.Empty;
+                _logger.LogInformation("Found Unsplash image for {Destination} by {Photographer}. URL: {ImageUrl}", destination, photo.User?.Name, imageUrl);
 
-                return (photo.Urls?.Regular ?? photo.Urls?.Small ?? string.Empty,
+                return (imageUrl,
                         photo.User?.Name,
                         photo.User?.Links?.Html);
             }
