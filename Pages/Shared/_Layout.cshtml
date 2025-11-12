@@ -69,9 +69,9 @@
         var uiCulture = System.Threading.Thread.CurrentThread.CurrentUICulture?.Name ?? "en-US";
         var htmlLang = CultureInfo.CurrentUICulture.Name ?? "en";
     }
-    <header class="border-bottom mb-3 bg-primary">
-        <nav class="container d-flex flex-wrap align-items-center justify-content-between py-2 px-3">
-            <a href="/" class="text-decoration-none fw-bold text-white d-flex align-items-center mb-2 mb-md-0">
+    <header class="border-bottom bg-primary fixed-top shadow-sm">
+        <nav class="container d-flex align-items-center justify-content-between py-2 px-3">
+            <a href="/" class="text-decoration-none fw-bold text-white d-flex align-items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
                     class="bi bi-geo-alt me-2" viewBox="0 0 16 16">
                     <path
@@ -82,53 +82,43 @@
                 <span class="d-inline d-sm-none">Travel AI</span>
             </a>
 
-            <button class="navbar-toggler d-md-none btn btn-light btn-sm" type="button" data-bs-toggle="collapse"
-                data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-list"
-                    viewBox="0 0 16 16">
-                    <path fill-rule="evenodd"
-                        d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z" />
-                </svg>
-            </button>
+            <!-- Desktop nav -->
+            <ul class="nav gap-2 align-items-center d-none d-md-flex">
+                <li class="nav-item"><a href="/"
+                        class="nav-link text-white @(currentPath == "/" ? "fw-bold" : null)">Home</a></li>
+                <li class="nav-item"><a href="/TravelPlanner"
+                        class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner") && !currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">Plan
+                        Trip</a></li>
+                <li class="nav-item"><a href="/TravelPlanner/SavedPlans"
+                        class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">Saved
+                        Trips</a></li>
+                <li class="nav-item"><a href="/Privacy"
+                        class="nav-link text-white @(currentPath.StartsWith("/Privacy") ? "fw-bold" : null)">Privacy</a>
+                </li>
 
-            <div class="collapse navbar-collapse d-md-block w-100 w-md-auto" id="mainNav">
-                <ul class="nav gap-2 align-items-center flex-column flex-md-row mt-2 mt-md-0">
-                    <li class="nav-item"><a href="/"
-                            class="nav-link text-white @(currentPath == "/" ? "fw-bold" : null)">Home</a></li>
-                    <li class="nav-item"><a href="/TravelPlanner"
-                            class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner") && !currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">Plan
-                            Trip</a></li>
-                    <li class="nav-item"><a href="/TravelPlanner/SavedPlans"
-                            class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">Saved
-                            Trips</a></li>
-                    <li class="nav-item"><a href="/Privacy"
-                            class="nav-link text-white @(currentPath.StartsWith("/Privacy") ? "fw-bold" : null)">Privacy</a>
-                    </li>
-
-
-                    @if (SignInManager.IsSignedIn(User))
-                    {
-                        var email = User?.Identity?.Name ?? "Account";
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor"
-                                    class="bi bi-person-circle me-1" viewBox="0 0 16 16">
-                                    <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
-                                    <path fill-rule="evenodd"
-                                        d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z" />
-                                </svg>
-                                @email
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                                <li><a class="dropdown-item" href="/TravelPlanner/SavedPlans">My Plans</a></li>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                                <li>
-                                    <form method="post" asp-page="/Account/Logout" class="m-0">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="dropdown-item">Logout</button>
+                @if (SignInManager.IsSignedIn(User))
+                {
+                    var email = User?.Identity?.Name ?? "Account";
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor"
+                                class="bi bi-person-circle me-1" viewBox="0 0 16 16">
+                                <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                                <path fill-rule="evenodd"
+                                    d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z" />
+                            </svg>
+                            @email
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="/TravelPlanner/SavedPlans">My Plans</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <form method="post" asp-page="/Account/Logout" class="m-0">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="dropdown-item">Logout</button>
                                     </form>
                                 </li>
                             </ul>
@@ -137,23 +127,70 @@
                     else
                     {
                         <li class="nav-item"><a href="/Account/Login" class="nav-link text-white">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                                    class="bi bi-box-arrow-in-right me-1" viewBox="0 0 16 16">
-                                    <path fill-rule="evenodd"
-                                        d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z" />
-                                    <path fill-rule="evenodd"
-                                        d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z" />
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-box-arrow-in-right me-1" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                    d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z" />
+                                <path fill-rule="evenodd"
+                                    d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z" />
+                            </svg>
+                            Login</a></li>
+                    <li class="nav-item"><a href="/Account/Register" class="btn btn-light btn-sm">Sign Up</a></li>
+                }
+            </ul>
+
+            <!-- Mobile hamburger menu -->
+            <button class="btn btn-link text-white d-md-none p-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-controls="mobileMenu" aria-label="Toggle navigation">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+                </svg>
+            </button>
+        </nav>
+
+        <!-- Mobile offcanvas menu -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="mobileMenu" aria-labelledby="mobileMenuLabel">
+            <div class="offcanvas-header bg-primary text-white">
+                <h5 class="offcanvas-title" id="mobileMenuLabel">Menu</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <ul class="nav flex-column gap-2">
+                    <li class="nav-item"><a href="/" class="nav-link @(currentPath == "/" ? "fw-bold text-primary" : "text-dark")">Home</a></li>
+                    <li class="nav-item"><a href="/TravelPlanner" class="nav-link @(currentPath.StartsWith("/TravelPlanner") && !currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold text-primary" : "text-dark")">Plan Trip</a></li>
+                    <li class="nav-item"><a href="/TravelPlanner/SavedPlans" class="nav-link @(currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold text-primary" : "text-dark")">Saved Trips</a></li>
+                    <li class="nav-item"><a href="/Privacy" class="nav-link @(currentPath.StartsWith("/Privacy") ? "fw-bold text-primary" : "text-dark")">Privacy</a></li>
+                    <li class="nav-item mt-3 pt-3 border-top">
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            var email = User?.Identity?.Name ?? "Account";
+                            <div class="d-flex align-items-center mb-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-person-circle me-2" viewBox="0 0 16 16">
+                                    <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                                    <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
                                 </svg>
-                                Login</a></li>
-                        <li class="nav-item"><a href="/Account/Register" class="btn btn-light btn-sm">Sign Up</a></li>
-                    }
+                                <span class="fw-bold">@email</span>
+                            </div>
+                            <a href="/TravelPlanner/SavedPlans" class="btn btn-outline-primary w-100 mb-2">My Plans</a>
+                            <form method="post" asp-page="/Account/Logout" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-outline-danger w-100">Logout</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a href="/Account/Login?returnUrl=@returnUrl" class="btn btn-primary w-100 mb-2">Login</a>
+                            <a href="/Account/Register" class="btn btn-outline-primary w-100">Sign Up</a>
+                        }
+                    </li>
                 </ul>
             </div>
-        </nav>
+        </div>
     </header>
 
     <main class="container">
         @* Display TempData messages as Bootstrap alerts *@
+            </header>
+    <main role="main" class="container pt-5 mt-3">
         @if (TempData["SuccessMessage"] != null)
         {
             <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
