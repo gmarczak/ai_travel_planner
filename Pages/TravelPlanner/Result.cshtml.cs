@@ -487,6 +487,24 @@ namespace project.Pages.TravelPlanner
                 }
             }
 
+            // Add to saved plans list in cache
+            var savedIdsKey = GetSavedPlansKey();
+            var savedIds = _cache.GetOrCreate(savedIdsKey, entry =>
+            {
+                entry.SetSlidingExpiration(TimeSpan.FromDays(365));
+                return new List<string>();
+            });
+            savedIds ??= new List<string>();
+            if (!savedIds.Contains(id))
+            {
+                savedIds.Add(id);
+                _cache.Set(savedIdsKey, savedIds, new MemoryCacheEntryOptions
+                {
+                    SlidingExpiration = TimeSpan.FromDays(365)
+                });
+                _logger.LogInformation("Added plan {Id} to saved list cache key {Key}", id, savedIdsKey);
+            }
+
             TempData["SuccessMessage"] = "Plan saved.";
             return RedirectToPage("Result", new { id });
         }
@@ -511,6 +529,24 @@ namespace project.Pages.TravelPlanner
                 _db.TravelPlans.Remove(existing);
                 _db.SaveChanges();
                 _logger.LogInformation("Plan removed from DB: id={Id}", id);
+            }
+
+            // Remove from saved plans list in cache
+            var savedIdsKey = GetSavedPlansKey();
+            var savedIds = _cache.GetOrCreate(savedIdsKey, entry =>
+            {
+                entry.SetSlidingExpiration(TimeSpan.FromDays(365));
+                return new List<string>();
+            });
+            savedIds ??= new List<string>();
+            if (savedIds.Contains(id))
+            {
+                savedIds.Remove(id);
+                _cache.Set(savedIdsKey, savedIds, new MemoryCacheEntryOptions
+                {
+                    SlidingExpiration = TimeSpan.FromDays(365)
+                });
+                _logger.LogInformation("Removed plan {Id} from saved list cache key {Key}", id, savedIdsKey);
             }
 
             TempData["SuccessMessage"] = "Plan removed from saved.";

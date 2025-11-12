@@ -35,12 +35,17 @@ else
                  class="img-fluid rounded w-100" 
                  style="max-height: 300px; object-fit: cover;" />
             <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-50 text-white p-2 p-md-3 rounded-bottom">
-                <h1 class="mb-0 fs-2 fs-md-1">@plan?.Destination</h1>
-                <div class="d-flex gap-2 flex-wrap mt-2">
+                <h1 class="mb-0 fs-2 fs-md-1" style="text-transform: capitalize;">@plan?.Destination</h1>
+                <div class="d-flex gap-2 flex-wrap align-items-center mt-2">
                     <span class="badge text-bg-primary">@days days</span>
                     <span class="badge text-bg-secondary d-none d-sm-inline">@plan?.NumberOfTravelers traveler@((plan?.NumberOfTravelers ?? 0) == 1 ? "" : "s")</span>
                     <span class="badge text-bg-secondary d-inline d-sm-none">@(plan?.NumberOfTravelers ?? 0) 👥</span>
                     <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">/person/day</span><span class="d-inline d-sm-none">/p/d</span></span>
+                    <button type="button" class="btn btn-link p-0 save-heart-btn" id="savePlanBtn" data-plan-id="@planId" data-is-saved="@Model.IsSaved.ToString().ToLower()" title="@(Model.IsSaved ? "Click to unsave" : "Save to favorites")">
+                        <i class="bi bi-heart fs-4 text-white @(Model.IsSaved ? "d-none" : "")" id="heartOutline"></i>
+                        <i class="bi bi-heart-fill fs-4 text-danger @(Model.IsSaved ? "" : "d-none")" id="heartFill"></i>
+                        <span class="spinner-border spinner-border-sm ms-1" role="status" aria-hidden="true" style="display: none;" id="savePlanSpinner"></span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -48,36 +53,30 @@ else
 
     <!-- Simple header (mobile when image exists, always when no image) -->
     <header class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 @(!string.IsNullOrEmpty(plan?.DestinationImageUrl) ? "d-md-none" : "")">
-        <h1 class="mb-0 fs-4 fs-md-2">@plan?.Destination</h1>
-        <div class="d-flex gap-2 flex-wrap">
+        <h1 class="mb-0 fs-4 fs-md-2" style="text-transform: capitalize;">@plan?.Destination</h1>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
             <span class="badge text-bg-primary">@days days</span>
             <span class="badge text-bg-secondary d-none d-sm-inline">@plan?.NumberOfTravelers traveler@((plan?.NumberOfTravelers ?? 0) == 1 ? "" : "s")</span>
             <span class="badge text-bg-secondary d-inline d-sm-none">@(plan?.NumberOfTravelers ?? 0) 👥</span>
             <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">/person/day</span><span class="d-inline d-sm-none">/p/d</span></span>
+            <button type="button" class="btn btn-link p-0 save-heart-btn" id="savePlanBtnMobile" data-plan-id="@planId" data-is-saved="@Model.IsSaved.ToString().ToLower()" title="@(Model.IsSaved ? "Click to unsave" : "Save to favorites")">
+                <i class="bi bi-heart fs-4 text-secondary @(Model.IsSaved ? "d-none" : "")"></i>
+                <i class="bi bi-heart-fill fs-4 text-danger @(Model.IsSaved ? "" : "d-none")"></i>
+                <span class="spinner-border spinner-border-sm ms-1" role="status" aria-hidden="true" style="display: none;"></span>
+            </button>
         </div>
     </header>
 
-    <div class="mt-3 d-flex gap-2 flex-wrap utility-buttons d-none d-md-flex">
-        <form method="post" asp-page-handler="Save" asp-route-id="@planId" id="savePlanForm" class="flex-fill flex-sm-grow-0">
-            <button type="submit" class="btn btn-success w-100 w-sm-auto" id="savePlanBtn" style="min-height: 44px;">
-                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="savePlanSpinner"></span>
-                <span id="savePlanText">Save</span>
-            </button>
-        </form>
-        <button type="button" class="btn btn-outline-secondary flex-fill flex-sm-grow-0" id="copyItineraryBtn" style="min-height: 44px;">Copy</button>
-        <a asp-page="SavedPlans" class="btn btn-outline-primary flex-fill flex-sm-grow-0 d-flex align-items-center justify-content-center" style="min-height: 44px;">Saved</a>
-    </div>
-
     <hr class="my-3" />
 
-    <!-- Desktop navigation tabs -->
+    <!-- Desktop navigation tabs (mobile has bottom navbar) -->
     <nav class="mb-3 d-none d-md-flex gap-2 flex-wrap main-tabs" role="tablist" aria-label="Plan views">
-        <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm flex-fill flex-sm-grow-0" style="min-height: 44px;">Plan</button>
-        <button type="button" data-tab="map" aria-selected="false" class="btn btn-outline-primary btn-sm flex-fill flex-sm-grow-0" style="min-height: 44px;">Map</button>
-        <button type="button" data-tab="details" aria-selected="false" class="btn btn-outline-primary btn-sm flex-fill flex-sm-grow-0" style="min-height: 44px;">Details</button>
+        <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Plan</button>
+        <button type="button" data-tab="map" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Map</button>
+        <button type="button" data-tab="details" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Details</button>
     </nav>
 
-    <section id="tab-plan" data-tab-panel>
+    <section id="tab-plan" data-tab-panel style="padding-top: 0;">
         <div class="d-flex justify-content-end gap-2 mb-3">
             <button type="button" class="btn btn-sm btn-outline-secondary" id="expandAllBtn" style="min-height: 36px;">Expand all</button>
             <button type="button" class="btn btn-sm btn-outline-secondary" id="collapseAllBtn" style="min-height: 36px;">Collapse all</button>
@@ -183,68 +182,23 @@ else
     @Html.AntiForgeryToken()
 
     <section id="tab-map" data-tab-panel hidden>
-        <div class="mb-2 mb-md-3">
-            <!-- Day filter bar (horizontally scrollable on mobile) -->
-            <div class="day-filter-bar overflow-x-auto text-nowrap pb-2 mb-2">
-                <div id="map-controls" class="d-inline-flex gap-2"></div>
+        <!-- Map full width -->
+        <div class="mb-3">
+            <div id="plan-map" data-map-container class="bg-light rounded border position-relative result-map" style="width: 100%;">
+                <!-- Map loading indicator -->
+                <div id="map-loading" class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 1;">
+                    <div class="spinner-border text-primary mb-2" role="status">
+                        <span class="visually-hidden">Loading map...</span>
+                    </div>
+                    <div class="small text-muted">Loading map...</div>
+                </div>
             </div>
         </div>
-        
-        <div class="row g-2">
-            <!-- Map on the right (or full width on mobile) -->
-            <div class="col-12 col-lg-8 order-lg-2">
-                <div id="plan-map" data-map-container class="bg-light rounded border position-relative" style="height:400px; width:100%;">
-                    <!-- Map loading indicator -->
-                    <div id="map-loading" class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 1;">
-                        <div class="spinner-border text-primary mb-2" role="status">
-                            <span class="visually-hidden">Loading map...</span>
-                        </div>
-                        <div class="small text-muted">Loading map...</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Plan sidebar on the left (desktop) / Offcanvas (mobile) -->
-            <div class="col-12 col-lg-4 order-lg-1">
-                <!-- Desktop sidebar (visible on lg+) -->
-                <div class="d-none d-lg-block">
-                    <div id="side-panel" class="bg-white rounded border p-3" style="height:600px; overflow-y:auto;">
-                        <div class="d-flex align-items-center mb-3">
-                            <h5 class="mb-0">Day Details</h5>
-                            <small class="text-muted ms-auto">Drag to reorder</small>
-                        </div>
-                        <div class="px-1 py-2 text-muted small">Select a day from map controls to view and reorder points. Use the search box to add places to the selected day.</div>
-                        <!-- list populated by results-map.js -->
-                    </div>
-                </div>
-                
-                <!-- Mobile bottom sheet (visible on <lg) -->
-                <div class="bottom-sheet offcanvas offcanvas-bottom d-lg-none" tabindex="-1" id="planOffcanvas" aria-labelledby="planOffcanvasLabel" data-bs-backdrop="false" data-bs-scroll="true">
-                    <!-- Drag handle -->
-                    <div class="bottom-sheet-handle-container">
-                        <div class="bottom-sheet-handle"></div>
-                    </div>
-                    
-                    <div class="offcanvas-header border-bottom">
-                        <h5 class="offcanvas-title" id="planOffcanvasLabel">
-                            <span id="bottom-sheet-day-title">Select a day</span>
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-                    </div>
-                    
-                    <div class="offcanvas-body">
-                        <div id="side-panel-mobile">
-                            <div class="text-center text-muted py-4" id="bottom-sheet-placeholder">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="mb-3 opacity-50" viewBox="0 0 16 16">
-                                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                                    <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-                                </svg>
-                                <p>Select a day from the filters above to view details</p>
-                            </div>
-                            <!-- Content populated by results-map.js -->
-                        </div>
-                    </div>
-                </div>
+
+        <!-- Day filter bar below map -->
+        <div class="mb-2 mb-md-3">
+            <div class="day-filter-bar overflow-x-auto text-nowrap pb-2">
+                <div id="map-controls" class="d-flex gap-2 justify-content-center flex-wrap"></div>
             </div>
         </div>
     </section>
@@ -500,20 +454,63 @@ else
             if(ok==='saved') showToast('Itinerary saved.','success');
             if(ok==='reset') showToast('Itinerary reset to AI version.','secondary');
 
-            // SAVE PLAN BUTTON SPINNER
-            const savePlanForm = document.getElementById('savePlanForm');
-            if (savePlanForm) {
-                savePlanForm.addEventListener('submit', function() {
-                    const btn = document.getElementById('savePlanBtn');
-                    const spinner = document.getElementById('savePlanSpinner');
-                    const text = document.getElementById('savePlanText');
-                    if (btn && spinner && text) {
-                        btn.disabled = true;
-                        spinner.style.display = 'inline-block';
-                        text.textContent = 'Saving...';
+            // SAVE PLAN BUTTON - HEART TOGGLE (Save/Unsave)
+            const saveHeartButtons = document.querySelectorAll('.save-heart-btn');
+            saveHeartButtons.forEach(btn => {
+                btn.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    
+                    const planId = this.getAttribute('data-plan-id');
+                    const isSaved = this.getAttribute('data-is-saved') === 'true';
+                    const heartOutline = this.querySelector('.bi-heart:not(.bi-heart-fill)');
+                    const heartFill = this.querySelector('.bi-heart-fill');
+                    const spinner = this.querySelector('.spinner-border');
+                    
+                    if (!planId) return;
+                    
+                    // Show spinner
+                    if (spinner) spinner.style.display = 'inline-block';
+                    
+                    try {
+                        // Toggle: if saved, unsave it; if not saved, save it
+                        const handler = isSaved ? 'Remove' : 'Save';
+                        const formData = new FormData();
+                        formData.append('id', planId);
+                        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                        
+                        const response = await fetch(`?handler=${handler}`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (response.ok) {
+                            // Toggle heart icons
+                            if (isSaved) {
+                                // Was saved, now unsaved - show outline
+                                heartFill.classList.add('d-none');
+                                heartOutline.classList.remove('d-none');
+                                this.setAttribute('data-is-saved', 'false');
+                                this.setAttribute('title', 'Save to favorites');
+                                showToast('Plan unsaved', 'secondary');
+                            } else {
+                                // Was not saved, now saved - show filled
+                                heartOutline.classList.add('d-none');
+                                heartFill.classList.remove('d-none');
+                                this.setAttribute('data-is-saved', 'true');
+                                this.setAttribute('title', 'Click to unsave');
+                                showToast('Plan saved!', 'success');
+                            }
+                        } else {
+                            showToast('Failed to update plan', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error toggling save:', error);
+                        showToast('Failed to update plan', 'error');
+                    } finally {
+                        if (spinner) spinner.style.display = 'none';
                     }
                 });
-            }
+            });
 
             // COPY ITINERARY
             const copyBtn = document.getElementById('copyItineraryBtn');
@@ -882,38 +879,67 @@ else
     </nav>
 
     <style>
-        /* Mobile bottom navigation styles */
+        /* Mobile bottom navigation styles - WHITE ICONS ON GREEN */
         @@media (max-width: 767.98px) {
             body {
-                padding-bottom: 75px;
+                padding-bottom: 80px;
             }
             
             .mobile-bottom-nav {
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
                 z-index: 1030;
                 background: white !important;
+                border-top: 1px solid rgba(0,0,0,0.08) !important;
+                padding: 0.25rem 0;
             }
             
             .mobile-bottom-nav button {
-                color: #6c757d;
-                transition: color 0.2s, background-color 0.2s;
+                color: #94a3b8;
+                transition: all 0.25s ease;
+                padding: 0.75rem 0.5rem !important;
+                background: transparent;
+                border-radius: 12px;
+                margin: 0 0.25rem;
             }
             
             .mobile-bottom-nav button:active {
-                background-color: rgba(0,0,0,0.05);
+                background-color: rgba(0,0,0,0.03);
+            }
+
+            /* Remove blue ripple/focus effect */
+            .mobile-bottom-nav button:focus,
+            .mobile-bottom-nav button:focus-visible {
+                outline: none !important;
+                box-shadow: none !important;
             }
             
+            /* Active state - WHITE icons on GREEN background */
             .mobile-bottom-nav button[aria-selected="true"] {
-                color: #0d6efd;
-                font-weight: 500;
+                color: white !important;
+                background-color: #198754 !important;
+                font-weight: 600;
             }
             
             .mobile-bottom-nav button svg {
-                transition: transform 0.2s;
+                transition: all 0.25s ease;
+                width: 24px;
+                height: 24px;
+                color: inherit;
             }
             
             .mobile-bottom-nav button[aria-selected="true"] svg {
-                transform: scale(1.1);
+                transform: scale(1.05);
+                color: white !important;
+            }
+
+            .mobile-bottom-nav button small {
+                font-size: 0.7rem;
+                font-weight: 500;
+                margin-top: 0.25rem;
+            }
+
+            .mobile-bottom-nav button[aria-selected="true"] small {
+                font-weight: 700;
             }
             
             /* Horizontally scrollable day filters */

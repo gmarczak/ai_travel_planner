@@ -8,7 +8,8 @@
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8">
             <h1 class="text-center mb-3 mb-md-4 fw-bold fs-2 fs-md-1">Create Your Travel Plan</h1>
-            <p class="text-center text-muted mb-3 mb-md-4 small">Fill in the details below to generate a personalized AI itinerary.
+            <p class="text-center text-muted mb-3 mb-md-4 small">Fill in the details below to generate a personalized AI
+                itinerary.
             </p>
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-primary text-white py-2 py-md-3">
@@ -31,21 +32,24 @@
                             </legend>
                             <div class="row g-2 g-md-3">
                                 <div class="col-12 col-md-6">
-                                    <label asp-for="TravelRequest.Destination" class="form-label small">Destination *</label>
-                                    <input asp-for="TravelRequest.Destination" class="form-control form-control-sm form-control-md-normal"
-                                        placeholder="e.g. Barcelona" required />
+                                    <label asp-for="TravelRequest.Destination" class="form-label small">Destination
+                                        *</label>
+                                    <input asp-for="TravelRequest.Destination"
+                                        class="form-control form-control-sm form-control-md-normal"
+                                        placeholder="e.g. Barcelona" autocapitalize="words" required />
                                     <span asp-validation-for="TravelRequest.Destination"
                                         class="text-danger small"></span>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label asp-for="TravelRequest.StartDate" class="form-label small">Start *</label>
-                                    <input asp-for="TravelRequest.StartDate" type="date" class="form-control form-control-sm form-control-md-normal"
-                                        required />
+                                    <input asp-for="TravelRequest.StartDate" type="date"
+                                        class="form-control form-control-sm form-control-md-normal" required />
                                     <span asp-validation-for="TravelRequest.StartDate" class="text-danger small"></span>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label asp-for="TravelRequest.EndDate" class="form-label small">End *</label>
-                                    <input asp-for="TravelRequest.EndDate" type="date" class="form-control form-control-sm form-control-md-normal" required />
+                                    <input asp-for="TravelRequest.EndDate" type="date"
+                                        class="form-control form-control-sm form-control-md-normal" required />
                                     <span asp-validation-for="TravelRequest.EndDate" class="text-danger small"></span>
                                 </div>
                             </div>
@@ -59,9 +63,20 @@
                                 <div class="col-6 col-md-4">
                                     <label asp-for="TravelRequest.NumberOfTravelers" class="form-label small">Travelers
                                         *</label>
-                                    <input asp-for="TravelRequest.NumberOfTravelers" type="number" min="1" max="20"
-                                        inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" autocomplete="off"
-                                        class="form-control form-control-sm form-control-md-normal" required />
+                                    <div class="input-group input-group-sm">
+                                        <button class="btn btn-outline-secondary" type="button" id="decrementTravelers"
+                                            style="min-height: 44px;">
+                                            <i class="bi bi-dash-lg"></i>
+                                        </button>
+                                        <input asp-for="TravelRequest.NumberOfTravelers" type="number" min="1" max="20"
+                                            inputmode="numeric" pattern="[0-9]*" autocomplete="off"
+                                            class="form-control form-control-sm form-control-md-normal text-center"
+                                            id="travelersInput" required readonly />
+                                        <button class="btn btn-outline-secondary" type="button" id="incrementTravelers"
+                                            style="min-height: 44px;">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
                                     <span asp-validation-for="TravelRequest.NumberOfTravelers"
                                         class="text-danger small"></span>
                                 </div>
@@ -70,12 +85,14 @@
                                         *</label>
                                     <input asp-for="TravelRequest.Budget" type="number" min="100" step="50"
                                         inputmode="decimal" enterkeyhint="done" autocomplete="off"
-                                        class="form-control form-control-sm form-control-md-normal" placeholder="2500" required />
+                                        class="form-control form-control-sm form-control-md-normal" placeholder="2500"
+                                        required />
                                     <span asp-validation-for="TravelRequest.Budget" class="text-danger small"></span>
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <label asp-for="TravelRequest.TripType" class="form-label small">Trip Type</label>
-                                    <select asp-for="TravelRequest.TripType" class="form-select form-select-sm form-select-md-normal">
+                                    <select asp-for="TravelRequest.TripType"
+                                        class="form-select form-select-sm form-select-md-normal">
                                         <option value="">(optional)</option>
                                         <option value="Adventure">Adventure</option>
                                         <option value="Relaxation">Relaxation</option>
@@ -93,12 +110,14 @@
                         <fieldset class="mb-3 mb-md-4">
                             <legend class="h6 text-uppercase small fw-semibold text-secondary mb-2 mb-md-3">Additional
                                 Preferences</legend>
-                            <textarea asp-for="TravelRequest.TravelPreferences" class="form-control form-control-sm form-control-md-normal" rows="2"
+                            <textarea asp-for="TravelRequest.TravelPreferences"
+                                class="form-control form-control-sm form-control-md-normal" rows="2"
                                 placeholder="Dietary needs, accessibility, must-see spots..."></textarea>
                         </fieldset>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg" id="generateBtn" style="min-height: 44px;">
+                            <button type="submit" class="btn btn-primary btn-lg" id="generateBtn"
+                                style="min-height: 44px;">
                                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"
                                     style="display: none;" id="loadingSpinner"></span>
                                 <span id="buttonText">Generate Travel Plan</span>
@@ -133,7 +152,8 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/%40microsoft/signalr@7.0.14/dist/browser/signalr.min.js" onerror="console.warn('Primary SignalR CDN failed');"></script>
+    <script src="https://cdn.jsdelivr.net/npm/%40microsoft/signalr@7.0.14/dist/browser/signalr.min.js"
+        onerror="console.warn('Primary SignalR CDN failed');"></script>
     <script>
         // Ensure signalR is available (fallback loaders if initial CDN missing)
         async function ensureSignalRLoaded() {
@@ -160,6 +180,34 @@
             console.error('SignalR script could not be loaded.');
             return false;
         }
+        // Travelers increment/decrement buttons
+        const travelersInput = document.getElementById('travelersInput');
+        const incrementBtn = document.getElementById('incrementTravelers');
+        const decrementBtn = document.getElementById('decrementTravelers');
+
+        if (travelersInput && incrementBtn && decrementBtn) {
+            // Set default value if empty
+            if (!travelersInput.value) {
+                travelersInput.value = 2;
+            }
+
+            incrementBtn.addEventListener('click', function () {
+                let currentValue = parseInt(travelersInput.value) || 1;
+                let maxValue = parseInt(travelersInput.getAttribute('max')) || 20;
+                if (currentValue < maxValue) {
+                    travelersInput.value = currentValue + 1;
+                }
+            });
+
+            decrementBtn.addEventListener('click', function () {
+                let currentValue = parseInt(travelersInput.value) || 1;
+                let minValue = parseInt(travelersInput.getAttribute('min')) || 1;
+                if (currentValue > minValue) {
+                    travelersInput.value = currentValue - 1;
+                }
+            });
+        }
+
         const today = new Date().toISOString().split('T')[0];
         const startDateInput = document.querySelector('input[name="TravelRequest.StartDate"]');
         const endDateInput = document.querySelector('input[name="TravelRequest.EndDate"]');
