@@ -19,10 +19,10 @@ else
         ? plan.Budget / plan.NumberOfTravelers / days
         : 0;
 
-    <!-- Destination Hero Image -->
+    <!-- Destination Hero Image (hidden on mobile) -->
     @if (!string.IsNullOrEmpty(plan?.DestinationImageUrl))
     {
-        <div class="mb-3 mb-md-4 position-relative">
+        <div class="mb-3 mb-md-4 position-relative d-none d-md-block hero-image">
             <img src="@plan.DestinationImageUrl" alt="@plan.Destination" 
                  class="img-fluid rounded w-100" 
                  style="max-height: 300px; object-fit: cover;" />
@@ -37,20 +37,19 @@ else
             </div>
         </div>
     }
-    else
-    {
-        <header class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-            <h1 class="mb-0 fs-2 fs-md-1">@plan?.Destination</h1>
-            <div class="d-flex gap-2 flex-wrap">
-                <span class="badge text-bg-primary">@days days</span>
-                <span class="badge text-bg-secondary d-none d-sm-inline">@plan?.NumberOfTravelers traveler@((plan?.NumberOfTravelers ?? 0) == 1 ? "" : "s")</span>
-                <span class="badge text-bg-secondary d-inline d-sm-none">@(plan?.NumberOfTravelers ?? 0) 👥</span>
-                <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">/person/day</span><span class="d-inline d-sm-none">/p/d</span></span>
-            </div>
-        </header>
-    }
 
-    <div class="mt-3 d-flex gap-2 flex-wrap">
+    <!-- Simple header for mobile/desktop without image -->
+    <header class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 @(!string.IsNullOrEmpty(plan?.DestinationImageUrl) ? "d-md-none" : "")">
+        <h1 class="mb-0 fs-2 fs-md-1">@plan?.Destination</h1>
+        <div class="d-flex gap-2 flex-wrap">
+            <span class="badge text-bg-primary">@days days</span>
+            <span class="badge text-bg-secondary d-none d-sm-inline">@plan?.NumberOfTravelers traveler@((plan?.NumberOfTravelers ?? 0) == 1 ? "" : "s")</span>
+            <span class="badge text-bg-secondary d-inline d-sm-none">@(plan?.NumberOfTravelers ?? 0) 👥</span>
+            <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">/person/day</span><span class="d-inline d-sm-none">/p/d</span></span>
+        </div>
+    </header>
+
+    <div class="mt-3 d-flex gap-2 flex-wrap utility-buttons d-none d-md-flex">
         <form method="post" asp-page-handler="Save" asp-route-id="@planId" id="savePlanForm" class="flex-fill flex-sm-grow-0">
             <button type="submit" class="btn btn-success w-100 w-sm-auto" id="savePlanBtn" style="min-height: 44px;">
                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="savePlanSpinner"></span>
@@ -63,7 +62,8 @@ else
 
     <hr class="my-3" />
 
-    <nav class="mb-3 d-flex gap-2 flex-wrap" role="tablist" aria-label="Plan views">
+    <!-- Desktop navigation tabs -->
+    <nav class="mb-3 d-none d-md-flex gap-2 flex-wrap main-tabs" role="tablist" aria-label="Plan views">
         <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm flex-fill flex-sm-grow-0" style="min-height: 44px;">Plan</button>
         <button type="button" data-tab="map" aria-selected="false" class="btn btn-outline-primary btn-sm flex-fill flex-sm-grow-0" style="min-height: 44px;">Map</button>
         <button type="button" data-tab="details" aria-selected="false" class="btn btn-outline-primary btn-sm flex-fill flex-sm-grow-0" style="min-height: 44px;">Details</button>
@@ -175,14 +175,21 @@ else
     @Html.AntiForgeryToken()
 
     <section id="tab-map" data-tab-panel hidden>
-        <div class="mb-2 mb-md-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div id="map-controls" class="flex-fill"></div>
-            <button class="btn btn-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#planOffcanvas" aria-controls="planOffcanvas" style="min-height: 44px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
-                </svg>
-                Show Plan
-            </button>
+        <div class="mb-2 mb-md-3">
+            <!-- Day filter bar (horizontally scrollable on mobile) -->
+            <div class="day-filter-bar overflow-x-auto text-nowrap pb-2 mb-2">
+                <div id="map-controls" class="d-inline-flex gap-2"></div>
+            </div>
+            
+            <!-- Show Plan button for mobile -->
+            <div class="d-lg-none">
+                <button class="btn btn-primary w-100 btn-show-plan" type="button" data-bs-toggle="offcanvas" data-bs-target="#planOffcanvas" aria-controls="planOffcanvas" style="min-height: 44px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list me-2" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+                    </svg>
+                    Show Plan
+                </button>
+            </div>
         </div>
         
         <div class="row g-2">
@@ -213,8 +220,8 @@ else
                     </div>
                 </div>
                 
-                <!-- Mobile offcanvas (visible on <lg) -->
-                <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="planOffcanvas" aria-labelledby="planOffcanvasLabel">
+                <!-- Mobile offcanvas bottom (visible on <lg) -->
+                <div class="offcanvas offcanvas-bottom d-lg-none" tabindex="-1" id="planOffcanvas" aria-labelledby="planOffcanvasLabel" style="height: 70vh;">
                     <div class="offcanvas-header">
                         <h5 class="offcanvas-title" id="planOffcanvasLabel">Day Details</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -706,6 +713,9 @@ else
                 opacity: 0.8;
             }
     </style>
+
+    <!-- Tab navigation controller -->
+    <script src="~/js/tabs.js"></script>
 }
 
     @* Unsplash Attribution (required by API terms) - uses preloaded property *@
@@ -730,3 +740,67 @@ else
                target="_blank" rel="noopener" class="text-decoration-none">Unsplash</a>
         </div>
     }
+
+    <!-- Mobile bottom navigation -->
+    <nav class="fixed-bottom bg-white border-top d-flex d-md-none mobile-bottom-nav" role="tablist" aria-label="Mobile navigation">
+        <button type="button" data-tab="plan" class="flex-fill btn btn-link text-decoration-none py-3 border-0" aria-selected="true">
+            <div class="d-flex flex-column align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4zM3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707zM2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10zm9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5zm.754-4.246a.389.389 0 0 0-.527-.02L7.547 9.31a.91.91 0 1 0 1.302 1.258l3.434-4.297a.389.389 0 0 0-.029-.518z"/>
+                    <path fill-rule="evenodd" d="M0 10a8 8 0 1 1 16 0A8 8 0 0 1 0 10zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 4.37A7 7 0 0 0 8 3z"/>
+                </svg>
+                <small class="mt-1">Plan</small>
+            </div>
+        </button>
+        <button type="button" data-tab="map" class="flex-fill btn btn-link text-decoration-none py-3 border-0" aria-selected="false">
+            <div class="d-flex flex-column align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M15.817.113A.5.5 0 0 1 16 .5v14a.5.5 0 0 1-.402.49l-5 1a.502.502 0 0 1-.196 0L5.5 15.01l-4.902.98A.5.5 0 0 1 0 15.5v-14a.5.5 0 0 1 .402-.49l5-1a.5.5 0 0 1 .196 0L10.5.99l4.902-.98a.5.5 0 0 1 .415.103zM10 1.91l-4-.8v12.98l4 .8V1.91zm1 12.98 4-.8V1.11l-4 .8v12.98zm-6-.8V1.11l-4 .8v12.98l4-.8z"/>
+                </svg>
+                <small class="mt-1">Map</small>
+            </div>
+        </button>
+        <button type="button" data-tab="details" class="flex-fill btn btn-link text-decoration-none py-3 border-0" aria-selected="false">
+            <div class="d-flex flex-column align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                </svg>
+                <small class="mt-1">Details</small>
+            </div>
+        </button>
+    </nav>
+
+    <style>
+        /* Mobile bottom navigation styles */
+        @@media (max-width: 767.98px) {
+            body {
+                padding-bottom: 70px;
+            }
+            
+            .mobile-bottom-nav {
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            }
+            
+            .mobile-bottom-nav button {
+                color: #6c757d;
+                transition: color 0.2s;
+            }
+            
+            .mobile-bottom-nav button[aria-selected="true"] {
+                color: #0d6efd;
+                font-weight: 500;
+            }
+            
+            /* Horizontally scrollable day filters */
+            .day-filter-bar {
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none; /* Firefox */
+            }
+            
+            .day-filter-bar::-webkit-scrollbar {
+                display: none; /* Chrome, Safari, Edge */
+            }
+        }
+    </style>
+}
