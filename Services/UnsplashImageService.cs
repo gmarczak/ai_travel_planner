@@ -49,15 +49,15 @@ namespace project.Services
         public async Task<(string? ImageUrl, string? PhotographerName, string? PhotographerUrl)?> GetDestinationImageWithAttributionAsync(string destination)
         {
             if (string.IsNullOrWhiteSpace(destination))
-                {
-                    _logger.LogWarning("GetDestinationImageWithAttributionAsync called with empty destination");
+            {
+                _logger.LogWarning("GetDestinationImageWithAttributionAsync called with empty destination");
                 return null;
-                }
+            }
 
-                _logger.LogInformation("Fetching image for destination: {Destination}", destination);
+            _logger.LogInformation("Fetching image for destination: {Destination}", destination);
 
             var normalizedDestination = NormalizeDestination(destination);
-                _logger.LogDebug("Normalized destination: {Normalized}", normalizedDestination);
+            _logger.LogDebug("Normalized destination: {Normalized}", normalizedDestination);
 
             // 1. Check cache first (expires after 90 days)
             var cachedImage = await _context.DestinationImages
@@ -104,11 +104,11 @@ namespace project.Services
         {
             if (string.IsNullOrEmpty(_unsplashAccessKey))
             {
-                    _logger.LogWarning("Unsplash API key not configured - cannot fetch images");
+                _logger.LogWarning("Unsplash API key not configured - cannot fetch images");
                 return null;
             }
 
-                _logger.LogInformation("Calling Unsplash API for {Destination} with key length: {KeyLength}", destination, _unsplashAccessKey.Length);
+            _logger.LogInformation("Calling Unsplash API for {Destination} with key length: {KeyLength}", destination, _unsplashAccessKey.Length);
 
             try
             {

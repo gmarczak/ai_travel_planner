@@ -4,52 +4,41 @@
     ViewData["Title"] = "AI Travel Planner - Home";
 }
 
-<!-- Hero Section - Mobile First -->
-<div class="hero-section mb-4">
-    <div class="container py-4 py-md-5">
-        <h1 class="fs-2 fs-md-1 mb-3">Intelligent Travel Planning</h1>
-        <p class="lead fs-5 fs-md-4 mb-4">Create personalized travel itineraries powered by AI</p>
-        <a asp-page="/TravelPlanner/Index" class="btn btn-light btn-lg px-4" style="min-height: 48px;">Start Planning Your Trip</a>
+<!-- Hero Section - Desktop/Responsive -->
+<section class="hero-section position-relative mb-4"
+    style="background-image: url('/img/hero-bg.jpg'); background-size: cover; background-position: center; min-height: 340px;">
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0,128,0,0.55); z-index:1;"></div>
+    <div class="container py-5 position-relative" style="z-index:2;">
+        <h1 class="display-4 fw-bold text-white mb-3" style="text-shadow:0 2px 8px rgba(0,0,0,0.18); line-height:1.2;">Intelligent Travel Planning</h1>
+        <p class="lead fs-4 text-white mb-4" style="text-shadow:0 1px 4px rgba(0,0,0,0.12);">Create personalized travel itineraries powered by AI</p>
+        <a asp-page="/TravelPlanner/Index" class="btn btn-success btn-lg px-5 py-3 shadow w-100 w-md-auto" style="font-size:1.15rem; min-height:48px; transition: box-shadow .2s, transform .2s;">Start Planning Your Trip</a>
     </div>
-</div>
+</section>
 
 <!-- Features Section -->
-<div class="row g-3 g-md-4 mb-4">
-    <div class="col-12 col-md-4">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body text-center p-3 p-md-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor"
-                    class="bi bi-geo-alt text-primary mb-3" viewBox="0 0 16 16">
-                    <path
-                        d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 0 1 8 14.58a31.481 31.481 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94zM8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z" />
-                    <path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
-                </svg>
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card h-100 border-0 shadow mb-3 mb-md-0" style="box-shadow:0 .125rem .25rem rgba(0,0,0,.075) !important;">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-geo-alt fs-1 text-success mb-3"></i>
                 <h3 class="h5 mb-2">Personalized Itineraries</h3>
                 <p class="text-muted small">Create custom travel plans based on your preferences, budget, and interests.</p>
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-4">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body text-center p-3 p-md-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor"
-                    class="bi bi-map text-primary mb-3" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd"
-                        d="M15.817.113A.5.5 0 0 1 16 .5v14a.5.5 0 0 1-.402.49l-5 1a.502.502 0 0 1-.196 0L5.5 15.01l-4.902.98A.5.5 0 0 1 0 15.5v-14a.5.5 0 0 1 .402-.49l5-1a.5.5 0 0 1 .196 0L10.5.99l4.902-.98a.5.5 0 0 1 .415.103zM10 1.91l-4-.8v12.98l4 .8V1.91zm1 12.98 4-.8V1.11l-4 .8v12.98zm-6-.8V1.11l-4 .8v12.98l4-.8z" />
-                </svg>
+    <div class="col-12">
+        <div class="card h-100 border-0 shadow mb-3 mb-md-0" style="box-shadow:0 .125rem .25rem rgba(0,0,0,.075) !important;">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-map fs-1 text-success mb-3"></i>
                 <h3 class="h5 mb-2">Interactive Maps</h3>
                 <p class="text-muted small">Visualize your travel plans with integrated maps showing your destinations.</p>
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-4">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body text-center p-3 p-md-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor"
-                    class="bi bi-lightning text-primary mb-3" viewBox="0 0 16 16">
-                    <path
-                        d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641l2.5-8.5z" />
-                </svg>
+    <div class="col-12">
+        <div class="card h-100 border-0 shadow" style="box-shadow:0 .125rem .25rem rgba(0,0,0,.075) !important;">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-lightning fs-1 text-success mb-3"></i>
                 <h3 class="h5 mb-2">AI-Powered Recommendations</h3>
                 <p class="text-muted small">Get intelligent suggestions for accommodations, activities and transportation.</p>
             </div>
@@ -57,25 +46,23 @@
     </div>
 </div>
 
-<!-- CTA Button -->
-<div class="text-center mb-5">
-    <a asp-page="/TravelPlanner/Index" class="btn btn-primary btn-lg px-4" style="min-height: 48px;">Create Your Travel Plan</a>
-</div>
+
 
 <!-- Popular Trips Section -->
-<div class="mb-5">
-    <h2 class="h4 mb-3">MOST POPULAR TRIPS</h2>
+<section class="mb-5">
+    <h2 class="h3 fw-bold mb-4 text-success">Most Popular Trips</h2>
     @if (Model.TopDestinations != null && Model.TopDestinations.Count > 0)
     {
-        <div class="row g-3">
+        <div class="row g-4">
             @foreach (var dest in Model.TopDestinations)
             {
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body p-3">
-                            <h5 class="mb-1">@dest</h5>
-                            <p class="text-muted small mb-0">Popular choice from saved plans</p>
-                            <a asp-page="/TravelPlanner/Index" asp-route-destination="@dest" class="stretched-link"></a>
+                <div class="col-12">
+                    <div class="card h-100 border-0 shadow mb-3" style="box-shadow:0 .125rem .25rem rgba(0,0,0,.075) !important;">
+                        <img src="/img/popular-trip.jpg" class="card-img-top" alt="Popular trip image" style="object-fit:cover; height:120px; background:#e9ecef;">
+                        <div class="card-body p-3 d-flex flex-column">
+                            <h5 class="card-title mb-1">@dest</h5>
+                            <p class="card-text text-muted small mb-2">Popular choice from saved plans</p>
+                            <a asp-page="/TravelPlanner/Index" asp-route-destination="@dest" class="btn btn-outline-success btn-sm mt-auto w-100">View Details</a>
                         </div>
                     </div>
                 </div>
@@ -86,4 +73,4 @@
     {
         <p class="text-muted">No popular trips yet — create and save plans to populate this list.</p>
     }
-</div>
+</section>

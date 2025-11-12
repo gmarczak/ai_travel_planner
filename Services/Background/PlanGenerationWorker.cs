@@ -114,7 +114,7 @@ namespace project.Services.Background
                         };
                         dbContext.TravelPlans.Add(dbPlan);
                         await dbContext.SaveChangesAsync();
-                        _logger.LogInformation("Plan auto-saved to DB: id={PlanId}, userId={UserId}, anonId={AnonId}, imageUrl={ImageUrl}", 
+                        _logger.LogInformation("Plan auto-saved to DB: id={PlanId}, userId={UserId}, anonId={AnonId}, imageUrl={ImageUrl}",
                             job.PlanId, job.UserId ?? "null", job.AnonymousCookieId ?? "null", plan.DestinationImageUrl ?? "null");
                     }
                     catch (Exception dbEx)

@@ -1,8 +1,8 @@
 // Minimal tabs controller without CSS frameworks.
 // Usage: add buttons/links with [data-tab]="<name>" and panels with id="tab-<name>" and [data-tab-panel].
 // The active panel is the one without the hidden attribute.
-(function(){
-  function selectTab(name){
+(function () {
+  function selectTab(name) {
     const panels = document.querySelectorAll('[data-tab-panel]');
     panels.forEach(p => {
       if (p.id === `tab-${name}`) { p.removeAttribute('hidden'); }
@@ -30,13 +30,13 @@
             google.maps.event.trigger(map, 'resize');
             if (center) map.setCenter(center);
           }
-        } catch {}
+        } catch { }
       }, 50);
     }
   }
 
-  function wire(){
-    document.addEventListener('click', function(ev){
+  function wire() {
+    document.addEventListener('click', function (ev) {
       const t = ev.target.closest('[data-tab]');
       if (!t) return;
       const name = t.getAttribute('data-tab');
