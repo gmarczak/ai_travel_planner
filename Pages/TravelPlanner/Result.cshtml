@@ -19,9 +19,17 @@ else
         ? plan.Budget / plan.NumberOfTravelers / days
         : 0;
 
-    <!-- Destination Hero Image (hidden on mobile) -->
+    <!-- Destination Hero Image -->
     @if (!string.IsNullOrEmpty(plan?.DestinationImageUrl))
     {
+        <!-- Mobile: Simple image with header below -->
+        <div class="mb-3 d-md-none hero-image">
+            <img src="@plan.DestinationImageUrl" alt="@plan.Destination" 
+                 class="img-fluid rounded w-100" 
+                 style="max-height: 200px; object-fit: cover;" />
+        </div>
+        
+        <!-- Desktop: Image with overlay -->
         <div class="mb-3 mb-md-4 position-relative d-none d-md-block hero-image">
             <img src="@plan.DestinationImageUrl" alt="@plan.Destination" 
                  class="img-fluid rounded w-100" 
@@ -38,9 +46,9 @@ else
         </div>
     }
 
-    <!-- Simple header for mobile/desktop without image -->
+    <!-- Simple header (mobile when image exists, always when no image) -->
     <header class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 @(!string.IsNullOrEmpty(plan?.DestinationImageUrl) ? "d-md-none" : "")">
-        <h1 class="mb-0 fs-2 fs-md-1">@plan?.Destination</h1>
+        <h1 class="mb-0 fs-4 fs-md-2">@plan?.Destination</h1>
         <div class="d-flex gap-2 flex-wrap">
             <span class="badge text-bg-primary">@days days</span>
             <span class="badge text-bg-secondary d-none d-sm-inline">@plan?.NumberOfTravelers traveler@((plan?.NumberOfTravelers ?? 0) == 1 ? "" : "s")</span>
@@ -775,21 +783,35 @@ else
         /* Mobile bottom navigation styles */
         @@media (max-width: 767.98px) {
             body {
-                padding-bottom: 70px;
+                padding-bottom: 75px;
             }
             
             .mobile-bottom-nav {
                 box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                z-index: 1030;
+                background: white !important;
             }
             
             .mobile-bottom-nav button {
                 color: #6c757d;
-                transition: color 0.2s;
+                transition: color 0.2s, background-color 0.2s;
+            }
+            
+            .mobile-bottom-nav button:active {
+                background-color: rgba(0,0,0,0.05);
             }
             
             .mobile-bottom-nav button[aria-selected="true"] {
                 color: #0d6efd;
                 font-weight: 500;
+            }
+            
+            .mobile-bottom-nav button svg {
+                transition: transform 0.2s;
+            }
+            
+            .mobile-bottom-nav button[aria-selected="true"] svg {
+                transform: scale(1.1);
             }
             
             /* Horizontally scrollable day filters */
@@ -800,6 +822,11 @@ else
             
             .day-filter-bar::-webkit-scrollbar {
                 display: none; /* Chrome, Safari, Edge */
+            }
+            
+            /* Ensure attribution and other bottom content have proper spacing */
+            .image-attribution {
+                margin-bottom: 20px;
             }
         }
     </style>

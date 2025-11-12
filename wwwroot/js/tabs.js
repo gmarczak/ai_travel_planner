@@ -14,6 +14,11 @@
       t.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
 
+    // Scroll to top on mobile when switching tabs
+    if (window.innerWidth < 768) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     // If switching to map, ensure Google Map resizes correctly
     if (name.toLowerCase().includes('map')) {
       setTimeout(() => {
