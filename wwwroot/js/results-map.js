@@ -399,6 +399,25 @@
         const content = generateSidePanelContent(dayNum);
         panels.forEach(sp => sp.innerHTML = content);
 
+        // Update bottom sheet title on mobile
+        const titleEl = document.getElementById('bottom-sheet-day-title');
+        if (titleEl && window.innerWidth < 992) {
+            if (dayNum) {
+                const name = `Day ${dayNum}`;
+                const parsedDay = travelPlan?.parsedDays?.find(d => d.day === dayNum);
+                const dateStr = parsedDay?.date || '';
+                titleEl.textContent = dateStr ? `${name} - ${dateStr}` : name;
+            } else {
+                titleEl.textContent = 'All Days';
+            }
+        }
+
+        // Hide placeholder when content loaded
+        const placeholder = document.getElementById('bottom-sheet-placeholder');
+        if (placeholder) {
+            placeholder.style.display = dayNum ? 'none' : 'block';
+        }
+
         // Attach events if showing specific day
         if (dayNum) {
             attachSidePanelEvents(dayNum);

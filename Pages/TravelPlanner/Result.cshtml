@@ -188,16 +188,6 @@ else
             <div class="day-filter-bar overflow-x-auto text-nowrap pb-2 mb-2">
                 <div id="map-controls" class="d-inline-flex gap-2"></div>
             </div>
-            
-            <!-- Show Plan button for mobile -->
-            <div class="d-lg-none">
-                <button class="btn btn-primary w-100 btn-show-plan" type="button" data-bs-toggle="offcanvas" data-bs-target="#planOffcanvas" aria-controls="planOffcanvas" style="min-height: 44px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list me-2" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
-                    </svg>
-                    Show Plan
-                </button>
-            </div>
         </div>
         
         <div class="row g-2">
@@ -228,19 +218,30 @@ else
                     </div>
                 </div>
                 
-                <!-- Mobile offcanvas bottom (visible on <lg) -->
-                <div class="offcanvas offcanvas-bottom d-lg-none" tabindex="-1" id="planOffcanvas" aria-labelledby="planOffcanvasLabel" style="height: 70vh;">
-                    <div class="offcanvas-header">
-                        <h5 class="offcanvas-title" id="planOffcanvasLabel">Day Details</h5>
+                <!-- Mobile bottom sheet (visible on <lg) -->
+                <div class="bottom-sheet offcanvas offcanvas-bottom d-lg-none" tabindex="-1" id="planOffcanvas" aria-labelledby="planOffcanvasLabel" data-bs-backdrop="false" data-bs-scroll="true">
+                    <!-- Drag handle -->
+                    <div class="bottom-sheet-handle-container">
+                        <div class="bottom-sheet-handle"></div>
+                    </div>
+                    
+                    <div class="offcanvas-header border-bottom">
+                        <h5 class="offcanvas-title" id="planOffcanvasLabel">
+                            <span id="bottom-sheet-day-title">Select a day</span>
+                        </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                     </div>
+                    
                     <div class="offcanvas-body">
-                        <div id="side-panel-mobile" class="bg-white">
-                            <div class="mb-3">
-                                <small class="text-muted">Drag to reorder</small>
+                        <div id="side-panel-mobile">
+                            <div class="text-center text-muted py-4" id="bottom-sheet-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="mb-3 opacity-50" viewBox="0 0 16 16">
+                                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                    <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                                </svg>
+                                <p>Select a day from the filters above to view details</p>
                             </div>
-                            <div class="px-1 py-2 text-muted small">Select a day from map controls to view and reorder points. Use the search box to add places to the selected day.</div>
-                            <!-- list populated by results-map.js -->
+                            <!-- Content populated by results-map.js -->
                         </div>
                     </div>
                 </div>
@@ -724,6 +725,107 @@ else
 
     <!-- Tab navigation controller -->
     <script src="~/js/tabs.js"></script>
+    
+    <!-- Bottom Sheet Controller -->
+    <script>
+        (function() {
+            if (window.innerWidth >= 992) return; // Desktop only uses sidebar
+            
+            const bottomSheet = document.getElementById('planOffcanvas');
+            if (!bottomSheet) return;
+            
+            const handle = bottomSheet.querySelector('.bottom-sheet-handle-container');
+            let startY = 0;
+            let currentY = 0;
+            let isDragging = false;
+            
+            // Initialize bottom sheet as visible but collapsed
+            const bsOffcanvas = new bootstrap.Offcanvas(bottomSheet, {
+                backdrop: false,
+                scroll: true
+            });
+            
+            // Auto-show on map tab switch (collapsed state)
+            document.addEventListener('click', function(ev) {
+                const tabBtn = ev.target.closest('[data-tab="map"]');
+                if (tabBtn && window.innerWidth < 992) {
+                    setTimeout(() => {
+                        if (!bottomSheet.classList.contains('show')) {
+                            bsOffcanvas.show();
+                        }
+                    }, 100);
+                }
+            });
+            
+            // Drag functionality
+            if (handle) {
+                handle.addEventListener('touchstart', handleTouchStart, { passive: true });
+                handle.addEventListener('mousedown', handleMouseDown);
+            }
+            
+            function handleTouchStart(e) {
+                startY = e.touches[0].clientY;
+                isDragging = true;
+                bottomSheet.style.transition = 'none';
+            }
+            
+            function handleMouseDown(e) {
+                startY = e.clientY;
+                isDragging = true;
+                bottomSheet.style.transition = 'none';
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+            }
+            
+            function handleMouseMove(e) {
+                if (!isDragging) return;
+                currentY = e.clientY;
+                const deltaY = currentY - startY;
+                
+                if (deltaY > 0) { // Only allow dragging down
+                    bottomSheet.style.transform = `translateY(${deltaY}px)`;
+                }
+            }
+            
+            function handleMouseUp() {
+                if (!isDragging) return;
+                isDragging = false;
+                bottomSheet.style.transition = '';
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+                
+                const deltaY = currentY - startY;
+                if (deltaY > 100) {
+                    bsOffcanvas.hide();
+                } else {
+                    bottomSheet.style.transform = '';
+                }
+            }
+            
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                currentY = e.touches[0].clientY;
+                const deltaY = currentY - startY;
+                
+                if (deltaY > 0) {
+                    bottomSheet.style.transform = `translateY(${deltaY}px)`;
+                }
+            }, { passive: true });
+            
+            document.addEventListener('touchend', function() {
+                if (!isDragging) return;
+                isDragging = false;
+                bottomSheet.style.transition = '';
+                
+                const deltaY = currentY - startY;
+                if (deltaY > 100) {
+                    bsOffcanvas.hide();
+                } else {
+                    bottomSheet.style.transform = '';
+                }
+            });
+        })();
+    </script>
 }
 
     @* Unsplash Attribution (required by API terms) - uses preloaded property *@
@@ -827,6 +929,70 @@ else
             /* Ensure attribution and other bottom content have proper spacing */
             .image-attribution {
                 margin-bottom: 20px;
+            }
+            
+            /* Bottom Sheet Styles */
+            .bottom-sheet {
+                height: auto !important;
+                max-height: 80vh;
+                min-height: 120px;
+                background: rgba(255, 255, 255, 0.95) !important;
+                backdrop-filter: blur(10px);
+                border-radius: 20px 20px 0 0;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+                transition: transform 0.3s ease-out;
+            }
+            
+            .bottom-sheet-handle-container {
+                padding: 12px 0 8px 0;
+                cursor: grab;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                touch-action: none;
+            }
+            
+            .bottom-sheet-handle-container:active {
+                cursor: grabbing;
+            }
+            
+            .bottom-sheet-handle {
+                width: 40px;
+                height: 4px;
+                background-color: #ccc;
+                border-radius: 2px;
+                transition: background-color 0.2s;
+            }
+            
+            .bottom-sheet-handle-container:hover .bottom-sheet-handle,
+            .bottom-sheet-handle-container:active .bottom-sheet-handle {
+                background-color: #999;
+            }
+            
+            .bottom-sheet .offcanvas-header {
+                padding-top: 0;
+                padding-bottom: 12px;
+                background: transparent;
+            }
+            
+            .bottom-sheet .offcanvas-body {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Remove backdrop since we want map visible */
+            .bottom-sheet.show ~ .offcanvas-backdrop {
+                display: none !important;
+            }
+            
+            /* Initial collapsed state */
+            .bottom-sheet:not(.show) {
+                transform: translateY(calc(100% - 120px)) !important;
+            }
+            
+            /* Expanded state */
+            .bottom-sheet.show {
+                transform: translateY(0) !important;
             }
         }
     </style>
