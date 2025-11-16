@@ -34,7 +34,12 @@ public class AdminUsersModel : PageModel
             return Page();
         }
 
-        Users = await _db.Users.OrderByDescending(u => u.CreatedAt).ToListAsync();
+        // Load recent users with read-only optimization (limit to 100 most recent)
+        Users = await _db.Users
+            .OrderByDescending(u => u.CreatedAt)
+            .Take(100)
+            .AsNoTracking()
+            .ToListAsync();
         return Page();
     }
 

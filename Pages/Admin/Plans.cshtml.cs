@@ -12,6 +12,9 @@ public class AdminPlansModel : PageModel
 
     public List<TravelPlan> Plans { get; set; } = new();
     public bool IsAdmin { get; set; }
+    public int TotalCount { get; set; }
+    public int PageSize { get; set; } = 50;
+    public int PageNumber { get; set; } = 1;
 
     public AdminPlansModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
     {
@@ -19,7 +22,7 @@ public class AdminPlansModel : PageModel
         _userManager = userManager;
     }
 
-    public async Task<IActionResult> OnGetAsync()
+    public async Task<IActionResult> OnGetAsync(int page = 1)
     {
         if (!User.Identity?.IsAuthenticated ?? true)
         {
@@ -34,9 +37,16 @@ public class AdminPlansModel : PageModel
             return Page();
         }
 
+        PageNumber = page > 0 ? page : 1;
+        TotalCount = await _db.TravelPlans.CountAsync();
+
+        // Paginate and load only recent plans with minimal data
         Plans = await _db.TravelPlans
             .Include(p => p.User)
             .OrderByDescending(p => p.CreatedAt)
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
+            .AsNoTracking() // Read-only query optimization
             .ToListAsync();
         
         return Page();

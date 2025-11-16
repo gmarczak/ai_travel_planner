@@ -56,38 +56,69 @@ public class AdminMonitoringModel : PageModel
             return Page();
         }
 
-        // Plan Generation Stats
-        TotalGenerationStates = await _db.PlanGenerationStates.CountAsync();
-        CompletedStates = await _db.PlanGenerationStates.CountAsync(s => s.Status == PlanGenerationStatus.Completed);
-        InProgressStates = await _db.PlanGenerationStates.CountAsync(s => 
-            s.Status == PlanGenerationStatus.InProgress || 
-            s.Status == PlanGenerationStatus.Queued);
-        FailedStates = await _db.PlanGenerationStates.CountAsync(s => s.Status == PlanGenerationStatus.Failed);
-        
-        // Cache Stats
-        var cacheEntries = await _db.AiResponseCaches.ToListAsync();
-        CacheEntryCount = cacheEntries.Count;
-        TotalCacheHits = cacheEntries.Sum(c => c.HitCount);
-        TotalTokensCached = cacheEntries.Sum(c => c.TokenCount);
-        ExpiredCacheCount = cacheEntries.Count(c => c.ExpiresAt.HasValue && c.ExpiresAt < DateTime.UtcNow);
+        // Plan Generation Stats (parallel queries)
+        var statsTask = Task.WhenAll(
+            _db.PlanGenerationStates.CountAsync(),
+            _db.PlanGenerationStates.CountAsync(s => s.Status == PlanGenerationStatus.Completed),
+            _db.PlanGenerationStates.CountAsync(s => 
+                s.Status == PlanGenerationStatus.InProgress || 
+                s.Status == PlanGenerationStatus.Queued),
+            _db.PlanGenerationStates.CountAsync(s => s.Status == PlanGenerationStatus.Failed)
+        );
+
+        // Cache Stats (aggregate in database, not in memory)
+        var now = DateTime.UtcNow;
+        var cacheStatsTask = Task.WhenAll(
+            _db.AiResponseCaches.CountAsync(),
+            _db.AiResponseCaches.SumAsync(c => c.HitCount),
+            _db.AiResponseCaches.SumAsync(c => c.TokenCount),
+            _db.AiResponseCaches.CountAsync(c => c.ExpiresAt.HasValue && c.ExpiresAt < now)
+        );
         
         // Image Cache Stats
-        ImageCacheCount = await _db.DestinationImages.CountAsync();
-        var mostRecent = await _db.DestinationImages
+        var imageCountTask = _db.DestinationImages.CountAsync();
+        var imageMostRecentTask = _db.DestinationImages
             .OrderByDescending(i => i.CachedAt)
+            .Select(i => (DateTime?)i.CachedAt)
             .FirstOrDefaultAsync();
-        MostRecentImageCache = mostRecent?.CachedAt;
-        
+
         // System Stats
-        TotalUsers = await _db.Users.CountAsync();
-        TotalPlans = await _db.TravelPlans.CountAsync();
-        
+        var systemStatsTask = Task.WhenAll(
+            _db.Users.CountAsync(),
+            _db.TravelPlans.CountAsync()
+        );
+
         // Recent Failures
-        RecentFailures = await _db.PlanGenerationStates
+        var recentFailuresTask = _db.PlanGenerationStates
             .Where(s => s.Status == PlanGenerationStatus.Failed)
             .OrderByDescending(s => s.LastUpdatedAt)
             .Take(10)
+            .AsNoTracking()
             .ToListAsync();
+
+        // Wait for all queries to complete in parallel
+        await Task.WhenAll(statsTask, cacheStatsTask, imageCountTask, imageMostRecentTask, systemStatsTask, recentFailuresTask);
+
+        var stats = await statsTask;
+        TotalGenerationStates = stats[0];
+        CompletedStates = stats[1];
+        InProgressStates = stats[2];
+        FailedStates = stats[3];
+
+        var cacheStats = await cacheStatsTask;
+        CacheEntryCount = cacheStats[0];
+        TotalCacheHits = cacheStats[1];
+        TotalTokensCached = cacheStats[2];
+        ExpiredCacheCount = cacheStats[3];
+
+        ImageCacheCount = await imageCountTask;
+        MostRecentImageCache = await imageMostRecentTask;
+
+        var systemStats = await systemStatsTask;
+        TotalUsers = systemStats[0];
+        TotalPlans = systemStats[1];
+
+        RecentFailures = await recentFailuresTask;
         
         return Page();
     }

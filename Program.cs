@@ -165,6 +165,24 @@ builder.Services.ConfigureApplicationCookie(options =>
 // ADD MEMORY CACHE
 builder.Services.AddMemoryCache();
 
+// ADD RESPONSE COMPRESSION
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+});
+
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+
 // BACKGROUND PLAN GENERATION QUEUE + WORKER
 builder.Services.AddSingleton<IPlanJobQueue, PlanGenerationQueue>();
 builder.Services.AddHostedService<PlanGenerationWorker>();
@@ -360,8 +378,17 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseResponseCompression();
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Cache static files for 30 days
+        const int durationInSeconds = 60 * 60 * 24 * 30;
+        ctx.Context.Response.Headers.Append("Cache-Control", $"public,max-age={durationInSeconds}");
+    }
+});
 app.UseRouting();
 
 app.UseAuthentication();

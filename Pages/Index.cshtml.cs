@@ -41,36 +41,41 @@ public class IndexModel : PageModel
 
         TopDestinations = counts.OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key).ToList();
 
-        // Load images for popular destinations
-        var defaultDestinations = new[] { "paris", "tokyo", "new york", "barcelona", "rome", "london" };
+        // Load all images in parallel (destinations + features) with caching
+        var allImageKeys = new[] 
+        { 
+            "paris", "tokyo", "new york", "barcelona", "rome", "london",
+            "artificial intelligence technology", "map navigation gps", "hotel restaurant dining" 
+        };
 
-        foreach (var destination in defaultDestinations)
+        // Use cache for pre-loaded images with 1-hour expiration
+        const string imagesCacheKey = "HomePage_DestinationImages";
+        DestinationImages = await _cache.GetOrCreateAsync(imagesCacheKey, async entry =>
         {
-            try
-            {
-                var imageUrl = await _imageService.GetDestinationImageAsync(destination);
-                DestinationImages[destination] = imageUrl ?? "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800";
-            }
-            catch
-            {
-                DestinationImages[destination] = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800";
-            }
-        }
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
+            entry.Priority = CacheItemPriority.High;
 
-        // Load images for features showcase
-        var featureKeywords = new[] { "artificial intelligence technology", "map navigation gps", "hotel restaurant dining" };
+            var images = new Dictionary<string, string>();
+            var tasks = allImageKeys.Select(async key =>
+            {
+                try
+                {
+                    var imageUrl = await _imageService.GetDestinationImageAsync(key);
+                    return (key, imageUrl ?? "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800");
+                }
+                catch
+                {
+                    return (key, "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800");
+                }
+            });
 
-        foreach (var keyword in featureKeywords)
-        {
-            try
+            var results = await Task.WhenAll(tasks);
+            foreach (var (key, url) in results)
             {
-                var imageUrl = await _imageService.GetDestinationImageAsync(keyword);
-                DestinationImages[keyword] = imageUrl ?? "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800";
+                images[key] = url;
             }
-            catch
-            {
-                DestinationImages[keyword] = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800";
-            }
-        }
+
+            return images;
+        }) ?? new Dictionary<string, string>();
     }
 }

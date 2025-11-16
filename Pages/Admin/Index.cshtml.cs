@@ -4,11 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using project.Data;
 using Microsoft.AspNetCore.Identity;
 using project.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 public class AdminIndexModel : PageModel
 {
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IMemoryCache _cache;
 
     public int UserCount { get; set; }
     public int PlanCount { get; set; }
@@ -16,10 +18,11 @@ public class AdminIndexModel : PageModel
     public int ImageCount { get; set; }
     public bool IsAdmin { get; set; }
 
-    public AdminIndexModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public AdminIndexModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IMemoryCache cache)
     {
         _db = db;
         _userManager = userManager;
+        _cache = cache;
     }
 
     public async Task<IActionResult> OnGetAsync()
@@ -36,10 +39,30 @@ public class AdminIndexModel : PageModel
             return Page(); // Render forbidden section
         }
 
-        UserCount = await _db.Users.CountAsync();
-        PlanCount = await _db.TravelPlans.CountAsync();
-        CacheCount = await _db.AiResponseCaches.CountAsync();
-        ImageCount = await _db.DestinationImages.CountAsync();
+        // Cache dashboard stats for 5 minutes to reduce DB load
+        const string cacheKey = "AdminDashboard_Stats";
+        var stats = await _cache.GetOrCreateAsync(cacheKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            entry.Priority = CacheItemPriority.Normal;
+
+            return new
+            {
+                Users = await _db.Users.CountAsync(),
+                Plans = await _db.TravelPlans.CountAsync(),
+                Cache = await _db.AiResponseCaches.CountAsync(),
+                Images = await _db.DestinationImages.CountAsync()
+            };
+        });
+
+        if (stats != null)
+        {
+            UserCount = stats.Users;
+            PlanCount = stats.Plans;
+            CacheCount = stats.Cache;
+            ImageCount = stats.Images;
+        }
+
         return Page();
     }
 }
