@@ -221,7 +221,8 @@ namespace project.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsAdmin")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("INTEGER");
@@ -512,10 +513,12 @@ namespace project.Migrations
 
             modelBuilder.Entity("project.Models.TravelPlan", b =>
                 {
-                    b.HasOne("project.Models.ApplicationUser", null)
+                    b.HasOne("project.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("User");
                 });
 #pragma warning restore 612, 618
         }
