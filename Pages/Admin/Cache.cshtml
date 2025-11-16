@@ -1,0 +1,173 @@
+@page
+@model AdminCacheModel
+@{
+    ViewData["Title"] = "AI Response Cache";
+}
+
+@if (!User.Identity?.IsAuthenticated ?? true)
+{
+    <div class="py-5 text-center">
+        <h2>Unauthorized</h2>
+        <p class="text-muted">You must be logged in to access this page.</p>
+        <a href="/Account/Login" class="btn btn-primary">Login</a>
+    </div>
+    return;
+}
+
+@if (!Model.IsAdmin)
+{
+    <div class="py-5 text-center">
+        <h2>Forbidden</h2>
+        <p class="text-muted">You do not have permission to view this page.</p>
+    </div>
+    return;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>AI Response Cache</h1>
+    <div>
+        <form method="post" asp-page-handler="ClearExpired" class="d-inline">
+            <button type="submit" class="btn btn-warning" onclick="return confirm('Clear all expired cache entries?')">
+                <i class="bi bi-trash"></i> Clear Expired
+            </button>
+        </form>
+        <form method="post" asp-page-handler="ClearAll" class="d-inline">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Clear ALL cache entries? This cannot be undone!')">
+                <i class="bi bi-trash3"></i> Clear All
+            </button>
+        </form>
+    </div>
+</div>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Total Entries</h5>
+                <p class="display-6 fw-bold">@Model.CacheEntries.Count</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Total Hits</h5>
+                <p class="display-6 fw-bold">@Model.CacheEntries.Sum(c => c.HitCount)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Expired Entries</h5>
+                <p class="display-6 fw-bold text-danger">
+                    @Model.CacheEntries.Count(c => c.ExpiresAt.HasValue && c.ExpiresAt < DateTime.UtcNow)
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Model</th>
+                        <th>Prompt Hash</th>
+                        <th>Tokens</th>
+                        <th>Hit Count</th>
+                        <th>Created</th>
+                        <th>Expires</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var cache in Model.CacheEntries.OrderByDescending(c => c.CreatedAt).Take(50))
+                    {
+                        var isExpired = cache.ExpiresAt.HasValue && cache.ExpiresAt < DateTime.UtcNow;
+                        <tr class="@(isExpired ? "table-danger" : "")">
+                            <td>@cache.Id</td>
+                            <td>@(cache.ModelName ?? "N/A")</td>
+                            <td><code>@cache.PromptHash.Substring(0, Math.Min(16, cache.PromptHash.Length))...</code></td>
+                            <td>@cache.TokenCount</td>
+                            <td><span class="badge bg-info">@cache.HitCount</span></td>
+                            <td>@cache.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>
+                                @if (cache.ExpiresAt.HasValue)
+                                {
+                                    @cache.ExpiresAt.Value.ToString("yyyy-MM-dd HH:mm")
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Never</span>
+                                }
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#viewModal@(cache.Id)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <form method="post" asp-page-handler="Delete" class="d-inline">
+                                    <input type="hidden" name="cacheId" value="@cache.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                
+                                <!-- Modal -->
+                                <div class="modal fade" id="viewModal@(cache.Id)" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Cache Entry #@cache.Id</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p><strong>Model:</strong> @cache.ModelName</p>
+                                                <p><strong>Prompt Hash:</strong> <code>@cache.PromptHash</code></p>
+                                                <p><strong>Tokens:</strong> @cache.TokenCount</p>
+                                                <p><strong>Hit Count:</strong> @cache.HitCount</p>
+                                                <p><strong>Created:</strong> @cache.CreatedAt</p>
+                                                <p><strong>Expires:</strong> @(cache.ExpiresAt?.ToString() ?? "Never")</p>
+                                                <hr />
+                                                <h6>Cached Response:</h6>
+                                                <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap;">@cache.Response</pre>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        
+        @if (Model.CacheEntries.Count == 0)
+        {
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-1"></i>
+                <p>No cache entries found.</p>
+            </div>
+        }
+        else if (Model.CacheEntries.Count > 50)
+        {
+            <div class="text-center text-muted py-3">
+                <small>Showing 50 most recent entries out of @Model.CacheEntries.Count total</small>
+            </div>
+        }
+    </div>
+</div>

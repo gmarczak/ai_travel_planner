@@ -139,6 +139,19 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
+// In Development relax password policy to allow simple seed password
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.Configure<IdentityOptions>(o =>
+    {
+        o.Password.RequireDigit = false;
+        o.Password.RequireNonAlphanumeric = false;
+        o.Password.RequireUppercase = false;
+        o.Password.RequireLowercase = false;
+        o.Password.RequiredLength = 6;
+    });
+}
+
 // Configure cookie settings
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -254,6 +267,89 @@ else
 }
 
 var app = builder.Build();
+
+// Ensure SQLite schema is created in Development without applying SQL Server migrations
+if (app.Environment.IsDevelopment())
+{
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<project.Data.ApplicationDbContext>();
+        if (db.Database.EnsureCreated())
+        {
+            Console.WriteLine("[DEV] SQLite database schema created (EnsureCreated). Migrations are bypassed.");
+        }
+        else
+        {
+            Console.WriteLine("[DEV] SQLite database schema already exists.");
+        }
+
+        // Seed admin account (email/username: admin@local, password: adminadmin)
+        var userManager = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<project.Models.ApplicationUser>>();
+        var existingByEmail = userManager.FindByEmailAsync("admin@local").GetAwaiter().GetResult();
+        var existingByName = userManager.FindByNameAsync("admin").GetAwaiter().GetResult();
+
+        if (existingByEmail == null && existingByName == null)
+        {
+            var admin = new project.Models.ApplicationUser
+            {
+                UserName = "admin@local",
+                Email = "admin@local",
+                EmailConfirmed = true,
+                IsAdmin = true,
+                FullName = "Administrator",
+                CreatedAt = DateTime.UtcNow
+            };
+            var createRes = userManager.CreateAsync(admin, "adminadmin").GetAwaiter().GetResult();
+            if (createRes.Succeeded)
+            {
+                Console.WriteLine("[DEV] Seeded admin user 'admin@local' with default password 'adminadmin'.");
+            }
+            else
+            {
+                Console.WriteLine("[DEV][WARN] Failed to create admin user: " + string.Join("; ", createRes.Errors.Select(e => e.Description)));
+            }
+        }
+        else
+        {
+            // Normalize: if 'admin' exists with username 'admin', rename to 'admin@local'
+            var userToNormalize = existingByEmail ?? existingByName;
+            if (userToNormalize != null)
+            {
+                if (string.IsNullOrWhiteSpace(userToNormalize.Email))
+                {
+                    userToNormalize.Email = "admin@local";
+                    userToNormalize.EmailConfirmed = true;
+                }
+                if (!string.Equals(userToNormalize.UserName, "admin@local", StringComparison.OrdinalIgnoreCase))
+                {
+                    var setName = userManager.SetUserNameAsync(userToNormalize, "admin@local").GetAwaiter().GetResult();
+                    if (!setName.Succeeded)
+                    {
+                        Console.WriteLine("[DEV][WARN] Failed to update admin username: " + string.Join("; ", setName.Errors.Select(e => e.Description)));
+                    }
+                }
+                if (!userToNormalize.IsAdmin)
+                {
+                    userToNormalize.IsAdmin = true;
+                }
+                var updateRes = userManager.UpdateAsync(userToNormalize).GetAwaiter().GetResult();
+                if (updateRes.Succeeded)
+                {
+                    Console.WriteLine("[DEV] Admin account normalized as 'admin@local' and ensured IsAdmin=true.");
+                }
+                else
+                {
+                    Console.WriteLine("[DEV][WARN] Failed to update admin user: " + string.Join("; ", updateRes.Errors.Select(e => e.Description)));
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DEV][ERROR] Failed to EnsureCreated: {ex.Message}");
+    }
+}
 
 // Configure request localization
 // (Localization removed) - app uses default request culture
@@ -377,6 +473,82 @@ try
                     Console.WriteLine("[MIGRATION] No migrations found. Ensuring database is created...");
                     db.Database.EnsureCreated();
                     Console.WriteLine("[MIGRATION] Database created successfully.");
+                }
+
+                // Seed/ensure admin account in Production using secure secrets
+                try
+                {
+                    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+                    var adminEmail = config["Admin:Email"] ?? config["ADMIN_EMAIL"]; // Prefer hierarchical config
+                    var adminPassword = config["Admin:Password"] ?? config["ADMIN_PASSWORD"]; // Set via Key Vault or env
+
+                    if (!string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword))
+                    {
+                        var existingByEmail = await userManager.FindByEmailAsync(adminEmail);
+                        var existingByName = await userManager.FindByNameAsync(adminEmail);
+                        var user = existingByEmail ?? existingByName;
+
+                        if (user == null)
+                        {
+                            user = new ApplicationUser
+                            {
+                                UserName = adminEmail,
+                                Email = adminEmail,
+                                EmailConfirmed = true,
+                                IsAdmin = true,
+                                FullName = "Administrator"
+                            };
+                            var create = await userManager.CreateAsync(user, adminPassword);
+                            if (create.Succeeded)
+                            {
+                                Console.WriteLine("[PROD] Admin user created from configuration (email). IsAdmin=true.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("[PROD][WARN] Failed to create admin user: " + string.Join("; ", create.Errors.Select(e => e.Description)));
+                            }
+                        }
+                        else
+                        {
+                            // Normalize username/email and ensure IsAdmin=true
+                            if (!string.Equals(user.UserName, adminEmail, StringComparison.OrdinalIgnoreCase))
+                            {
+                                var setU = await userManager.SetUserNameAsync(user, adminEmail);
+                                if (!setU.Succeeded)
+                                {
+                                    Console.WriteLine("[PROD][WARN] Failed to update admin username: " + string.Join("; ", setU.Errors.Select(e => e.Description)));
+                                }
+                            }
+                            if (!string.Equals(user.Email, adminEmail, StringComparison.OrdinalIgnoreCase))
+                            {
+                                user.Email = adminEmail;
+                                user.EmailConfirmed = true;
+                            }
+                            if (!user.IsAdmin)
+                            {
+                                user.IsAdmin = true;
+                            }
+                            var upd = await userManager.UpdateAsync(user);
+                            if (upd.Succeeded)
+                            {
+                                Console.WriteLine("[PROD] Admin user ensured and normalized. IsAdmin=true.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("[PROD][WARN] Failed to update admin user: " + string.Join("; ", upd.Errors.Select(e => e.Description)));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("[PROD][INFO] Admin credentials not configured (Admin:Email/Admin:Password). Skipping admin seed.");
+                    }
+                }
+                catch (Exception seedEx)
+                {
+                    Console.WriteLine($"[PROD][WARN] Admin seeding skipped due to error: {seedEx.Message}");
                 }
             }
         }

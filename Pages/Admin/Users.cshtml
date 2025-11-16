@@ -1,0 +1,126 @@
+@page
+@model AdminUsersModel
+@{
+    ViewData["Title"] = "Manage Users";
+}
+
+@if (!User.Identity?.IsAuthenticated ?? true)
+{
+    <div class="py-5 text-center">
+        <h2>Unauthorized</h2>
+        <p class="text-muted">You must be logged in to access this page.</p>
+        <a href="/Account/Login" class="btn btn-primary">Login</a>
+    </div>
+    return;
+}
+
+@if (!Model.IsAdmin)
+{
+    <div class="py-5 text-center">
+        <h2>Forbidden</h2>
+        <p class="text-muted">You do not have permission to view this page.</p>
+    </div>
+    return;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Manage Users</h1>
+    <div class="text-muted">Total: @Model.Users.Count</div>
+</div>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Full Name</th>
+                        <th>Created</th>
+                        <th>Admin</th>
+                        <th>Locked</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr>
+                            <td>@user.UserName</td>
+                            <td>@user.Email</td>
+                            <td>@(user.FullName ?? "-")</td>
+                            <td>@user.CreatedAt.ToString("yyyy-MM-dd")</td>
+                            <td>
+                                @if (user.IsAdmin)
+                                {
+                                    <span class="badge bg-success">Yes</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">No</span>
+                                }
+                            </td>
+                            <td>
+                                @if (user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow)
+                                {
+                                    <span class="badge bg-danger">Locked</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                            </td>
+                            <td>
+                                <form method="post" class="d-inline">
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    @if (!user.IsAdmin)
+                                    {
+                                        <button type="submit" asp-page-handler="MakeAdmin" class="btn btn-sm btn-primary" onclick="return confirm('Make this user an admin?')">
+                                            <i class="bi bi-shield-check"></i> Make Admin
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" asp-page-handler="RemoveAdmin" class="btn btn-sm btn-warning" onclick="return confirm('Remove admin rights?')">
+                                            <i class="bi bi-shield-x"></i> Remove Admin
+                                        </button>
+                                    }
+                                    
+                                    @if (user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow)
+                                    {
+                                        <button type="submit" asp-page-handler="Unlock" class="btn btn-sm btn-success">
+                                            <i class="bi bi-unlock"></i> Unlock
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" asp-page-handler="Lock" class="btn btn-sm btn-danger" onclick="return confirm('Lock this user?')">
+                                            <i class="bi bi-lock"></i> Lock
+                                        </button>
+                                    }
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

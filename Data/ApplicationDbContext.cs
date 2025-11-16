@@ -76,11 +76,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.GeneratedItinerary).HasMaxLength(10000);
             entity.Property(e => e.ExternalId).HasMaxLength(100);
 
-            // Foreign key to ApplicationUser
-            entity.HasOne<ApplicationUser>()
-                  .WithMany()
-                  .HasForeignKey(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
+        // Foreign key to ApplicationUser (align navigation to avoid shadow FKs)
+        entity.HasOne(e => e.User)
+            .WithMany()
+            .HasForeignKey(e => e.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.CreatedAt);

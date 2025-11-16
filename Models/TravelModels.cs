@@ -19,6 +19,9 @@ namespace project.Models
 
         // Foreign key to ApplicationUser (nullable for existing plans)
         public string? UserId { get; set; }
+        
+        // Navigation property
+        public ApplicationUser? User { get; set; }
 
         // Anonymous user identifier from cookie (for non-authenticated users)
         public string? AnonymousCookieId { get; set; }

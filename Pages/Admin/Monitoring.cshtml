@@ -1,0 +1,171 @@
+@page
+@model AdminMonitoringModel
+@{
+    ViewData["Title"] = "System Monitoring";
+}
+
+@if (!User.Identity?.IsAuthenticated ?? true)
+{
+    <div class="py-5 text-center">
+        <h2>Unauthorized</h2>
+        <p class="text-muted">You must be logged in to access this page.</p>
+        <a href="/Account/Login" class="btn btn-primary">Login</a>
+    </div>
+    return;
+}
+
+@if (!Model.IsAdmin)
+{
+    <div class="py-5 text-center">
+        <h2>Forbidden</h2>
+        <p class="text-muted">You do not have permission to view this page.</p>
+    </div>
+    return;
+}
+
+<h1 class="mb-4">System Monitoring</h1>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title text-muted">Plan Generation States</h6>
+                <p class="display-6 fw-bold">@Model.TotalGenerationStates</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-success">
+            <div class="card-body">
+                <h6 class="card-title text-muted">Completed</h6>
+                <p class="display-6 fw-bold text-success">@Model.CompletedStates</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-warning">
+            <div class="card-body">
+                <h6 class="card-title text-muted">In Progress</h6>
+                <p class="display-6 fw-bold text-warning">@Model.InProgressStates</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-danger">
+            <div class="card-body">
+                <h6 class="card-title text-muted">Failed</h6>
+                <p class="display-6 fw-bold text-danger">@Model.FailedStates</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">AI Cache Statistics</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td>Total Cache Entries</td>
+                        <td class="text-end fw-bold">@Model.CacheEntryCount</td>
+                    </tr>
+                    <tr>
+                        <td>Total Cache Hits</td>
+                        <td class="text-end fw-bold">@Model.TotalCacheHits</td>
+                    </tr>
+                    <tr>
+                        <td>Total Tokens Saved</td>
+                        <td class="text-end fw-bold">@Model.TotalTokensCached.ToString("N0")</td>
+                    </tr>
+                    <tr>
+                        <td>Expired Entries</td>
+                        <td class="text-end fw-bold text-danger">@Model.ExpiredCacheCount</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Image Cache Statistics</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td>Cached Destination Images</td>
+                        <td class="text-end fw-bold">@Model.ImageCacheCount</td>
+                    </tr>
+                    <tr>
+                        <td>Most Recent Cache</td>
+                        <td class="text-end">@(Model.MostRecentImageCache?.ToString("yyyy-MM-dd HH:mm") ?? "N/A")</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-warning">
+        <h5 class="mb-0">Recent Failed Generations</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.RecentFailures.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Destination</th>
+                            <th>User/Anonymous</th>
+                            <th>Failed At</th>
+                            <th>Error Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var failure in Model.RecentFailures.Take(10))
+                        {
+                            <tr>
+                                <td>@failure.Destination</td>
+                                <td>@(failure.UserId ?? failure.AnonymousCookieId ?? "Unknown")</td>
+                                <td>@failure.LastUpdatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td><span class="text-danger">@(failure.ErrorMessage ?? failure.Error ?? "No error message")</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted text-center py-3">No recent failures</p>
+        }
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">System Information</h5>
+    </div>
+    <div class="card-body">
+        <table class="table table-sm">
+            <tr>
+                <td>Server Time</td>
+                <td class="text-end fw-bold">@DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") UTC</td>
+            </tr>
+            <tr>
+                <td>Total Registered Users</td>
+                <td class="text-end fw-bold">@Model.TotalUsers</td>
+            </tr>
+            <tr>
+                <td>Total Travel Plans Created</td>
+                <td class="text-end fw-bold">@Model.TotalPlans</td>
+            </tr>
+        </table>
+    </div>
+</div>

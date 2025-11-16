@@ -59,45 +59,50 @@ public class LoginModel : PageModel
 
         if (ModelState.IsValid)
         {
-            var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+            // Allow signing in with either Email or Username
+            var user = await _user_manager.FindByEmailAsync(Input.Email) 
+                       ?? await _user_manager.FindByNameAsync(Input.Email);
 
-            if (result.Succeeded)
+            if (user != null)
             {
-                var user = await _user_manager.FindByEmailAsync(Input.Email);
-                Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
-                Console.WriteLine("║                  ✅ USER LOGGED IN                         ║");
-                Console.WriteLine("╠════════════════════════════════════════════════════════════╣");
-                Console.WriteLine($"║ Email:      {Input.Email,-45} ║");
-                Console.WriteLine($"║ User ID:    {user?.Id,-45} ║");
-                Console.WriteLine($"║ Full Name:  {(user?.FullName ?? "N/A"),-45} ║");
-                Console.WriteLine($"║ Time:       {DateTime.Now:yyyy-MM-dd HH:mm:ss}                         ║");
-                Console.WriteLine($"║ Remember:   {(Input.RememberMe ? "Yes" : "No"),-45} ║");
-                Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
+                var result = await _signInManager.PasswordSignInAsync(user.UserName!, Input.Password, Input.RememberMe, lockoutOnFailure: false);
 
-                // Merge anonymous saved plans into user's account if present
-                try
+                if (result.Succeeded)
                 {
-                    var anonId = Request.Cookies["anon_saved_plans_id"];
-                    if (!string.IsNullOrWhiteSpace(anonId) && user != null)
+                    Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
+                    Console.WriteLine("║                  ✅ USER LOGGED IN                         ║");
+                    Console.WriteLine("╠════════════════════════════════════════════════════════════╣");
+                    Console.WriteLine($"║ Email:      {(user.Email ?? Input.Email),-45} ║");
+                    Console.WriteLine($"║ User ID:    {user.Id,-45} ║");
+                    Console.WriteLine($"║ Full Name:  {(user.FullName ?? "N/A"),-45} ║");
+                    Console.WriteLine($"║ Time:       {DateTime.Now:yyyy-MM-dd HH:mm:ss}                         ║");
+                    Console.WriteLine($"║ Remember:   {(Input.RememberMe ? "Yes" : "No"),-45} ║");
+                    Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
+
+                    // Merge anonymous saved plans into user's account if present
+                    try
                     {
-                        _savedPlansService.MergeAnonymousPlansToUser(user.Id, anonId);
+                        var anonId = Request.Cookies["anon_saved_plans_id"];
+                        if (!string.IsNullOrWhiteSpace(anonId))
+                        {
+                            _savedPlansService.MergeAnonymousPlansToUser(user.Id, anonId);
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to merge anonymous plans for user {Email}", Input.Email);
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to merge anonymous plans for user {Email}", user.Email ?? Input.Email);
+                    }
+
+                    _logger.LogInformation("User {Email} logged in at {Time}.", user.Email ?? Input.Email, DateTime.Now);
+                    TempData["SuccessMessage"] = $"Welcome back, {user.FullName ?? user.Email ?? "User"}!";
+                    return LocalRedirect(returnUrl);
                 }
 
-                _logger.LogInformation("User {Email} logged in at {Time}.", Input.Email, DateTime.Now);
-                TempData["SuccessMessage"] = $"Welcome back, {user?.FullName ?? user?.Email ?? "User"}!";
-                return LocalRedirect(returnUrl);
-            }
-            else
-            {
+                // Invalid password or locked out
                 Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
                 Console.WriteLine("║                  ❌ LOGIN FAILED                           ║");
                 Console.WriteLine("╠════════════════════════════════════════════════════════════╣");
-                Console.WriteLine($"║ Email:      {Input.Email,-45} ║");
+                Console.WriteLine($"║ Identifier: {Input.Email,-45} ║");
                 Console.WriteLine($"║ Time:       {DateTime.Now:yyyy-MM-dd HH:mm:ss}                         ║");
                 Console.WriteLine("║ Reason:     Invalid credentials                            ║");
                 Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
@@ -105,6 +110,18 @@ public class LoginModel : PageModel
                 ModelState.AddModelError(string.Empty, "Invalid login attempt.");
                 return Page();
             }
+
+            // User not found
+            Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
+            Console.WriteLine("║                  ❌ LOGIN FAILED                           ║");
+            Console.WriteLine("╠════════════════════════════════════════════════════════════╣");
+            Console.WriteLine($"║ Identifier: {Input.Email,-45} ║");
+            Console.WriteLine($"║ Time:       {DateTime.Now:yyyy-MM-dd HH:mm:ss}                         ║");
+            Console.WriteLine("║ Reason:     User not found                                  ║");
+            Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
+
+            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+            return Page();
         }
 
         return Page();

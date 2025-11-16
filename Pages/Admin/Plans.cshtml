@@ -1,0 +1,116 @@
+@page
+@model AdminPlansModel
+@{
+    ViewData["Title"] = "Travel Plans";
+}
+
+@if (!User.Identity?.IsAuthenticated ?? true)
+{
+    <div class="py-5 text-center">
+        <h2>Unauthorized</h2>
+        <p class="text-muted">You must be logged in to access this page.</p>
+        <a href="/Account/Login" class="btn btn-primary">Login</a>
+    </div>
+    return;
+}
+
+@if (!Model.IsAdmin)
+{
+    <div class="py-5 text-center">
+        <h2>Forbidden</h2>
+        <p class="text-muted">You do not have permission to view this page.</p>
+    </div>
+    return;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Travel Plans</h1>
+    <div class="text-muted">Total: @Model.Plans.Count</div>
+</div>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Destination</th>
+                        <th>User</th>
+                        <th>Dates</th>
+                        <th>Travelers</th>
+                        <th>Budget</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var plan in Model.Plans)
+                    {
+                        <tr>
+                            <td>@plan.Id</td>
+                            <td><strong>@plan.Destination</strong></td>
+                            <td>@(plan.User?.UserName ?? "Anonymous")</td>
+                            <td>@plan.StartDate.ToString("yyyy-MM-dd") - @plan.EndDate.ToString("yyyy-MM-dd")</td>
+                            <td>@plan.NumberOfTravelers</td>
+                            <td>@plan.Budget.ToString("C0")</td>
+                            <td>@plan.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#viewModal@(plan.Id)">
+                                    <i class="bi bi-eye"></i> View
+                                </button>
+                                <form method="post" class="d-inline" asp-page-handler="Delete">
+                                    <input type="hidden" name="planId" value="@plan.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this plan?')">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </form>
+                                
+                                <!-- Modal -->
+                                <div class="modal fade" id="viewModal@(plan.Id)" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">@plan.Destination - Plan Details</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p><strong>User:</strong> @(plan.User?.UserName ?? "Anonymous")</p>
+                                                <p><strong>Dates:</strong> @plan.StartDate.ToString("yyyy-MM-dd") to @plan.EndDate.ToString("yyyy-MM-dd")</p>
+                                                <p><strong>Travelers:</strong> @plan.NumberOfTravelers</p>
+                                                <p><strong>Budget:</strong> @plan.Budget.ToString("C0")</p>
+                                                <p><strong>Preferences:</strong> @plan.TravelPreferences</p>
+                                                <hr />
+                                                <h6>Generated Itinerary:</h6>
+                                                <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap;">@plan.GeneratedItinerary</pre>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        
+        @if (Model.Plans.Count == 0)
+        {
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-1"></i>
+                <p>No travel plans found.</p>
+            </div>
+        }
+    </div>
+</div>
