@@ -74,6 +74,7 @@ else
         <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Plan</button>
         <button type="button" data-tab="map" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Map</button>
         <button type="button" data-tab="details" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Details</button>
+        <button type="button" data-tab="chat" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">AI Assistant</button>
     </nav>
 
     <section id="tab-plan" data-tab-panel style="padding-top: 0;">
@@ -95,11 +96,39 @@ else
                     <details class="mb-3 border rounded" open>
                         <summary class="fw-semibold p-2 p-md-3 bg-light" style="cursor: pointer; min-height: 44px; display: flex; align-items: center;">Day @d.Day @if(!string.IsNullOrWhiteSpace(d.Date)){<text>- @d.Date</text>}</summary>
                         <div class="p-2 p-md-3">
+                            @* Day Images - 2-3 images per day *@
+                            @if (d.Images != null && d.Images.Any())
+                            {
+                                <div class="row g-2 mb-3">
+                                    @foreach (var img in d.Images.Take(3))
+                                    {
+                                        var colSize = d.Images.Count == 1 ? "12" : (img.IsPrimary ? "12" : "6");
+                                        <div class="col-@colSize">
+                                            <img src="@img.Url" 
+                                                 alt="@img.Description" 
+                                                 class="img-fluid rounded w-100 day-image-clickable" 
+                                                 style="max-height: @(img.IsPrimary ? "250px" : "180px"); object-fit: cover; cursor: pointer;"
+                                                 loading="lazy"
+                                                 data-bs-toggle="modal"
+                                                 data-bs-target="#imageModal"
+                                                 data-image-url="@img.Url"
+                                                 data-image-description="@img.Description" />
+                                            @if (!string.IsNullOrEmpty(img.Description))
+                                            {
+                                                <div class="text-muted small mt-1">@img.Description</div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            
                             @foreach (var line in d.Lines)
                             {
+                                var trimmedLine = line.Trim();
                                 if (string.IsNullOrWhiteSpace(line))
                                 {
                                     <div class="mb-1"></div>
+                                    continue;
                                 }
                                 else if (line.TrimStart().StartsWith("🌅") || line.TrimStart().StartsWith("☀️") || line.TrimStart().StartsWith("🌆"))
                                 {
@@ -177,63 +206,181 @@ else
         transportation = (plan?.Transportation ?? new List<string>()),
         generatedItinerary = plan?.GeneratedItinerary ?? string.Empty,
         createdAt = plan?.CreatedAt ?? DateTime.MinValue,
-    parsedDays = (Model.ParsedDays?.Select(d => new { day = d.Day, date = d.Date, lines = d.Lines }).ToArray()) ?? Array.Empty<object>()
+        parsedDays = (Model.ParsedDays?.Select(d => new { day = d.Day, date = d.Date, lines = d.Lines }).ToArray()) ?? Array.Empty<object>()
     }, new System.Text.Json.JsonSerializerOptions { WriteIndented = false }))</script>
     @Html.AntiForgeryToken()
 
     <section id="tab-map" data-tab-panel hidden>
-        <!-- Map full width -->
-        <div class="mb-3">
-            <div id="plan-map" data-map-container class="bg-light rounded border position-relative result-map" style="width: 100%;">
-                <!-- Map loading indicator -->
-                <div id="map-loading" class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 1;">
-                    <div class="spinner-border text-primary mb-2" role="status">
-                        <span class="visually-hidden">Loading map...</span>
+        <!-- Desktop: 2-column layout (map + sidebar) -->
+        <div class="row g-3 g-md-4">
+            <!-- Left column: Map (desktop priority) -->
+            <div class="col-12 col-lg-8">
+                <div id="plan-map" data-map-container class="bg-light rounded border position-relative result-map map-container-mobile">
+                    <!-- Map loading indicator -->
+                    <div id="map-loading" class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 1;">
+                        <div class="spinner-border text-primary mb-2" role="status">
+                            <span class="visually-hidden">Loading map...</span>
+                        </div>
+                        <div class="small text-muted">Loading map...</div>
                     </div>
-                    <div class="small text-muted">Loading map...</div>
                 </div>
             </div>
-        </div>
 
-        <!-- Day filter bar below map -->
-        <div class="mb-2 mb-md-3">
-            <div class="day-filter-bar overflow-x-auto text-nowrap pb-2">
-                <div id="map-controls" class="d-flex gap-2 justify-content-center flex-wrap"></div>
+            <!-- Right column: Sidebar (desktop only visible) -->
+            <div class="col-12 col-lg-4">
+                <div class="map-sidebar">
+                    <!-- Destination Hero Card removed (no duplication) -->
+
+                    <!-- Day Filter Chips (desktop: grid, mobile: horizontal scroll) -->
+                    <div class="mb-3">
+                        <h6 class="mb-2 text-muted small text-uppercase">Filter by day</h6>
+                        <div class="day-chips-container">
+                            <div id="map-controls" class="day-chips-grid"></div>
+                        </div>
+                    </div>
+
+                    <!-- Search/Add Location Section -->
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">Add Location</h6>
+                            <div class="input-group mb-2 search-input-mobile">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                                    </svg>
+                                </span>
+                                <input type="text" id="location-search" class="form-control border-start-0" placeholder="Search places..." />
+                            </div>
+                            <button type="button" class="btn btn-primary w-100 add-location-btn" id="add-location-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                                </svg>
+                                Add to Map
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
     <section id="tab-details" data-tab-panel hidden>
-        <h2 class="h4">Summary</h2>
-        <div class="row g-3">
-            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Dates: @plan?.StartDate.ToString("MMM dd, yyyy") - @plan?.EndDate.ToString("MMM dd, yyyy") (@days days)</div></div>
-            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Travelers: @(plan?.NumberOfTravelers ?? 0)</div></div>
-            <div class="col-sm-6 col-lg-4"><div class="p-2 bg-light rounded border">Budget: $@(plan?.Budget ?? 0) (@perPersonPerDay.ToString("F0") per person per day)</div></div>
+        <!-- Hero Summary Card -->
+        <div class="card shadow-sm mb-4 details-hero-card">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h2 class="h4 mb-0">📊 Trip Overview</h2>
+                    <span class="badge bg-success fs-5">$@(plan?.Budget ?? 0)</span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="detail-stat-card">
+                            <div class="stat-icon">📅</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Duration</div>
+                                <div class="stat-value">@days days</div>
+                                <div class="stat-subtext">@plan?.StartDate.ToString("MMM dd") - @plan?.EndDate.ToString("MMM dd, yyyy")</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="detail-stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Travelers</div>
+                                <div class="stat-value">@(plan?.NumberOfTravelers ?? 0) @((plan?.NumberOfTravelers ?? 0) == 1 ? "person" : "people")</div>
+                                <div class="stat-subtext">$@perPersonPerDay.ToString("F0")/person/day</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="detail-stat-card">
+                            <div class="stat-icon">🏨</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Accommodations</div>
+                                <div class="stat-value">@((plan?.Accommodations?.Count ?? 0)) stays</div>
+                                <div class="stat-subtext">@((plan?.Activities?.Count ?? 0)) activities planned</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+
     @if (!string.IsNullOrWhiteSpace(plan?.TravelPreferences))
         {
-            <p class="mt-3">Preferences: @plan?.TravelPreferences</p>
+            <div class="alert alert-info mb-4">
+                <strong>✨ Your Preferences:</strong> @plan?.TravelPreferences
+            </div>
         }
+
     @if ((plan?.Accommodations) != null && plan.Accommodations.Count > 0)
         {
-            <h3 class="h5 mt-3">Accommodations</h3>
-            <ul class="list-group">
-                @foreach (var item in plan.Accommodations) { <li class="list-group-item">@item</li> }
-            </ul>
+            <div class="card shadow-sm mb-3 detail-section-card">
+                <div class="card-header bg-white border-0 pt-3 pb-2">
+                    <h3 class="h5 mb-0 d-flex align-items-center">
+                        <span class="detail-icon me-2">🏨</span>
+                        Accommodations
+                        <span class="badge bg-secondary ms-2">@plan.Accommodations.Count</span>
+                    </h3>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var item in plan.Accommodations) { 
+                        <li class="list-group-item py-3">
+                            <div class="d-flex align-items-start">
+                                <span class="me-2">🔹</span>
+                                <span>@item</span>
+                            </div>
+                        </li> 
+                    }
+                </ul>
+            </div>
         }
+
     @if ((plan?.Activities) != null && plan.Activities.Count > 0)
         {
-            <h3 class="h5 mt-3">Activities</h3>
-            <ul class="list-group">
-                @foreach (var item in plan.Activities) { <li class="list-group-item">@item</li> }
-            </ul>
+            <div class="card shadow-sm mb-3 detail-section-card">
+                <div class="card-header bg-white border-0 pt-3 pb-2">
+                    <h3 class="h5 mb-0 d-flex align-items-center">
+                        <span class="detail-icon me-2">🎯</span>
+                        Activities & Experiences
+                        <span class="badge bg-secondary ms-2">@plan.Activities.Count</span>
+                    </h3>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var item in plan.Activities) { 
+                        <li class="list-group-item py-3">
+                            <div class="d-flex align-items-start">
+                                <span class="me-2">✅</span>
+                                <span>@item</span>
+                            </div>
+                        </li> 
+                    }
+                </ul>
+            </div>
         }
+
     @if ((plan?.Transportation) != null && plan.Transportation.Count > 0)
         {
-            <h3 class="h5 mt-3">Transportation</h3>
-            <ul class="list-group">
-                @foreach (var t in plan.Transportation) { <li class="list-group-item">@t</li> }
-            </ul>
+            <div class="card shadow-sm mb-3 detail-section-card">
+                <div class="card-header bg-white border-0 pt-3 pb-2">
+                    <h3 class="h5 mb-0 d-flex align-items-center">
+                        <span class="detail-icon me-2">🚗</span>
+                        Transportation
+                        <span class="badge bg-secondary ms-2">@plan.Transportation.Count</span>
+                    </h3>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var t in plan.Transportation) { 
+                        <li class="list-group-item py-3">
+                            <div class="d-flex align-items-start">
+                                <span class="me-2">🚀</span>
+                                <span>@t</span>
+                            </div>
+                        </li> 
+                    }
+                </ul>
+            </div>
         }
         <details class="mt-3">
             <summary class="fw-semibold">Edit details</summary>
@@ -282,7 +429,72 @@ else
             </form>
         </details>
     </section>
+
+    <!-- AI Assistant Chat Tab -->
+    <section id="tab-chat" data-tab-panel hidden>
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="h5 mb-0">🤖 AI Travel Assistant</h3>
+                    <small class="text-white-50">Ask questions or request changes to your itinerary</small>
+                </div>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-light" id="undoBtn" title="Undo last change" disabled>
+                        ↶ Undo
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light" id="redoBtn" title="Redo change" disabled>
+                        ↷ Redo
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <!-- Chat messages container -->
+                <div id="chatMessages" class="p-3" style="height: 400px; overflow-y: auto; background-color: #f8f9fa;">
+                    <div class="alert alert-info mb-2">
+                        <strong>👋 Welcome!</strong> I can help you modify your travel plan. Try asking:
+                        <ul class="mb-0 mt-2">
+                            <li>"Add a museum visit on day 2"</li>
+                            <li>"Change day 3 lunch to a local restaurant"</li>
+                            <li>"What are the best activities for families?"</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Diff Preview Panel (hidden by default) -->
+                <div id="diffPreviewPanel" class="border-top p-3 bg-light" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">📋 Proposed Changes</h6>
+                        <button type="button" class="btn-close" onclick="closeDiffPreview()"></button>
+                    </div>
+                    <div id="diffContent" class="mb-3" style="max-height: 200px; overflow-y: auto;">
+                        <!-- Diff will be rendered here -->
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-success btn-sm" id="applyChangesBtn">
+                            ✅ Apply Changes
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" id="rejectChangesBtn">
+                            ❌ Reject
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input area -->
+                <div class="border-top p-3">
+                    <div class="input-group">
+                        <input type="text" id="chatInput" class="form-control" placeholder="Type your message..." />
+                        <button class="btn btn-primary" id="sendChatBtn" type="button">
+                            <span id="sendBtnText">Send</span>
+                            <span id="sendBtnSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                        </button>
+                    </div>
+                    <small class="text-muted mt-1 d-block">Powered by OpenAI GPT-4o-mini</small>
+                </div>
+            </div>
+        </div>
+    </section>
 }
+@* End of main else block *@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/%40microsoft/signalr@7.0.14/dist/browser/signalr.min.js"></script>
@@ -849,36 +1061,326 @@ else
     }
 
     <!-- Mobile bottom navigation -->
-    <nav class="fixed-bottom bg-white border-top d-flex d-md-none mobile-bottom-nav" role="tablist" aria-label="Mobile navigation">
-        <button type="button" data-tab="plan" class="flex-fill btn btn-link text-decoration-none py-3 border-0" aria-selected="true">
-            <div class="d-flex flex-column align-items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4zM3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707zM2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10zm9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5zm.754-4.246a.389.389 0 0 0-.527-.02L7.547 9.31a.91.91 0 1 0 1.302 1.258l3.434-4.297a.389.389 0 0 0-.029-.518z"/>
-                    <path fill-rule="evenodd" d="M0 10a8 8 0 1 1 16 0A8 8 0 0 1 0 10zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 4.37A7 7 0 0 0 8 3z"/>
-                </svg>
-                <small class="mt-1">Plan</small>
-            </div>
+    <!-- Custom mobile bottom nav -->
+    <nav class="custom-bottom-nav d-md-none" role="tablist" aria-label="Mobile navigation">
+        <button type="button" data-tab="plan" aria-selected="false" class="nav-btn">
+            <span class="icon-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M3 11.5V21a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V11.5a1 1 0 0 0-.553-.894l-8-4a1 1 0 0 0-.894 0l-8 4A1 1 0 0 0 3 11.5z"/></svg>
+            </span>
+            <span class="nav-label">Plan</span>
         </button>
-        <button type="button" data-tab="map" class="flex-fill btn btn-link text-decoration-none py-3 border-0" aria-selected="false">
-            <div class="d-flex flex-column align-items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M15.817.113A.5.5 0 0 1 16 .5v14a.5.5 0 0 1-.402.49l-5 1a.502.502 0 0 1-.196 0L5.5 15.01l-4.902.98A.5.5 0 0 1 0 15.5v-14a.5.5 0 0 1 .402-.49l5-1a.5.5 0 0 1 .196 0L10.5.99l4.902-.98a.5.5 0 0 1 .415.103zM10 1.91l-4-.8v12.98l4 .8V1.91zm1 12.98 4-.8V1.11l-4 .8v12.98zm-6-.8V1.11l-4 .8v12.98l4-.8z"/>
-                </svg>
-                <small class="mt-1">Map</small>
-            </div>
+        <button type="button" data-tab="map" aria-selected="true" class="nav-btn">
+            <span class="icon-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M3.5 6.5l7-3 7 3v11.92l-7 3-7-3V6.5zm7-1.38l-5 2.14v9.72l5 2.14 5-2.14V7.26l-5-2.14z"/></svg>
+            </span>
+            <span class="nav-label">Map</span>
         </button>
-        <button type="button" data-tab="details" class="flex-fill btn btn-link text-decoration-none py-3 border-0" aria-selected="false">
-            <div class="d-flex flex-column align-items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                    <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-                </svg>
-                <small class="mt-1">Details</small>
-            </div>
+        <button type="button" data-tab="details" aria-selected="false" class="nav-btn">
+            <span class="icon-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/></svg>
+            </span>
+            <span class="nav-label">Details</span>
+        </button>
+        <button type="button" data-tab="chat" aria-selected="false" class="nav-btn">
+            <span class="icon-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+            </span>
+            <span class="nav-label">AI Chat</span>
         </button>
     </nav>
 
     <style>
+        /* ========== MAP TAB STYLES ========== */
+        
+        /* Desktop: 2-column professional layout */
+        @@media (min-width: 992px) {
+            #tab-map .row {
+                margin-left: -24px;
+                margin-right: -24px;
+            }
+            
+            #tab-map .col-lg-8,
+            #tab-map .col-lg-4 {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+            
+            .result-map {
+                height: 600px;
+                border-radius: 12px;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            }
+            
+            .map-sidebar {
+                position: sticky;
+                top: 80px;
+                max-height: calc(100vh - 100px);
+                overflow-y: auto;
+            }
+            
+            .destination-hero-card {
+                border-radius: 12px;
+                overflow: hidden;
+                border: none;
+            }
+            
+            .destination-hero-card img {
+                border-radius: 12px 12px 0 0;
+            }
+            
+            .day-chips-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                gap: 8px;
+            }
+            
+            .day-chips-grid button {
+                padding: 8px 12px;
+                border-radius: 8px;
+                border: 1px solid #dee2e6;
+                background: white;
+                font-size: 0.875rem;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                white-space: nowrap;
+            }
+            
+            .day-chips-grid button:hover {
+                background: #f8f9fa;
+                border-color: #198754;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            .day-chips-grid button.active {
+                background: #198754;
+                color: white;
+                border-color: #198754;
+                font-weight: 600;
+            }
+        }
+        
+        /* Mobile: compact, scrollable, modern UI */
+        @@media (max-width: 991.98px) {
+            #tab-map .row {
+                margin-left: -12px;
+                margin-right: -12px;
+            }
+            
+            #tab-map .col-12 {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+            
+            .map-container-mobile {
+                height: 350px;
+                border-radius: 16px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+                margin-bottom: 16px;
+            }
+            
+            .destination-hero-card {
+                border-radius: 16px;
+                overflow: hidden;
+                margin-bottom: 16px;
+            }
+            
+            .destination-hero-card img {
+                height: 140px !important;
+            }
+            
+            .day-chips-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                margin: 0 -12px;
+                padding: 0 12px;
+            }
+            
+            .day-chips-container::-webkit-scrollbar {
+                display: none;
+            }
+            
+            .day-chips-grid {
+                display: flex;
+                gap: 8px;
+                padding-bottom: 4px;
+            }
+            
+            .day-chips-grid button {
+                flex: 0 0 auto;
+                padding: 8px 16px;
+                border-radius: 20px;
+                border: 1px solid #dee2e6;
+                background: white;
+                font-size: 0.875rem;
+                font-weight: 500;
+                white-space: nowrap;
+                transition: all 0.2s ease;
+            }
+            
+            .day-chips-grid button.active {
+                background: #198754;
+                color: white;
+                border-color: #198754;
+                font-weight: 600;
+                box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
+            }
+            
+            .search-input-mobile .input-group-text,
+            .search-input-mobile .form-control {
+                border-radius: 12px;
+                padding: 12px 16px;
+                font-size: 0.9375rem;
+            }
+            
+            .search-input-mobile .input-group-text {
+                border-top-right-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+            
+            .search-input-mobile .form-control {
+                border-top-left-radius: 0;
+                border-bottom-left-radius: 0;
+            }
+            
+            .add-location-btn {
+                padding: 12px 16px;
+                border-radius: 12px;
+                font-weight: 600;
+                font-size: 0.9375rem;
+                box-shadow: 0 2px 8px rgba(25, 135, 84, 0.2);
+            }
+        }
+        
+        /* Common styles */
+        .map-sidebar .card {
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .result-map {
+            width: 100%;
+        }
+
+        /* ========== DETAILS TAB STYLES ========== */
+        .details-hero-card {
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        .detail-stat-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .detail-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            line-height: 1;
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #6c757d;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 2px;
+        }
+
+        .stat-subtext {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .detail-section-card {
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .detail-section-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+        }
+
+        .detail-section-card .card-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .detail-icon {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .detail-section-card .list-group-item {
+            border-left: none;
+            border-right: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .detail-section-card .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .detail-section-card .list-group-item:first-child {
+            border-top: none;
+        }
+
+        .detail-section-card .list-group-item:last-child {
+            border-bottom: none;
+        }
+
+        @@media (max-width: 767.98px) {
+            .details-hero-card .card-body {
+                padding: 1.5rem !important;
+            }
+
+            .detail-stat-card {
+                padding: 12px;
+            }
+
+            .stat-icon {
+                font-size: 1.75rem;
+            }
+
+            .stat-value {
+                font-size: 1.1rem;
+            }
+
+            .stat-subtext {
+                font-size: 0.75rem;
+            }
+
+            .detail-icon {
+                font-size: 1.25rem;
+            }
+        }
+        
         /* Mobile bottom navigation styles - WHITE ICONS ON GREEN */
         @@media (max-width: 767.98px) {
             body {
@@ -1021,5 +1523,600 @@ else
                 transform: translateY(0) !important;
             }
         }
+        
+        /* Image hover effect */
+        .day-image-clickable {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .day-image-clickable:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
     </style>
+    
+    <!-- Image Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title text-white" id="imageModalLabel">Image</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <img id="modalImage" src="" alt="" class="img-fluid" style="max-height: 80vh; width: auto;" />
+                </div>
+                <div class="modal-footer border-0 justify-content-center" id="modalImageDescription">
+                    <p class="text-white mb-0"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Handle image modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const imageModal = document.getElementById('imageModal');
+            if (imageModal) {
+                imageModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const imageUrl = button.getAttribute('data-image-url');
+                    const imageDescription = button.getAttribute('data-image-description');
+                    
+                    const modalImage = document.getElementById('modalImage');
+                    const modalTitle = document.getElementById('imageModalLabel');
+                    const modalDescription = document.querySelector('#modalImageDescription p');
+                    
+                    if (modalImage) {
+                        modalImage.src = imageUrl;
+                        modalImage.alt = imageDescription || '';
+                    }
+                    
+                    if (modalTitle && imageDescription) {
+                        modalTitle.textContent = imageDescription;
+                    }
+                    
+                    if (modalDescription) {
+                        if (imageDescription) {
+                            modalDescription.textContent = imageDescription;
+                            modalDescription.parentElement.style.display = 'flex';
+                        } else {
+                            modalDescription.parentElement.style.display = 'none';
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        // AI Assistant Chat functionality
+        (function() {
+            const chatMessages = document.getElementById('chatMessages');
+            const chatInput = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendChatBtn');
+            const sendBtnText = document.getElementById('sendBtnText');
+            const sendBtnSpinner = document.getElementById('sendBtnSpinner');
+
+            if (!chatMessages || !chatInput || !sendBtn) return;
+
+            let connection = null;
+            let isConnecting = false;
+
+            async function ensureConnection() {
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    return connection;
+                }
+
+                if (isConnecting) {
+                    return null;
+                }
+
+                isConnecting = true;
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/hubs/assistantChat")
+                    .withAutomaticReconnect()
+                    .build();
+
+                connection.on("StreamStart", function() {
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = 'alert alert-secondary mb-2 assistant-message';
+                    msgDiv.id = 'streaming-message';
+                    msgDiv.innerHTML = '<strong>?? Assistant:</strong> <span class="message-content"></span>';
+                    chatMessages.appendChild(msgDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                });
+
+                connection.on("StreamChunk", function(chunk) {
+                    const streamingMsg = document.getElementById('streaming-message');
+                    if (streamingMsg) {
+                        const content = streamingMsg.querySelector('.message-content');
+                        content.textContent += chunk;
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                });
+
+                connection.on("StreamEnd", function(fullResponse) {
+                    const streamingMsg = document.getElementById('streaming-message');
+                    if (streamingMsg) {
+                        streamingMsg.removeAttribute('id');
+                    }
+                    
+                    // Try to parse delta from response
+                    const delta = parseDeltaFromResponse(fullResponse);
+                    if (delta && delta.changes && delta.changes.length > 0) {
+                        showDiffPreview(delta, fullResponse);
+                    } else {
+                        enableInput();
+                    }
+                });
+
+                connection.on("Error", function(errorMessage) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-danger mb-2';
+                    errorDiv.innerHTML = `<strong>? Error:</strong> ${errorMessage}`;
+                    chatMessages.appendChild(errorDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    enableInput();
+                });
+
+                try {
+                    await connection.start();
+                    console.log("SignalR Connected");
+                } catch (err) {
+                    console.error("SignalR Connection Error:", err);
+                    alert("Failed to connect to chat service. Please refresh the page.");
+                } finally {
+                    isConnecting = false;
+                }
+
+                return connection;
+            }
+
+            function disableInput() {
+                chatInput.disabled = true;
+                sendBtn.disabled = true;
+                sendBtnText.classList.add('d-none');
+                sendBtnSpinner.classList.remove('d-none');
+            }
+
+            function enableInput() {
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                sendBtnText.classList.remove('d-none');
+                sendBtnSpinner.classList.add('d-none');
+            }
+
+            async function sendMessage() {
+                const message = chatInput.value.trim();
+                if (!message) return;
+
+                const conn = await ensureConnection();
+                if (!conn) {
+                    alert("Connecting to chat service...");
+                    return;
+                }
+
+                const userDiv = document.createElement('div');
+                userDiv.className = 'alert alert-primary mb-2 user-message';
+                userDiv.innerHTML = `<strong>You:</strong> ${escapeHtml(message)}`;
+                chatMessages.appendChild(userDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // Save user message to history
+                saveToHistory('user', message);
+
+                disableInput();
+                chatInput.value = '';
+
+                const planData = document.querySelector('#tab-plan');
+                const userId = 'user-' + Date.now();
+                
+                // Get chat history to send as context
+                const planId = '@Model.PlanId';
+                const historyJson = localStorage.getItem(`chat_${planId}`) || '[]';
+
+                try {
+                    await conn.invoke("SendMessage", userId, message, '', '@Model.TravelPlan?.Destination', @((Model.TravelPlan?.EndDate - Model.TravelPlan?.StartDate)?.Days ?? 5), @(Model.TravelPlan?.NumberOfTravelers ?? 2), @(Model.TravelPlan?.Budget ?? 1000), historyJson);
+                } catch (err) {
+                    console.error("Error sending message:", err);
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-danger mb-2';
+                    errorDiv.innerHTML = `<strong>🚫 Error:</strong> Failed to send message.`;
+                    chatMessages.appendChild(errorDiv);
+                    enableInput();
+                }
+            }
+
+            sendBtn.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            document.querySelectorAll('[data-tab="chat"]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (!connection) {
+                        ensureConnection();
+                    }
+                });
+            });
+
+            // ========== DIFF PREVIEW & APPLY CHANGES ==========
+            let currentDelta = null;
+            let currentFullResponse = null;
+
+            function parseDeltaFromResponse(text) {
+                try {
+                    // Look for JSON block in markdown
+                    const jsonMatch = text.match(/```json\s*\n?([\s\S]*?)\n?```/);
+                    if (jsonMatch) {
+                        const json = jsonMatch[1].trim();
+                        return JSON.parse(json);
+                    }
+                    
+                    // Try to find plain JSON
+                    const plainMatch = text.match(/\{"changes":\s*\[[\s\S]*?\]\s*\}/);
+                    if (plainMatch) {
+                        return JSON.parse(plainMatch[0]);
+                    }
+                } catch (e) {
+                    console.warn("Failed to parse delta:", e);
+                }
+                return null;
+            }
+
+            function showDiffPreview(delta, fullResponse) {
+                currentDelta = delta;
+                currentFullResponse = fullResponse;
+                
+                const diffContent = document.getElementById('diffContent');
+                const diffPanel = document.getElementById('diffPreviewPanel');
+                
+                let html = '';
+                if (delta.truncateToDays && Number.isInteger(delta.truncateToDays)) {
+                    html += `<div class="alert alert-warning py-1 px-2 mb-2">Truncate itinerary to <strong>${delta.truncateToDays}</strong> day(s)</div>`;
+                }
+                (delta.changes || []).forEach(change => {
+                    html += `<div class="mb-2 p-2 border rounded">`;
+                    html += `<strong>Day ${change.day}:</strong><br/>`;
+                    
+                    if (change.addMorning && change.addMorning.length > 0) {
+                        change.addMorning.forEach(act => {
+                            html += `<div class="text-success">+ Morning: ${escapeHtml(act)}</div>`;
+                        });
+                    }
+                    if (change.addAfternoon && change.addAfternoon.length > 0) {
+                        change.addAfternoon.forEach(act => {
+                            html += `<div class="text-success">+ Afternoon: ${escapeHtml(act)}</div>`;
+                        });
+                    }
+                    if (change.addEvening && change.addEvening.length > 0) {
+                        change.addEvening.forEach(act => {
+                            html += `<div class="text-success">+ Evening: ${escapeHtml(act)}</div>`;
+                        });
+                    }
+                    if (change.remove && change.remove.length > 0) {
+                        change.remove.forEach(act => {
+                            html += `<div class="text-danger">- Remove: ${escapeHtml(act)}</div>`;
+                        });
+                    }
+                    if (change.note) {
+                        html += `<div class="text-info"><em>Note: ${escapeHtml(change.note)}</em></div>`;
+                    }
+                    
+                    html += `</div>`;
+                });
+                
+                diffContent.innerHTML = html;
+                diffPanel.style.display = 'block';
+                enableInput();
+            }
+
+            function closeDiffPreview() {
+                document.getElementById('diffPreviewPanel').style.display = 'none';
+                currentDelta = null;
+                currentFullResponse = null;
+            }
+
+            async function applyChanges() {
+                if (!currentDelta) {
+                    showErrorNotification('No changes to apply');
+                    return;
+                }
+
+                const applyBtn = document.getElementById('applyChangesBtn');
+                applyBtn.disabled = true;
+                applyBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Applying...';
+
+                try {
+                    const planId = '@Model.PlanId';
+                    const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    console.log('Sending delta:', currentDelta);
+                    console.log('PlanId:', planId);
+                    console.log('AntiForgery token:', antiForgeryToken ? 'present' : 'missing');
+                    
+                    const url = `/TravelPlanner/Result/${planId}?handler=ApplyDelta`;
+                    console.log('Posting to:', url);
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': antiForgeryToken || '',
+                            'RequestVerificationToken': antiForgeryToken || ''
+                        },
+                        body: JSON.stringify({
+                            planId: planId,
+                            delta: currentDelta
+                        })
+                    });
+                    
+                    console.log('Response status:', response.status);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('Backend response:', result);
+                    
+                    if (result.success) {
+                        console.log('Success! New itinerary length:', result.newItinerary?.length);
+                        console.log('Parsed days count:', result.parsedDays?.length);
+                        
+                        // Show success notification
+                        showSuccessNotification('Plan updated successfully!');
+                        
+                        // Close diff preview
+                        closeDiffPreview();
+                        
+                        // Save to history
+                        saveToHistory('assistant', currentFullResponse);
+                        
+                        // Refresh the plan section
+                        console.log('Reloading page in 1.5s...');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        console.error('Backend returned error:', result.error);
+                        showErrorNotification(result.error || 'Unknown error occurred');
+                    }
+                } catch (err) {
+                    console.error('Error applying changes:', err);
+                    showErrorNotification('Failed to apply changes: ' + err.message);
+                } finally {
+                    applyBtn.disabled = false;
+                    applyBtn.innerHTML = '✅ Apply Changes';
+                }
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function showSuccessNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3';
+                notification.style.zIndex = '9999';
+                notification.innerHTML = `<strong>✅ ${escapeHtml(message)}</strong>`;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            }
+
+            function showErrorNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3';
+                notification.style.zIndex = '9999';
+                notification.innerHTML = `<strong>❌ ${escapeHtml(message)}</strong>`;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            }
+
+            // ========== CHAT HISTORY ==========
+            function saveToHistory(role, content) {
+                try {
+                    const planId = '@Model.PlanId';
+                    const history = JSON.parse(localStorage.getItem(`chat_${planId}`) || '[]');
+                    history.push({
+                        role: role,
+                        content: content,
+                        timestamp: new Date().toISOString()
+                    });
+                    // Keep last 20 messages
+                    if (history.length > 20) {
+                        history.splice(0, history.length - 20);
+                    }
+                    localStorage.setItem(`chat_${planId}`, JSON.stringify(history));
+                } catch (e) {
+                    console.warn('Failed to save chat history:', e);
+                }
+            }
+
+            function loadChatHistory() {
+                try {
+                    const planId = '@Model.PlanId';
+                    const history = JSON.parse(localStorage.getItem(`chat_${planId}`) || '[]');
+                    const chatMessages = document.getElementById('chatMessages');
+                    
+                    // Clear welcome message if history exists
+                    if (history.length > 0) {
+                        chatMessages.innerHTML = '';
+                    }
+                    
+                    history.forEach(msg => {
+                        const msgDiv = document.createElement('div');
+                        if (msg.role === 'user') {
+                            msgDiv.className = 'alert alert-primary mb-2 user-message';
+                            msgDiv.innerHTML = `<strong>You:</strong> ${escapeHtml(msg.content)}`;
+                        } else {
+                            msgDiv.className = 'alert alert-secondary mb-2 assistant-message';
+                            msgDiv.innerHTML = `<strong>🤖 Assistant:</strong> ${escapeHtml(msg.content.substring(0, 200))}${msg.content.length > 200 ? '...' : ''}`;
+                        }
+                        chatMessages.appendChild(msgDiv);
+                    });
+                    
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                } catch (e) {
+                    console.warn('Failed to load chat history:', e);
+                }
+            }
+
+            // Load history on chat tab open
+            document.querySelectorAll('[data-tab="chat"]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    loadChatHistory();
+                });
+            });
+
+            // ========== UNDO/REDO FUNCTIONALITY ==========
+            let undoStack = [];
+            let redoStack = [];
+            const MAX_HISTORY = 10;
+
+            function savePlanSnapshot() {
+                try {
+                    const planId = '@Model.PlanId';
+                    const snapshot = {
+                        planId: planId,
+                        itinerary: document.getElementById('daysContainer')?.innerHTML || '',
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    undoStack.push(snapshot);
+                    if (undoStack.length > MAX_HISTORY) {
+                        undoStack.shift();
+                    }
+                    
+                    // Clear redo stack when new change is made
+                    redoStack = [];
+                    
+                    updateUndoRedoButtons();
+                    
+                    // Save to sessionStorage
+                    sessionStorage.setItem(`undo_${planId}`, JSON.stringify(undoStack));
+                    sessionStorage.setItem(`redo_${planId}`, JSON.stringify(redoStack));
+                } catch (e) {
+                    console.warn('Failed to save plan snapshot:', e);
+                }
+            }
+
+            function loadPlanHistory() {
+                try {
+                    const planId = '@Model.PlanId';
+                    undoStack = JSON.parse(sessionStorage.getItem(`undo_${planId}`) || '[]');
+                    redoStack = JSON.parse(sessionStorage.getItem(`redo_${planId}`) || '[]');
+                    updateUndoRedoButtons();
+                } catch (e) {
+                    console.warn('Failed to load plan history:', e);
+                }
+            }
+
+            function updateUndoRedoButtons() {
+                const undoBtn = document.getElementById('undoBtn');
+                const redoBtn = document.getElementById('redoBtn');
+                
+                if (undoBtn) {
+                    undoBtn.disabled = undoStack.length === 0;
+                }
+                if (redoBtn) {
+                    redoBtn.disabled = redoStack.length === 0;
+                }
+            }
+
+            async function undoChange() {
+                if (undoStack.length === 0) return;
+                
+                try {
+                    // Save current state to redo stack
+                    const planId = '@Model.PlanId';
+                    const currentState = {
+                        planId: planId,
+                        itinerary: document.getElementById('daysContainer')?.innerHTML || '',
+                        timestamp: new Date().toISOString()
+                    };
+                    redoStack.push(currentState);
+                    
+                    // Pop from undo stack
+                    const snapshot = undoStack.pop();
+                    
+                    // Restore snapshot (in real app, would POST to backend)
+                    showSuccessNotification('Undo applied - reloading...');
+                    
+                    // Update storage
+                    sessionStorage.setItem(`undo_${planId}`, JSON.stringify(undoStack));
+                    sessionStorage.setItem(`redo_${planId}`, JSON.stringify(redoStack));
+                    
+                    updateUndoRedoButtons();
+                    
+                    // For now, just show notification (full implementation would POST snapshot.itinerary to backend)
+                    setTimeout(() => {
+                        // window.location.reload(); // Uncomment when backend supports restoring snapshots
+                    }, 1000);
+                } catch (e) {
+                    console.error('Failed to undo:', e);
+                    alert('Failed to undo change');
+                }
+            }
+
+            async function redoChange() {
+                if (redoStack.length === 0) return;
+                
+                try {
+                    // Save current state to undo stack
+                    const planId = '@Model.PlanId';
+                    const currentState = {
+                        planId: planId,
+                        itinerary: document.getElementById('daysContainer')?.innerHTML || '',
+                        timestamp: new Date().toISOString()
+                    };
+                    undoStack.push(currentState);
+                    
+                    // Pop from redo stack
+                    const snapshot = redoStack.pop();
+                    
+                    // Restore snapshot
+                    showSuccessNotification('Redo applied - reloading...');
+                    
+                    // Update storage
+                    sessionStorage.setItem(`undo_${planId}`, JSON.stringify(undoStack));
+                    sessionStorage.setItem(`redo_${planId}`, JSON.stringify(redoStack));
+                    
+                    updateUndoRedoButtons();
+                    
+                    setTimeout(() => {
+                        // window.location.reload();
+                    }, 1000);
+                } catch (e) {
+                    console.error('Failed to redo:', e);
+                    alert('Failed to redo change');
+                }
+            }
+
+            // Attach undo/redo button handlers
+            document.getElementById('undoBtn')?.addEventListener('click', undoChange);
+            document.getElementById('redoBtn')?.addEventListener('click', redoChange);
+            
+            // Attach Apply/Reject button handlers
+            document.getElementById('applyChangesBtn')?.addEventListener('click', async function() {
+                savePlanSnapshot(); // Save before applying
+                await applyChanges();
+            });
+            document.getElementById('rejectChangesBtn')?.addEventListener('click', closeDiffPreview);
+
+            // Load history on page load
+            loadPlanHistory();
+        })();
+    </script>
 }

@@ -274,36 +274,27 @@
         // Clear
         container.innerHTML = '';
 
-        // search box
-        const searchWrap = document.createElement('div');
-        searchWrap.className = 'd-flex mb-2 gap-2';
-        const input = document.createElement('input');
-        input.type = 'search'; input.id = 'place-search'; input.placeholder = 'Search places, restaurants...';
-        input.className = 'form-control form-control-sm';
-        const addBtn = document.createElement('button'); addBtn.className = 'btn btn-sm btn-primary'; addBtn.textContent = 'Add';
-        searchWrap.appendChild(input); searchWrap.appendChild(addBtn);
-        container.appendChild(searchWrap);
-
-        // Master toggle for POI/Hotels/Restaurants could be added later
+        // ALL DAYS button
         const allBtn = document.createElement('button');
-        allBtn.className = 'btn btn-sm btn-outline-primary me-2';
-        allBtn.textContent = 'ALL DAYS';
+        allBtn.textContent = 'All Days';
+        allBtn.setAttribute('data-day', 'all');
         allBtn.addEventListener('click', () => setDayFilter(null));
         container.appendChild(allBtn);
 
+        // Individual day buttons
         for (let i = 1; i <= dayCount; i++) {
             const b = document.createElement('button');
-            b.className = 'btn btn-sm btn-outline-secondary me-1';
             b.textContent = `Day ${i}`;
+            b.setAttribute('data-day', i);
             b.addEventListener('click', () => setDayFilter(i));
             container.appendChild(b);
         }
 
-        // Initialize Places Autocomplete for the search input (if API loaded)
+        // Initialize Places Autocomplete for the sidebar search input
         let autocomplete = null;
         function initAutocomplete() {
             try {
-                const inputEl = document.getElementById('place-search');
+                const inputEl = document.getElementById('location-search');
                 if (!inputEl || !window.google || !google.maps || !google.maps.places) return;
                 autocomplete = new google.maps.places.Autocomplete(inputEl, { types: ['establishment', 'geocode'] });
                 autocomplete.setFields(['place_id', 'name', 'geometry', 'photos', 'rating', 'formatted_address', 'types']);
@@ -322,6 +313,27 @@
                     });
                 });
             } catch (e) { console.warn('Autocomplete init failed', e); }
+        }
+
+        // Wire up Add button
+        const addBtn = document.getElementById('add-location-btn');
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                const inputEl = document.getElementById('location-search');
+                if (inputEl && inputEl.value.trim()) {
+                    // Trigger place search
+                    const place = autocomplete && autocomplete.getPlace();
+                    if (place && place.place_id) {
+                        const svc = new google.maps.places.PlacesService(gmap);
+                        svc.getDetails({ placeId: place.place_id, fields: ['place_id', 'name', 'geometry', 'photos', 'rating', 'formatted_address', 'types', 'formatted_phone_number', 'opening_hours'] }, (details, status) => {
+                            if (status === google.maps.places.PlacesServiceStatus.OK && details) {
+                                addPlaceResultToMap(details);
+                                inputEl.value = '';
+                            }
+                        });
+                    }
+                }
+            });
         }
 
         // Attach autocomplete when maps API is ready (or try now)
@@ -366,6 +378,23 @@
             }
         }
         selectedDay = dayNum;
+        
+        // Update active state on day filter buttons
+        const container = document.getElementById('map-controls');
+        if (container) {
+            const buttons = container.querySelectorAll('button');
+            buttons.forEach(btn => {
+                const btnDay = btn.getAttribute('data-day');
+                if (btnDay === 'all' && !dayNum) {
+                    btn.classList.add('active');
+                } else if (btnDay && parseInt(btnDay) === dayNum) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        
         renderSidePanel(dayNum);
         // refresh clusters to reflect visibility change
         updateCluster();

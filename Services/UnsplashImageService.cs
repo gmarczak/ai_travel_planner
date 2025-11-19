@@ -235,5 +235,46 @@ namespace project.Services
             [JsonPropertyName("html")]
             public string? Html { get; set; }
         }
+
+        /// <summary>
+        /// Fetch multiple images in parallel (optimized for 2-3 images per day)
+        /// </summary>
+        public async Task<Dictionary<string, string>> GetMultipleImagesAsync(IEnumerable<string> queries)
+        {
+            var results = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            
+            if (queries == null || !queries.Any())
+            {
+                return results;
+            }
+
+            // Fetch all images in parallel with timeout per request
+            var tasks = queries.Distinct(StringComparer.OrdinalIgnoreCase).Select(async query =>
+            {
+                try
+                {
+                    var url = await GetDestinationImageAsync(query);
+                    return new KeyValuePair<string, string>(query, url ?? string.Empty);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch image for query: {Query}", query);
+                    return new KeyValuePair<string, string>(query, string.Empty);
+                }
+            });
+
+            var completed = await Task.WhenAll(tasks);
+            
+            foreach (var kvp in completed)
+            {
+                if (!string.IsNullOrEmpty(kvp.Value))
+                {
+                    results[kvp.Key] = kvp.Value;
+                }
+            }
+
+            _logger.LogInformation("Fetched {Count} images out of {Total} requested", results.Count, queries.Count());
+            return results;
+        }
     }
 }

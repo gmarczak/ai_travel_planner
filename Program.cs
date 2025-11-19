@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.Data.SqlClient;
+using project.Services.AI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -221,12 +222,28 @@ builder.Services.AddHttpClient();
 // Register Image Service with HttpClient for Unsplash API
 builder.Services.AddHttpClient<IImageService, UnsplashImageService>();
 
+// AI ASSISTANT SERVICES (chat-based plan editing)
+builder.Services.AddScoped<GptMiniAssistantService>();
+builder.Services.AddScoped<Gpt41MiniAssistantService>();
+builder.Services.AddScoped<IAiAssistantService, FallbackAssistantService>();
+builder.Services.AddSingleton<AssistantTelemetryService>();
+builder.Services.AddSingleton<AssistantRateLimiter>();
+builder.Services.AddScoped<PlanDeltaApplier>();
+
 // REGISTER AI SERVICES (with fallback support)
 var enableFallback = builder.Configuration.GetValue<bool>("AI:EnableFallback", true);
 
 // Register individual AI providers as IAiService
 builder.Services.AddScoped<OpenAITravelService>();
 builder.Services.AddScoped<IAiService>(sp => sp.GetRequiredService<OpenAITravelService>());
+
+// Register AI Assistant (chat edit) services (stubs with fallback dispatcher)
+builder.Services.AddScoped<GptMiniAssistantService>();
+builder.Services.AddScoped<Gpt41MiniAssistantService>();
+builder.Services.AddScoped<IAiAssistantService, FallbackAssistantService>();
+builder.Services.AddScoped<PlanDeltaApplier>();
+builder.Services.AddSingleton<AssistantTelemetryService>();
+builder.Services.AddSingleton<AssistantRateLimiter>();
 
 // Register OpenRouter as additional fallback
 builder.Services.AddScoped<OpenRouterAiService>();
@@ -396,6 +413,7 @@ app.UseAuthorization();
 
 // MAP SIGNALR HUBS
 app.MapHub<project.Hubs.PlanGenerationHub>("/hubs/planGeneration");
+app.MapHub<project.Hubs.AssistantChatHub>("/hubs/assistantChat");
 
 app.MapRazorPages();
 

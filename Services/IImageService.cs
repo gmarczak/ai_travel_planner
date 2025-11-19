@@ -13,5 +13,12 @@ namespace project.Services
         /// Gets cached image with photographer attribution
         /// </summary>
         Task<(string? ImageUrl, string? PhotographerName, string? PhotographerUrl)?> GetDestinationImageWithAttributionAsync(string destination);
+
+        /// <summary>
+        /// Gets multiple images in parallel for better performance (2-3 images per day strategy)
+        /// </summary>
+        /// <param name="queries">List of search queries (e.g., "Eiffel Tower Paris", "French cuisine restaurant")</param>
+        /// <returns>Dictionary mapping query to image URL</returns>
+        Task<Dictionary<string, string>> GetMultipleImagesAsync(IEnumerable<string> queries);
     }
 }
