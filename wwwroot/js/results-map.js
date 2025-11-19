@@ -378,7 +378,7 @@
             }
         }
         selectedDay = dayNum;
-        
+
         // Update active state on day filter buttons
         const container = document.getElementById('map-controls');
         if (container) {
@@ -394,7 +394,7 @@
                 }
             });
         }
-        
+
         renderSidePanel(dayNum);
         // refresh clusters to reflect visibility change
         updateCluster();

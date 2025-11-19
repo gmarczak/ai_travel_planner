@@ -212,7 +212,7 @@ namespace project.Services.AI
             sb.AppendLine("You are an expert travel planning assistant handling complex itinerary modifications.");
             sb.AppendLine("Pay special attention to details, constraints, and user preferences.");
             sb.AppendLine($"Current trip: {request.Destination}, {request.Days} days, {request.Travelers} travelers, budget: ${request.Budget}");
-            
+
             if (!string.IsNullOrWhiteSpace(request.CompressedPlanJson))
             {
                 sb.AppendLine("\nCurrent itinerary (JSON):");

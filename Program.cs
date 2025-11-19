@@ -222,6 +222,9 @@ builder.Services.AddHttpClient();
 // Register Image Service with HttpClient for Unsplash API
 builder.Services.AddHttpClient<IImageService, UnsplashImageService>();
 
+// Image Caption Service (AI-generated descriptions for activity images)
+builder.Services.AddScoped<IImageCaptionService, ImageCaptionService>();
+
 // AI ASSISTANT SERVICES (chat-based plan editing)
 builder.Services.AddScoped<GptMiniAssistantService>();
 builder.Services.AddScoped<Gpt41MiniAssistantService>();

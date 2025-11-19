@@ -11,27 +11,27 @@ public class AdminMonitoringModel : PageModel
     private readonly UserManager<ApplicationUser> _userManager;
 
     public bool IsAdmin { get; set; }
-    
+
     // Plan Generation Statistics
     public int TotalGenerationStates { get; set; }
     public int CompletedStates { get; set; }
     public int InProgressStates { get; set; }
     public int FailedStates { get; set; }
-    
+
     // Cache Statistics
     public int CacheEntryCount { get; set; }
     public int TotalCacheHits { get; set; }
     public int TotalTokensCached { get; set; }
     public int ExpiredCacheCount { get; set; }
-    
+
     // Image Cache Statistics
     public int ImageCacheCount { get; set; }
     public DateTime? MostRecentImageCache { get; set; }
-    
+
     // System Statistics
     public int TotalUsers { get; set; }
     public int TotalPlans { get; set; }
-    
+
     // Recent Failures
     public List<PlanGenerationState> RecentFailures { get; set; } = new();
 
@@ -50,7 +50,7 @@ public class AdminMonitoringModel : PageModel
 
         var currentUser = await _userManager.GetUserAsync(User);
         IsAdmin = currentUser?.IsAdmin ?? false;
-        
+
         if (!IsAdmin)
         {
             return Page();
@@ -60,8 +60,8 @@ public class AdminMonitoringModel : PageModel
         var statsTask = Task.WhenAll(
             _db.PlanGenerationStates.CountAsync(),
             _db.PlanGenerationStates.CountAsync(s => s.Status == PlanGenerationStatus.Completed),
-            _db.PlanGenerationStates.CountAsync(s => 
-                s.Status == PlanGenerationStatus.InProgress || 
+            _db.PlanGenerationStates.CountAsync(s =>
+                s.Status == PlanGenerationStatus.InProgress ||
                 s.Status == PlanGenerationStatus.Queued),
             _db.PlanGenerationStates.CountAsync(s => s.Status == PlanGenerationStatus.Failed)
         );
@@ -74,7 +74,7 @@ public class AdminMonitoringModel : PageModel
             _db.AiResponseCaches.SumAsync(c => c.TokenCount),
             _db.AiResponseCaches.CountAsync(c => c.ExpiresAt.HasValue && c.ExpiresAt < now)
         );
-        
+
         // Image Cache Stats
         var imageCountTask = _db.DestinationImages.CountAsync();
         var imageMostRecentTask = _db.DestinationImages
@@ -119,7 +119,7 @@ public class AdminMonitoringModel : PageModel
         TotalPlans = systemStats[1];
 
         RecentFailures = await recentFailuresTask;
-        
+
         return Page();
     }
 }

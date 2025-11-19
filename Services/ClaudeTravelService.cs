@@ -39,7 +39,8 @@ namespace project.Services
 
             // SYSTEM & USER PROMPTS
             var systemPrompt = $"You are an expert travel planner. Create detailed, personalized travel itineraries. Always respond in JSON as specified. Respond in English (en-US).";
-            var userPrompt = $@"Create a detailed {days}-day travel plan for {request.Destination} for {request.NumberOfTravelers} travelers with a budget of ${request.Budget}.
+            var budgetValue = request.Budget ?? 0m;
+            var userPrompt = $@"Create a detailed {days}-day travel plan for {request.Destination} for {request.NumberOfTravelers} travelers with a budget of ${budgetValue}.
 
 Trip details:
 - Dates: {request.StartDate:MMM dd, yyyy} to {request.EndDate:MMM dd, yyyy}
@@ -99,7 +100,7 @@ Respond with a JSON object. Return an object with these keys (names in English):
                     StartDate = request.StartDate,
                     EndDate = request.EndDate,
                     NumberOfTravelers = request.NumberOfTravelers,
-                    Budget = request.Budget,
+                    Budget = request.Budget ?? 0m,
                     TravelPreferences = request.TravelPreferences ?? string.Empty,
                     CreatedAt = DateTime.Now,
                     GeneratedItinerary = aiResponse?.Itinerary ?? text,
@@ -152,7 +153,7 @@ Respond with a JSON object. Return an object with these keys (names in English):
                 StartDate = request.StartDate,
                 EndDate = request.EndDate,
                 NumberOfTravelers = request.NumberOfTravelers,
-                Budget = request.Budget,
+                Budget = request.Budget ?? 0m,
                 TravelPreferences = request.TravelPreferences ?? string.Empty,
                 CreatedAt = DateTime.Now,
                 GeneratedItinerary = text,

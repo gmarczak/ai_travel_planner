@@ -312,7 +312,7 @@ Keep it under 100 words total.";
                     StartDate = request.StartDate,
                     EndDate = request.EndDate,
                     NumberOfTravelers = request.NumberOfTravelers,
-                    Budget = request.Budget,
+                    Budget = request.Budget ?? 0m,
                     TravelPreferences = request.TravelPreferences ?? "",
                     CreatedAt = DateTime.Now,
                     GeneratedItinerary = itineraryText,
@@ -392,13 +392,14 @@ Return ONLY the JSON array above.";
             var interestsText = "general sightseeing";
             var tripType = !string.IsNullOrWhiteSpace(request.TripType) ? request.TripType : "General";
             var preferences = !string.IsNullOrWhiteSpace(request.TravelPreferences) ? request.TravelPreferences : "None specified";
+            var budgetValue = request.Budget ?? 0m;
 
             return $@"You must respond with ONLY valid JSON. No additional text, no markdown formatting, no code blocks.
 
 Task: Create a detailed {days}-day travel plan for {request.Destination}.
 - Dates: {request.StartDate:MMM dd, yyyy} to {request.EndDate:MMM dd, yyyy}
 - Travelers: {request.NumberOfTravelers}
-- Budget: ${request.Budget} (approximately ${request.Budget / request.NumberOfTravelers / days:F0} per person per day)
+- Budget: ${budgetValue} (approximately {(budgetValue > 0 ? (budgetValue / request.NumberOfTravelers / days).ToString("F0") : "0")} per person per day)
 - Interests: {interestsText}
 - Trip type: {tripType}
 - Preferences: {preferences}
@@ -439,7 +440,7 @@ CRITICAL: Include ALL {days} days. Use \\n for line breaks in the itinerary stri
                 StartDate = request.StartDate,
                 EndDate = request.EndDate,
                 NumberOfTravelers = request.NumberOfTravelers,
-                Budget = request.Budget,
+                Budget = request.Budget ?? 0m,
                 TravelPreferences = request.TravelPreferences ?? string.Empty,
                 CreatedAt = DateTime.Now,
                 GeneratedItinerary = itinerary,

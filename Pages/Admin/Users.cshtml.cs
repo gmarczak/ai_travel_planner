@@ -28,7 +28,7 @@ public class AdminUsersModel : PageModel
 
         var currentUser = await _userManager.GetUserAsync(User);
         IsAdmin = currentUser?.IsAdmin ?? false;
-        
+
         if (!IsAdmin)
         {
             return Page();

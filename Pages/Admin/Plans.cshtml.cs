@@ -31,7 +31,7 @@ public class AdminPlansModel : PageModel
 
         var currentUser = await _userManager.GetUserAsync(User);
         IsAdmin = currentUser?.IsAdmin ?? false;
-        
+
         if (!IsAdmin)
         {
             return Page();
@@ -48,7 +48,7 @@ public class AdminPlansModel : PageModel
             .Take(PageSize)
             .AsNoTracking() // Read-only query optimization
             .ToListAsync();
-        
+
         return Page();
     }
 

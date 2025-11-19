@@ -28,7 +28,7 @@ public class AdminCacheModel : PageModel
 
         var currentUser = await _userManager.GetUserAsync(User);
         IsAdmin = currentUser?.IsAdmin ?? false;
-        
+
         if (!IsAdmin)
         {
             return Page();
@@ -37,7 +37,7 @@ public class AdminCacheModel : PageModel
         CacheEntries = await _db.AiResponseCaches
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync();
-        
+
         return Page();
     }
 
@@ -71,10 +71,10 @@ public class AdminCacheModel : PageModel
         var expired = await _db.AiResponseCaches
             .Where(c => c.ExpiresAt.HasValue && c.ExpiresAt < DateTime.UtcNow)
             .ToListAsync();
-        
+
         _db.AiResponseCaches.RemoveRange(expired);
         await _db.SaveChangesAsync();
-        
+
         TempData["Message"] = $"Deleted {expired.Count} expired cache entries.";
         return RedirectToPage();
     }
@@ -90,7 +90,7 @@ public class AdminCacheModel : PageModel
         var count = await _db.AiResponseCaches.CountAsync();
         _db.AiResponseCaches.RemoveRange(_db.AiResponseCaches);
         await _db.SaveChangesAsync();
-        
+
         TempData["Message"] = $"Deleted all {count} cache entries.";
         return RedirectToPage();
     }

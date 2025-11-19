@@ -60,7 +60,7 @@ public class LoginModel : PageModel
         if (ModelState.IsValid)
         {
             // Allow signing in with either Email or Username
-            var user = await _user_manager.FindByEmailAsync(Input.Email) 
+            var user = await _user_manager.FindByEmailAsync(Input.Email)
                        ?? await _user_manager.FindByNameAsync(Input.Email);
 
             if (user != null)

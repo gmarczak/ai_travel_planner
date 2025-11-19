@@ -167,7 +167,7 @@ namespace project.Services.AI
             var sb = new StringBuilder();
             sb.AppendLine("You are a helpful travel planning assistant. You can answer questions and modify travel itineraries.");
             sb.AppendLine($"Current trip: {request.Destination}, {request.Days} days, {request.Travelers} travelers, budget: ${request.Budget}");
-            
+
             if (!string.IsNullOrWhiteSpace(request.CompressedPlanJson))
             {
                 sb.AppendLine("\nCurrent itinerary (JSON):");

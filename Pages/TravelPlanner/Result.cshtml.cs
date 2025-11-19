@@ -24,11 +24,12 @@ namespace project.Pages.TravelPlanner
         private readonly IWebHostEnvironment _env;
         private readonly project.Data.ApplicationDbContext _db;
         private readonly IImageService _imageService;
+        private readonly IImageCaptionService _captionService;
         private readonly IServiceScopeFactory _scopeFactory;
         private const string SavedPlansKeyPrefix = "savedplans:";
         private const string AnonymousCookieName = "anon_saved_plans_id";
 
-        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env, project.Data.ApplicationDbContext db, IImageService imageService, IServiceScopeFactory scopeFactory)
+        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env, project.Data.ApplicationDbContext db, IImageService imageService, IImageCaptionService captionService, IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
             _cache = cache;
@@ -37,6 +38,7 @@ namespace project.Pages.TravelPlanner
             _env = env;
             _db = db;
             _imageService = imageService;
+            _captionService = captionService;
             _scopeFactory = scopeFactory;
         }
 
@@ -181,10 +183,10 @@ namespace project.Pages.TravelPlanner
                 }
 
                 ParseItinerary(plan.GeneratedItinerary);
-                
+
                 // Load 2-3 images per day (async, optimized with cache)
                 await LoadDayImagesAsync(plan.Destination);
-                
+
                 return Page();
             }
 
@@ -386,8 +388,8 @@ namespace project.Pages.TravelPlanner
                     }
                 }
             }
-            catch 
-            { 
+            catch
+            {
                 // JSON parsing failed - if it looked like JSON, clear it to avoid showing malformed data
                 if (text.StartsWith("{") && text.EndsWith("}"))
                 {
@@ -461,7 +463,7 @@ namespace project.Pages.TravelPlanner
 
                 // Extract 2-3 key activities/places from this day
                 var extracted = ExtractKeyPhrasesFromDay(dayLines, destination);
-                
+
                 for (int i = 0; i < extracted.Count && i < 3; i++)
                 {
                     allQueries.Add((day.Day, extracted[i].Query, i == 0, extracted[i].Description));
@@ -474,7 +476,28 @@ namespace project.Pages.TravelPlanner
             var queries = allQueries.Select(q => q.Query).Distinct().ToList();
             var imageResults = await _imageService.GetMultipleImagesAsync(queries);
 
-            // Map images back to days
+            // Generate AI captions for all activities (with fallback to original descriptions)
+            var aiCaptions = new Dictionary<string, string>();
+            try
+            {
+                var captionRequests = allQueries
+                    .Where(q => imageResults.ContainsKey(q.Query) && !string.IsNullOrEmpty(imageResults[q.Query]))
+                    .Select(q => (q.Description, destination))
+                    .Distinct()
+                    .ToList();
+
+                if (captionRequests.Any())
+                {
+                    aiCaptions = await _captionService.GenerateCaptionsAsync(captionRequests);
+                    _logger.LogInformation("Generated {Count} AI captions for activity images", aiCaptions.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to generate AI captions, using original descriptions");
+            }
+
+            // Map images back to days with AI-generated captions (or fallback to original)
             var dayImagesMap = allQueries
                 .Where(q => imageResults.ContainsKey(q.Query) && !string.IsNullOrEmpty(imageResults[q.Query]))
                 .GroupBy(q => q.DayNumber);
@@ -488,13 +511,15 @@ namespace project.Pages.TravelPlanner
                     {
                         Url = imageResults[item.Query],
                         Query = item.Query,
-                        Description = item.Description,
+                        Description = aiCaptions.ContainsKey(item.Description)
+                            ? aiCaptions[item.Description]
+                            : item.Description,
                         IsPrimary = item.IsPrimary
                     }));
                 }
             }
 
-            _logger.LogInformation("Loaded {Count} images across {Days} days", 
+            _logger.LogInformation("Loaded {Count} images with AI captions across {Days} days",
                 ParsedDays.Sum(d => d.Images.Count), ParsedDays.Count);
         }
 
@@ -504,15 +529,15 @@ namespace project.Pages.TravelPlanner
         private List<(string Query, string Description)> ExtractKeyPhrasesFromDay(List<string> dayLines, string destination)
         {
             var results = new List<(string Query, string Description)>();
-            
+
             // Keywords that indicate important places
             var attractionKeywords = new[] { "visit", "explore", "see", "tour", "museum", "palace", "tower", "church", "temple", "park", "garden", "square", "bridge", "castle" };
             var foodKeywords = new[] { "lunch", "dinner", "breakfast", "restaurant", "café", "cafe", "bistro", "cuisine", "food", "eat", "dine" };
-            
+
             foreach (var line in dayLines.Take(10)) // Check first 10 lines
             {
                 var lower = line.ToLowerInvariant();
-                
+
                 // Skip meta lines (times, titles)
                 if (line.StartsWith("**") || line.StartsWith("##") || line.Length < 15)
                     continue;
@@ -526,16 +551,19 @@ namespace project.Pages.TravelPlanner
                     // Extract the main subject (usually first mentioned place name or after "visit"/"explore")
                     var cleaned = System.Text.RegularExpressions.Regex.Replace(line, @"[*#\-•]", "").Trim();
                     cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"^\d+[\.\)]\s*", "").Trim();
-                    
+
+                    // Remove curly braces and brackets
+                    cleaned = cleaned.Replace("{", "").Replace("}", "").Replace("[", "").Replace("]", "");
+
                     // Take first significant phrase (up to 50 chars)
                     var phrase = cleaned.Length > 50 ? cleaned.Substring(0, 50).Trim() : cleaned;
-                    
+
                     if (phrase.Length > 10)
                     {
                         var query = $"{phrase} {destination}";
                         var description = phrase;
                         results.Add((query, description));
-                        
+
                         if (results.Count >= 3) break; // Max 3 per day
                     }
                 }
@@ -855,12 +883,12 @@ namespace project.Pages.TravelPlanner
 
         public async Task<IActionResult> OnPostApplyDeltaAsync([FromBody] ApplyDeltaRequest request)
         {
-            _logger.LogInformation("OnPostApplyDeltaAsync called. PlanId: {PlanId}, Delta null: {DeltaNull}", 
+            _logger.LogInformation("OnPostApplyDeltaAsync called. PlanId: {PlanId}, Delta null: {DeltaNull}",
                 request?.PlanId ?? "NULL", request?.Delta == null);
-            
+
             if (string.IsNullOrWhiteSpace(request?.PlanId) || request?.Delta == null)
             {
-                _logger.LogWarning("Invalid request: PlanId={PlanId}, Delta={Delta}", 
+                _logger.LogWarning("Invalid request: PlanId={PlanId}, Delta={Delta}",
                     request?.PlanId ?? "NULL", request?.Delta == null ? "NULL" : "Present");
                 return BadRequest(new { error = "Invalid request: PlanId and Delta required" });
             }
@@ -910,7 +938,7 @@ namespace project.Pages.TravelPlanner
                 var originalItinerary = plan.GeneratedItinerary;
                 _logger.LogInformation("Original itinerary length: {Length}", originalItinerary?.Length ?? 0);
                 _logger.LogInformation("Plan ID before apply: {Id}, ExternalId: {ExternalId}", plan.Id, plan.ExternalId);
-                
+
                 plan.GeneratedItinerary = applier.ApplyDeltaToItinerary(plan.GeneratedItinerary, request.Delta);
                 _logger.LogInformation("Updated itinerary length: {Length}", plan.GeneratedItinerary?.Length ?? 0);
                 _logger.LogInformation("Itinerary changed: {Changed}", originalItinerary != plan.GeneratedItinerary);
@@ -928,10 +956,10 @@ namespace project.Pages.TravelPlanner
 
                 // Save to database using a new scope to avoid threading issues
                 _logger.LogInformation("Attempting to save to DB. Plan.Id={Id}, ExternalId={ExternalId}", plan.Id, request.PlanId);
-                
+
                 using var scope = _scopeFactory.CreateScope();
                 var scopedDb = scope.ServiceProvider.GetRequiredService<project.Data.ApplicationDbContext>();
-                
+
                 // Find by ExternalId (GUID) not internal Id
                 var dbPlan = await scopedDb.TravelPlans.FirstOrDefaultAsync(tp => tp.ExternalId == request.PlanId);
                 if (dbPlan != null && plan.GeneratedItinerary != null)
@@ -954,7 +982,7 @@ namespace project.Pages.TravelPlanner
                 var parsedDays = new List<ParsedDay>();
                 ParseItineraryStatic(plan.GeneratedItinerary, parsedDays);
 
-                _logger.LogInformation("Applied delta to plan {PlanId}: {ChangeCount} changes, {ParsedDays} days parsed", 
+                _logger.LogInformation("Applied delta to plan {PlanId}: {ChangeCount} changes, {ParsedDays} days parsed",
                     request.PlanId, request.Delta.Changes?.Count ?? 0, parsedDays.Count);
 
                 return new JsonResult(new
@@ -1025,33 +1053,33 @@ namespace project.Pages.TravelPlanner
             }
 
             if (delta.Changes != null)
-            foreach (var change in delta.Changes)
-            {
-                // Validate day number
-                if (change.Day < 1 || change.Day > totalDays)
+                foreach (var change in delta.Changes)
                 {
-                    return $"Invalid day number: {change.Day}. Plan has {totalDays} days.";
+                    // Validate day number
+                    if (change.Day < 1 || change.Day > totalDays)
+                    {
+                        return $"Invalid day number: {change.Day}. Plan has {totalDays} days.";
+                    }
+
+                    // Check if at least one operation is specified
+                    var hasOperation = (change.AddMorning != null && change.AddMorning.Any()) ||
+                                       (change.AddAfternoon != null && change.AddAfternoon.Any()) ||
+                                       (change.AddEvening != null && change.AddEvening.Any()) ||
+                                       (change.Remove != null && change.Remove.Any());
+
+                    if (!hasOperation && string.IsNullOrWhiteSpace(change.Note))
+                    {
+                        return $"Day {change.Day}: No operations specified";
+                    }
+
+                    // Validate activities are not empty
+                    if (change.AddMorning != null && change.AddMorning.Any(a => string.IsNullOrWhiteSpace(a)))
+                        return $"Day {change.Day}: Empty activity in morning section";
+                    if (change.AddAfternoon != null && change.AddAfternoon.Any(a => string.IsNullOrWhiteSpace(a)))
+                        return $"Day {change.Day}: Empty activity in afternoon section";
+                    if (change.AddEvening != null && change.AddEvening.Any(a => string.IsNullOrWhiteSpace(a)))
+                        return $"Day {change.Day}: Empty activity in evening section";
                 }
-
-                // Check if at least one operation is specified
-                var hasOperation = (change.AddMorning != null && change.AddMorning.Any()) ||
-                                   (change.AddAfternoon != null && change.AddAfternoon.Any()) ||
-                                   (change.AddEvening != null && change.AddEvening.Any()) ||
-                                   (change.Remove != null && change.Remove.Any());
-
-                if (!hasOperation && string.IsNullOrWhiteSpace(change.Note))
-                {
-                    return $"Day {change.Day}: No operations specified";
-                }
-
-                // Validate activities are not empty
-                if (change.AddMorning != null && change.AddMorning.Any(a => string.IsNullOrWhiteSpace(a)))
-                    return $"Day {change.Day}: Empty activity in morning section";
-                if (change.AddAfternoon != null && change.AddAfternoon.Any(a => string.IsNullOrWhiteSpace(a)))
-                    return $"Day {change.Day}: Empty activity in afternoon section";
-                if (change.AddEvening != null && change.AddEvening.Any(a => string.IsNullOrWhiteSpace(a)))
-                    return $"Day {change.Day}: Empty activity in evening section";
-            }
 
             return null;
         }

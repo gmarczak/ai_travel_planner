@@ -36,7 +36,7 @@ namespace project.Services
                         break;
                     }
                 }
-                
+
                 if (dayStart < 0) continue;
 
                 var dayEnd = FindDayEnd(lines, dayStart);

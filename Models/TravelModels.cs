@@ -19,7 +19,7 @@ namespace project.Models
 
         // Foreign key to ApplicationUser (nullable for existing plans)
         public string? UserId { get; set; }
-        
+
         // Navigation property
         public ApplicationUser? User { get; set; }
 
@@ -61,7 +61,7 @@ namespace project.Models
         [Required(ErrorMessage = "Please enter your budget")]
         [Range(100, 100000, ErrorMessage = "Budget must be between $100 and $100,000")]
         [Display(Name = "Budget")]
-        public decimal Budget { get; set; }
+        public decimal? Budget { get; set; }
 
         // OPTIONAL FIELDS
         [Display(Name = "Travel Preferences")]

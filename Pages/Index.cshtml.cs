@@ -42,10 +42,10 @@ public class IndexModel : PageModel
         TopDestinations = counts.OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key).ToList();
 
         // Load all images in parallel (destinations + features) with caching
-        var allImageKeys = new[] 
-        { 
+        var allImageKeys = new[]
+        {
             "paris", "tokyo", "new york", "barcelona", "rome", "london",
-            "artificial intelligence technology", "map navigation gps", "hotel restaurant dining" 
+            "artificial intelligence technology", "map navigation gps", "hotel restaurant dining"
         };
 
         // Use cache for pre-loaded images with 1-hour expiration

@@ -4,6 +4,20 @@
     ViewData["Title"] = "AI Travel Planner";
 }
 
+<style>
+    /* Mobile: larger touch targets */
+    .travelers-btn {
+        min-height: 44px;
+    }
+
+    /* Desktop: normal button height */
+    @@media (min-width: 768px) {
+        .travelers-btn {
+            min-height: auto;
+        }
+    }
+</style>
+
 <div class="container mt-3 mt-md-5 px-2 px-md-3">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8">
@@ -32,11 +46,14 @@
                             </legend>
                             <div class="row g-2 g-md-3">
                                 <div class="col-12 col-md-6">
-                                    <label asp-for="TravelRequest.Destination" class="form-label small">Destination
+                                    <label asp-for="TravelRequest.Destination" class="form-label small">Where do you
+                                        want to go?
                                         *</label>
-                                    <input asp-for="TravelRequest.Destination"
+                                    <input asp-for="TravelRequest.Destination" id="destinationInput"
                                         class="form-control form-control-sm form-control-md-normal"
-                                        placeholder="e.g. Barcelona" autocapitalize="words" required />
+                                        placeholder="e.g. Paris, Tokyo, New York..." autocomplete="off"
+                                        autocapitalize="words" list="destinationSuggestions" required />
+                                    <datalist id="destinationSuggestions"></datalist>
                                     <span asp-validation-for="TravelRequest.Destination"
                                         class="text-danger small"></span>
                                 </div>
@@ -64,16 +81,16 @@
                                     <label asp-for="TravelRequest.NumberOfTravelers" class="form-label small">Travelers
                                         *</label>
                                     <div class="input-group input-group-sm">
-                                        <button class="btn btn-outline-secondary" type="button" id="decrementTravelers"
-                                            style="min-height: 44px;">
+                                        <button class="btn btn-outline-secondary travelers-btn" type="button"
+                                            id="decrementTravelers">
                                             <i class="bi bi-dash-lg"></i>
                                         </button>
                                         <input asp-for="TravelRequest.NumberOfTravelers" type="number" min="1" max="20"
                                             inputmode="numeric" pattern="[0-9]*" autocomplete="off"
                                             class="form-control form-control-sm form-control-md-normal text-center"
                                             id="travelersInput" required readonly />
-                                        <button class="btn btn-outline-secondary" type="button" id="incrementTravelers"
-                                            style="min-height: 44px;">
+                                        <button class="btn btn-outline-secondary travelers-btn" type="button"
+                                            id="incrementTravelers">
                                             <i class="bi bi-plus-lg"></i>
                                         </button>
                                     </div>
@@ -180,6 +197,55 @@
             console.error('SignalR script could not be loaded.');
             return false;
         }
+        // Destination autocomplete
+        document.addEventListener('DOMContentLoaded', function () {
+            const destinationInput = document.getElementById('destinationInput');
+            const destinationDatalist = document.getElementById('destinationSuggestions');
+            let debounceTimer;
+
+            console.log('Autocomplete initialized:', {
+                input: !!destinationInput,
+                datalist: !!destinationDatalist
+            });
+
+            if (destinationInput && destinationDatalist) {
+                destinationInput.addEventListener('input', function () {
+                    clearTimeout(debounceTimer);
+                    const query = this.value.trim();
+
+                    if (query.length < 2) {
+                        destinationDatalist.innerHTML = '';
+                        return;
+                    }
+
+                    debounceTimer = setTimeout(async () => {
+                        try {
+                            const url = `/TravelPlanner/Index?handler=DestinationSuggestions&query=${encodeURIComponent(query)}`;
+                            console.log('Fetching suggestions for:', query, 'URL:', url);
+
+                            const response = await fetch(url);
+                            console.log('Response status:', response.status);
+
+                            if (response.ok) {
+                                const suggestions = await response.json();
+                                console.log('Suggestions received:', suggestions.length);
+
+                                destinationDatalist.innerHTML = suggestions
+                                    .map(dest => `<option value="${dest}">`)
+                                    .join('');
+                            } else {
+                                console.warn('Failed to fetch suggestions:', response.status, response.statusText);
+                            }
+                        } catch (error) {
+                            console.error('Error fetching destination suggestions:', error);
+                        }
+                    }, 300); // 300ms debounce
+                });
+            } else {
+                console.warn('Autocomplete elements not found');
+            }
+        });
+
         // Travelers increment/decrement buttons
         const travelersInput = document.getElementById('travelersInput');
         const incrementBtn = document.getElementById('incrementTravelers');

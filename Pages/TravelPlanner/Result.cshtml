@@ -413,14 +413,29 @@ else
                 <div class="mb-3">
                     <label class="form-label">Accommodations (one per line)</label>
                     <textarea name="accommodations" class="form-control" rows="3" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan?.Accommodations ?? new List<string>())</textarea>
+                    <div class="input-group mt-2">
+                        <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                        <input type="text" id="accommodation-search" class="form-control" placeholder="Search accommodation..." @(Model.IsProcessing?"disabled":"") />
+                        <button type="button" id="add-accommodation-btn" class="btn btn-outline-primary" @(Model.IsProcessing?"disabled":"")>Add</button>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Activities (one per line)</label>
                     <textarea name="activities" class="form-control" rows="3" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan?.Activities ?? new List<string>())</textarea>
+                    <div class="input-group mt-2">
+                        <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                        <input type="text" id="activity-search" class="form-control" placeholder="Search activity place..." @(Model.IsProcessing?"disabled":"") />
+                        <button type="button" id="add-activity-btn" class="btn btn-outline-primary" @(Model.IsProcessing?"disabled":"")>Add</button>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Transportation (one per line)</label>
                     <textarea name="transportation" class="form-control" rows="2" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan?.Transportation ?? new List<string>())</textarea>
+                    <div class="input-group mt-2">
+                        <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                        <input type="text" id="transport-search" class="form-control" placeholder="Search transport place..." @(Model.IsProcessing?"disabled":"") />
+                        <button type="button" id="add-transport-btn" class="btn btn-outline-primary" @(Model.IsProcessing?"disabled":"")>Add</button>
+                    </div>
                 </div>
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary" @(Model.IsProcessing?"disabled":"")>Save details</button>
@@ -495,7 +510,6 @@ else
     </section>
 }
 @* End of main else block *@
-
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/%40microsoft/signalr@7.0.14/dist/browser/signalr.min.js"></script>
     <script>
@@ -891,46 +905,10 @@ else
             } catch (e) { /* ignore */ }
         })();
     </script>
+}
     
-    <style>
-        /* Improved itinerary formatting */
-        #daysContainer details {
-            transition: all 0.2s ease;
-        }
-        
-        #daysContainer details summary {
-            cursor: pointer;
-            user-select: none;
-            font-size: 1.1rem;
-        }
-        
-        #daysContainer details summary:hover {
-            background-color: #e9ecef !important;
-        }
-        
-        #daysContainer details[open] {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        
-        #daysContainer h6 {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-        
-        #daysContainer .ms-2 {
-            line-height: 1.6;
-        }
-        
-        #daysContainer .ms-4 {
-            line-height: 1.5;
-            font-size: 0.9rem;
-        }
-        
-            .image-attribution {
-                font-size: 0.75rem;
-                opacity: 0.8;
-            }
-    </style>
+    <!-- Page-specific styles moved to external file -->
+    <link href="~/css/travelplanner.result.css" rel="stylesheet" asp-append-version="true" />
 
     <!-- Tab navigation controller -->
     <script src="~/js/tabs.js"></script>
@@ -949,451 +927,7 @@ else
             let isDragging = false;
             
             // Initialize bottom sheet as visible but collapsed
-            const bsOffcanvas = new bootstrap.Offcanvas(bottomSheet, {
-                backdrop: false,
-                scroll: true
-            });
-            
-            // Auto-show on map tab switch (collapsed state)
-            document.addEventListener('click', function(ev) {
-                const tabBtn = ev.target.closest('[data-tab="map"]');
-                if (tabBtn && window.innerWidth < 992) {
-                    setTimeout(() => {
-                        if (!bottomSheet.classList.contains('show')) {
-                            bsOffcanvas.show();
-                        }
-                    }, 100);
-                }
-            });
-            
-            // Drag functionality
-            if (handle) {
-                handle.addEventListener('touchstart', handleTouchStart, { passive: true });
-                handle.addEventListener('mousedown', handleMouseDown);
-            }
-            
-            function handleTouchStart(e) {
-                startY = e.touches[0].clientY;
-                isDragging = true;
-                bottomSheet.style.transition = 'none';
-            }
-            
-            function handleMouseDown(e) {
-                startY = e.clientY;
-                isDragging = true;
-                bottomSheet.style.transition = 'none';
-                document.addEventListener('mousemove', handleMouseMove);
-                document.addEventListener('mouseup', handleMouseUp);
-            }
-            
-            function handleMouseMove(e) {
-                if (!isDragging) return;
-                currentY = e.clientY;
-                const deltaY = currentY - startY;
-                
-                if (deltaY > 0) { // Only allow dragging down
-                    bottomSheet.style.transform = `translateY(${deltaY}px)`;
-                }
-            }
-            
-            function handleMouseUp() {
-                if (!isDragging) return;
-                isDragging = false;
-                bottomSheet.style.transition = '';
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-                
-                const deltaY = currentY - startY;
-                if (deltaY > 100) {
-                    bsOffcanvas.hide();
-                } else {
-                    bottomSheet.style.transform = '';
-                }
-            }
-            
-            document.addEventListener('touchmove', function(e) {
-                if (!isDragging) return;
-                currentY = e.touches[0].clientY;
-                const deltaY = currentY - startY;
-                
-                if (deltaY > 0) {
-                    bottomSheet.style.transform = `translateY(${deltaY}px)`;
-                }
-            }, { passive: true });
-            
-            document.addEventListener('touchend', function() {
-                if (!isDragging) return;
-                isDragging = false;
-                bottomSheet.style.transition = '';
-                
-                const deltaY = currentY - startY;
-                if (deltaY > 100) {
-                    bsOffcanvas.hide();
-                } else {
-                    bottomSheet.style.transform = '';
-                }
-            });
-        })();
-    </script>
-}
-
-    @* Unsplash Attribution (required by API terms) - uses preloaded property *@
-    @if (Model.DestinationImageAttribution != null && Model.DestinationImageAttribution.Value.Source == "Unsplash")
-    {
-        var attrib = Model.DestinationImageAttribution.Value;
-        <div class="text-center mt-4 image-attribution text-muted">
-            Photo by 
-            @if (!string.IsNullOrEmpty(attrib.PhotographerUrl))
-            {
-                <a href="@(attrib.PhotographerUrl)?utm_source=ai_travel_planner&utm_medium=referral" 
-                   target="_blank" rel="noopener" class="text-decoration-none">
-                    @(attrib.PhotographerName ?? "Unsplash")
-                </a>
-            }
-            else
-            {
-                <span>@(attrib.PhotographerName ?? "Unsplash")</span>
-            }
-            on 
-            <a href="https://unsplash.com?utm_source=ai_travel_planner&utm_medium=referral" 
-               target="_blank" rel="noopener" class="text-decoration-none">Unsplash</a>
-        </div>
-    }
-
-    <!-- Mobile bottom navigation -->
-    <!-- Custom mobile bottom nav -->
-    <nav class="custom-bottom-nav d-md-none" role="tablist" aria-label="Mobile navigation">
-        <button type="button" data-tab="plan" aria-selected="false" class="nav-btn">
-            <span class="icon-wrap">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M3 11.5V21a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V11.5a1 1 0 0 0-.553-.894l-8-4a1 1 0 0 0-.894 0l-8 4A1 1 0 0 0 3 11.5z"/></svg>
-            </span>
-            <span class="nav-label">Plan</span>
-        </button>
-        <button type="button" data-tab="map" aria-selected="true" class="nav-btn">
-            <span class="icon-wrap">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M3.5 6.5l7-3 7 3v11.92l-7 3-7-3V6.5zm7-1.38l-5 2.14v9.72l5 2.14 5-2.14V7.26l-5-2.14z"/></svg>
-            </span>
-            <span class="nav-label">Map</span>
-        </button>
-        <button type="button" data-tab="details" aria-selected="false" class="nav-btn">
-            <span class="icon-wrap">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/></svg>
-            </span>
-            <span class="nav-label">Details</span>
-        </button>
-        <button type="button" data-tab="chat" aria-selected="false" class="nav-btn">
-            <span class="icon-wrap">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
-            </span>
-            <span class="nav-label">AI Chat</span>
-        </button>
-    </nav>
-
-    <style>
-        /* ========== MAP TAB STYLES ========== */
-        
-        /* Desktop: 2-column professional layout */
-        @@media (min-width: 992px) {
-            #tab-map .row {
-                margin-left: -24px;
-                margin-right: -24px;
-            }
-            
-            #tab-map .col-lg-8,
-            #tab-map .col-lg-4 {
-                padding-left: 24px;
-                padding-right: 24px;
-            }
-            
-            .result-map {
-                height: 600px;
-                border-radius: 12px;
-                box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            }
-            
-            .map-sidebar {
-                position: sticky;
-                top: 80px;
-                max-height: calc(100vh - 100px);
-                overflow-y: auto;
-            }
-            
-            .destination-hero-card {
-                border-radius: 12px;
-                overflow: hidden;
-                border: none;
-            }
-            
-            .destination-hero-card img {
-                border-radius: 12px 12px 0 0;
-            }
-            
-            .day-chips-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-                gap: 8px;
-            }
-            
-            .day-chips-grid button {
-                padding: 8px 12px;
-                border-radius: 8px;
-                border: 1px solid #dee2e6;
-                background: white;
-                font-size: 0.875rem;
-                font-weight: 500;
-                transition: all 0.2s ease;
-                white-space: nowrap;
-            }
-            
-            .day-chips-grid button:hover {
-                background: #f8f9fa;
-                border-color: #198754;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            
-            .day-chips-grid button.active {
-                background: #198754;
-                color: white;
-                border-color: #198754;
-                font-weight: 600;
-            }
-        }
-        
-        /* Mobile: compact, scrollable, modern UI */
-        @@media (max-width: 991.98px) {
-            #tab-map .row {
-                margin-left: -12px;
-                margin-right: -12px;
-            }
-            
-            #tab-map .col-12 {
-                padding-left: 12px;
-                padding-right: 12px;
-            }
-            
-            .map-container-mobile {
-                height: 350px;
-                border-radius: 16px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-                margin-bottom: 16px;
-            }
-            
-            .destination-hero-card {
-                border-radius: 16px;
-                overflow: hidden;
-                margin-bottom: 16px;
-            }
-            
-            .destination-hero-card img {
-                height: 140px !important;
-            }
-            
-            .day-chips-container {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none;
-                margin: 0 -12px;
-                padding: 0 12px;
-            }
-            
-            .day-chips-container::-webkit-scrollbar {
-                display: none;
-            }
-            
-            .day-chips-grid {
-                display: flex;
-                gap: 8px;
-                padding-bottom: 4px;
-            }
-            
-            .day-chips-grid button {
-                flex: 0 0 auto;
-                padding: 8px 16px;
-                border-radius: 20px;
-                border: 1px solid #dee2e6;
-                background: white;
-                font-size: 0.875rem;
-                font-weight: 500;
-                white-space: nowrap;
-                transition: all 0.2s ease;
-            }
-            
-            .day-chips-grid button.active {
-                background: #198754;
-                color: white;
-                border-color: #198754;
-                font-weight: 600;
-                box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
-            }
-            
-            .search-input-mobile .input-group-text,
-            .search-input-mobile .form-control {
-                border-radius: 12px;
-                padding: 12px 16px;
-                font-size: 0.9375rem;
-            }
-            
-            .search-input-mobile .input-group-text {
-                border-top-right-radius: 0;
-                border-bottom-right-radius: 0;
-            }
-            
-            .search-input-mobile .form-control {
-                border-top-left-radius: 0;
-                border-bottom-left-radius: 0;
-            }
-            
-            .add-location-btn {
-                padding: 12px 16px;
-                border-radius: 12px;
-                font-weight: 600;
-                font-size: 0.9375rem;
-                box-shadow: 0 2px 8px rgba(25, 135, 84, 0.2);
-            }
-        }
-        
-        /* Common styles */
-        .map-sidebar .card {
-            border-radius: 12px;
-            border: 1px solid #e9ecef;
-        }
-        
-        .result-map {
-            width: 100%;
-        }
-
-        /* ========== DETAILS TAB STYLES ========== */
-        .details-hero-card {
-            border: none;
-            border-radius: 16px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        }
-
-        .detail-stat-card {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 16px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .detail-stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .stat-icon {
-            font-size: 2rem;
-            line-height: 1;
-        }
-
-        .stat-content {
-            flex: 1;
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: #6c757d;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-
-        .stat-value {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #212529;
-            margin-bottom: 2px;
-        }
-
-        .stat-subtext {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-
-        .detail-section-card {
-            border: none;
-            border-radius: 12px;
-            overflow: hidden;
-            transition: box-shadow 0.2s ease;
-        }
-
-        .detail-section-card:hover {
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
-        }
-
-        .detail-section-card .card-header {
-            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-            border-bottom: 2px solid #e9ecef;
-        }
-
-        .detail-icon {
-            font-size: 1.5rem;
-            line-height: 1;
-        }
-
-        .detail-section-card .list-group-item {
-            border-left: none;
-            border-right: none;
-            transition: background-color 0.2s ease;
-        }
-
-        .detail-section-card .list-group-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .detail-section-card .list-group-item:first-child {
-            border-top: none;
-        }
-
-        .detail-section-card .list-group-item:last-child {
-            border-bottom: none;
-        }
-
-        @@media (max-width: 767.98px) {
-            .details-hero-card .card-body {
-                padding: 1.5rem !important;
-            }
-
-            .detail-stat-card {
-                padding: 12px;
-            }
-
-            .stat-icon {
-                font-size: 1.75rem;
-            }
-
-            .stat-value {
-                font-size: 1.1rem;
-            }
-
-            .stat-subtext {
-                font-size: 0.75rem;
-            }
-
-            .detail-icon {
-                font-size: 1.25rem;
-            }
-        }
-        
-        /* Mobile bottom navigation styles - WHITE ICONS ON GREEN */
-        @@media (max-width: 767.98px) {
-            body {
-                padding-bottom: 80px;
-            }
-            
-            .mobile-bottom-nav {
-                box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
-                z-index: 1030;
-                background: white !important;
-                border-top: 1px solid rgba(0,0,0,0.08) !important;
-                padding: 0.25rem 0;
-            }
+            <!-- Page-specific styles moved to external file -->
             
             .mobile-bottom-nav button {
                 color: #94a3b8;
@@ -2119,4 +1653,3 @@ else
             loadPlanHistory();
         })();
     </script>
-}

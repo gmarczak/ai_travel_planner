@@ -166,20 +166,37 @@ namespace project.Services
         {
             try
             {
-                var cachedImage = new DestinationImage
+                // Check if image already exists to avoid tracking conflicts
+                var existing = await _context.DestinationImages
+                    .FirstOrDefaultAsync(di => di.Destination == normalizedDestination);
+
+                if (existing != null)
                 {
-                    Destination = normalizedDestination,
-                    ImageUrl = imageUrl,
-                    Source = source,
-                    PhotographerName = photographerName,
-                    PhotographerUrl = photographerUrl,
-                    CachedAt = DateTime.UtcNow,
-                    UsageCount = 1
-                };
+                    // Update existing image URL and metadata
+                    existing.ImageUrl = imageUrl;
+                    existing.Source = source;
+                    existing.PhotographerName = photographerName;
+                    existing.PhotographerUrl = photographerUrl;
+                    existing.CachedAt = DateTime.UtcNow;
+                    existing.UsageCount++;
+                }
+                else
+                {
+                    // Add new image
+                    var cachedImage = new DestinationImage
+                    {
+                        Destination = normalizedDestination,
+                        ImageUrl = imageUrl,
+                        Source = source,
+                        PhotographerName = photographerName,
+                        PhotographerUrl = photographerUrl,
+                        CachedAt = DateTime.UtcNow,
+                        UsageCount = 1
+                    };
+                    _context.DestinationImages.Add(cachedImage);
+                }
 
-                _context.DestinationImages.Add(cachedImage);
                 await _context.SaveChangesAsync();
-
                 _logger.LogInformation("Cached {Source} image for {Destination}", source, normalizedDestination);
             }
             catch (Exception ex)
@@ -242,7 +259,7 @@ namespace project.Services
         public async Task<Dictionary<string, string>> GetMultipleImagesAsync(IEnumerable<string> queries)
         {
             var results = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            
+
             if (queries == null || !queries.Any())
             {
                 return results;
@@ -264,7 +281,7 @@ namespace project.Services
             });
 
             var completed = await Task.WhenAll(tasks);
-            
+
             foreach (var kvp in completed)
             {
                 if (!string.IsNullOrEmpty(kvp.Value))

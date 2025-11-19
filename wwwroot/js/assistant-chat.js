@@ -1,5 +1,5 @@
 // AI Assistant Chat functionality
-(function() {
+(function () {
     const chatMessages = document.getElementById('chatMessages');
     const chatInput = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendChatBtn');
@@ -26,7 +26,7 @@
             .withAutomaticReconnect()
             .build();
 
-        connection.on("StreamStart", function() {
+        connection.on("StreamStart", function () {
             const msgDiv = document.createElement('div');
             msgDiv.className = 'alert alert-secondary mb-2 assistant-message';
             msgDiv.id = 'streaming-message';
@@ -35,7 +35,7 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 
-        connection.on("StreamChunk", function(chunk) {
+        connection.on("StreamChunk", function (chunk) {
             const streamingMsg = document.getElementById('streaming-message');
             if (streamingMsg) {
                 const content = streamingMsg.querySelector('.message-content');
@@ -44,7 +44,7 @@
             }
         });
 
-        connection.on("StreamEnd", function(fullResponse) {
+        connection.on("StreamEnd", function (fullResponse) {
             const streamingMsg = document.getElementById('streaming-message');
             if (streamingMsg) {
                 streamingMsg.removeAttribute('id');
@@ -52,7 +52,7 @@
             enableInput();
         });
 
-        connection.on("Error", function(errorMessage) {
+        connection.on("Error", function (errorMessage) {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'alert alert-danger mb-2';
             errorDiv.innerHTML = `<strong>❌ Error:</strong> ${errorMessage}`;
@@ -122,14 +122,14 @@
     }
 
     sendBtn.addEventListener('click', sendMessage);
-    chatInput.addEventListener('keypress', function(e) {
+    chatInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             sendMessage();
         }
     });
 
     document.querySelectorAll('[data-tab="chat"]').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             if (!connection) {
                 ensureConnection();
             }

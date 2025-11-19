@@ -120,7 +120,7 @@ Required JSON format:
                     StartDate = request.StartDate,
                     EndDate = request.EndDate,
                     NumberOfTravelers = request.NumberOfTravelers,
-                    Budget = request.Budget,
+                    Budget = request.Budget ?? 0m,
                     TravelPreferences = request.TravelPreferences ?? "",
                     CreatedAt = DateTime.Now,
                     GeneratedItinerary = itineraryBuilder.ToString(),
