@@ -53,13 +53,15 @@
 
                 foreach (var dest in defaultDestinations)
                 {
+                    var fullDestination = $"{dest.Name}, {dest.Country}";
                     <div class="col-12 col-md-6 col-lg-4">
-                        <a href="/TravelPlanner?destination=@Uri.EscapeDataString(dest.Key)"
+                        <a href="/TravelPlanner?destination=@Uri.EscapeDataString(fullDestination)"
                             class="destination-card-link text-decoration-none">
                             <div class="destination-card card h-100 border-0 shadow-sm">
                                 <div class="destination-image-wrapper position-relative">
                                     <img src="@(Model.DestinationImages.ContainsKey(dest.Key) ? Model.DestinationImages[dest.Key] : "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800")"
-                                        class="card-img-top destination-image" alt="@dest.Name, @dest.Country" loading="lazy">
+                                        class="card-img-top destination-image" alt="@dest.Name, @dest.Country" loading="lazy"
+                                        onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800';">
                                     <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3">
                                         <h5 class="text-white fw-bold mb-1">@dest.Name</h5>
                                         <p class="text-white-50 small mb-0">@dest.Country</p>
@@ -155,7 +157,8 @@
             <div class="col-12 col-md-6">
                 <div class="feature-image-wrapper">
                     <img src="@(Model.DestinationImages.ContainsKey("artificial intelligence technology") ? Model.DestinationImages["artificial intelligence technology"] : "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800")"
-                        class="img-fluid rounded shadow feature-image" alt="AI Planning Technology" loading="lazy">
+                        class="img-fluid rounded shadow feature-image" alt="AI Planning Technology" loading="lazy"
+                        onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800';">
                 </div>
             </div>
         </div>
@@ -185,7 +188,8 @@
             <div class="col-12 col-md-6">
                 <div class="feature-image-wrapper">
                     <img src="@(Model.DestinationImages.ContainsKey("map navigation gps") ? Model.DestinationImages["map navigation gps"] : "https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?w=800")"
-                        class="img-fluid rounded shadow feature-image" alt="Interactive Maps" loading="lazy">
+                        class="img-fluid rounded shadow feature-image" alt="Interactive Maps" loading="lazy"
+                        onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?w=800';">
                 </div>
             </div>
         </div>
@@ -216,7 +220,8 @@
                 <div class="feature-image-wrapper">
                     <img src="@(Model.DestinationImages.ContainsKey("hotel restaurant dining") ? Model.DestinationImages["hotel restaurant dining"] : "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800")"
                         class="img-fluid rounded shadow feature-image" alt="Personalized Recommendations"
-                        loading="lazy">
+                        loading="lazy"
+                        onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800';">
                 </div>
             </div>
         </div>
