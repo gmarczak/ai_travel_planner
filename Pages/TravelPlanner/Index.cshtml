@@ -52,8 +52,7 @@
                                     <input asp-for="TravelRequest.Destination" id="destinationInput"
                                         class="form-control form-control-sm form-control-md-normal"
                                         placeholder="e.g. Paris, Tokyo, New York..." autocomplete="off"
-                                        autocapitalize="words" list="destinationSuggestions" required />
-                                    <datalist id="destinationSuggestions"></datalist>
+                                        autocapitalize="words" required />
                                     <span asp-validation-for="TravelRequest.Destination"
                                         class="text-danger small"></span>
                                 </div>
@@ -169,6 +168,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/destination-autocomplete.js" asp-append-version="true"></script>
     <script src="https://cdn.jsdelivr.net/npm/%40microsoft/signalr@7.0.14/dist/browser/signalr.min.js"
         onerror="console.warn('Primary SignalR CDN failed');"></script>
     <script>

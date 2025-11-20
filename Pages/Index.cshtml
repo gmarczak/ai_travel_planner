@@ -22,9 +22,8 @@
                             </span>
                             <input type="text" name="destination" id="homeDestinationInput"
                                 class="form-control border-0 ps-2" placeholder="Where do you want to go?"
-                                aria-label="Search destination" autocomplete="off" list="homeDestinationSuggestions"
+                                aria-label="Search destination" autocomplete="off"
                                 autocapitalize="words" required>
-                            <datalist id="homeDestinationSuggestions"></datalist>
                         </div>
                     </form>
                 </div>
@@ -225,38 +224,5 @@
 </section>
 
 @section Scripts {
-    <script>
-        // Home page destination autocomplete
-        document.addEventListener('DOMContentLoaded', function () {
-            const homeInput = document.getElementById('homeDestinationInput');
-            const homeDatalist = document.getElementById('homeDestinationSuggestions');
-            let homeDebounceTimer;
-
-            if (homeInput && homeDatalist) {
-                homeInput.addEventListener('input', function () {
-                    clearTimeout(homeDebounceTimer);
-                    const query = this.value.trim();
-
-                    if (query.length < 2) {
-                        homeDatalist.innerHTML = '';
-                        return;
-                    }
-
-                    homeDebounceTimer = setTimeout(async () => {
-                        try {
-                            const response = await fetch(`/TravelPlanner/Index?handler=DestinationSuggestions&query=${encodeURIComponent(query)}`);
-                            if (response.ok) {
-                                const suggestions = await response.json();
-                                homeDatalist.innerHTML = suggestions
-                                    .map(dest => `<option value="${dest}">`)
-                                    .join('');
-                            }
-                        } catch (error) {
-                            console.error('Error fetching destination suggestions:', error);
-                        }
-                    }, 300);
-                });
-            }
-        });
-    </script>
+    <script src="~/js/destination-autocomplete.js" asp-append-version="true"></script>
 }
