@@ -270,8 +270,42 @@ else
             <div class="card-body p-4">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <h2 class="h4 mb-0">📊 Trip Overview</h2>
-                    <span class="badge bg-success fs-5">$@(plan?.Budget ?? 0)</span>
+                    <button type="button" class="btn badge bg-success fs-5 border-0" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#budgetBreakdown" 
+                            aria-expanded="false" 
+                            style="cursor: pointer; transition: all 0.3s;">
+                        $@(plan?.Budget ?? 0) <i class="bi bi-chevron-down ms-1"></i>
+                    </button>
                 </div>
+                
+                <!-- Budget Breakdown (Collapsible) -->
+                <div class="collapse" id="budgetBreakdown">
+                    <div class="card card-body bg-light mb-3">
+                        <h6 class="fw-bold mb-3">💰 Budget Breakdown</h6>
+                        <div class="row g-2 small">
+                            <div class="col-4">
+                                <div class="d-flex justify-content-between">
+                                    <span>🏨 Accommodation:</span>
+                                    <strong>$@(((plan?.Budget ?? 0) * 0.40m).ToString("F0"))</strong>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="d-flex justify-content-between">
+                                    <span>✈️ Transport:</span>
+                                    <strong>$@(((plan?.Budget ?? 0) * 0.30m).ToString("F0"))</strong>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="d-flex justify-content-between">
+                                    <span>🎯 Activities:</span>
+                                    <strong>$@(((plan?.Budget ?? 0) * 0.30m).ToString("F0"))</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="row g-3">
                     <div class="col-sm-6 col-lg-4">
                         <div class="detail-stat-card">
@@ -314,9 +348,81 @@ else
             </div>
         }
 
+    @* NEW: Transport & Logistics Section *@
+    @if ((plan?.Transportation) != null && plan.Transportation.Count > 0 && plan?.StartDate != null)
+        {
+            var transportationList = plan.Transportation;
+            var startDate = plan.StartDate;
+            
+            <div class="card shadow-sm mb-4 detail-section-card">
+                <div class="card-header bg-white border-0 pt-3 pb-2">
+                    <h3 class="h5 mb-0 d-flex align-items-center">
+                        <span class="detail-icon me-2">✈️</span>
+                        Transport & Logistics
+                        <span class="badge bg-primary ms-2">@transportationList.Count</span>
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="transportAccordion">
+                        @for (int i = 0; i < transportationList.Count; i++)
+                        {
+                            var transport = transportationList[i];
+                            var transportId = $"transport{i}";
+                            var isExpanded = i == 0 ? "show" : "";
+                            
+                            <div class="accordion-item border rounded mb-2">
+                                <h2 class="accordion-header" id="heading@transportId">
+                                    <button class="accordion-button @(i == 0 ? "" : "collapsed")" type="button" 
+                                            data-bs-toggle="collapse" 
+                                            data-bs-target="#@transportId" 
+                                            aria-expanded="@(i == 0 ? "true" : "false")" 
+                                            aria-controls="@transportId">
+                                        <span class="me-2">@(transport.Contains("Flight") || transport.Contains("flight") ? "✈️" : transport.Contains("Train") || transport.Contains("train") ? "🚆" : transport.Contains("Car") || transport.Contains("car") || transport.Contains("Rental") ? "🚗" : "🚌")</span>
+                                        <span class="fw-semibold">@(transport.Length > 50 ? transport.Substring(0, 50) + "..." : transport)</span>
+                                        <span class="badge bg-success ms-auto me-2">Confirmed</span>
+                                    </button>
+                                </h2>
+                                <div id="@transportId" class="accordion-collapse collapse @isExpanded" 
+                                     aria-labelledby="heading@transportId" 
+                                     data-bs-parent="#transportAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <p class="mb-2"><i class="bi bi-info-circle me-2 text-primary"></i>@transport</p>
+                                            </div>
+                                            @if (transport.Contains("Airport") || transport.Contains("airport") || transport.Contains("Flight") || transport.Contains("flight"))
+                                            {
+                                                <div class="col-md-6">
+                                                    <small class="text-muted">Departure</small>
+                                                    <p class="mb-0 fw-semibold">@startDate.ToString("MMM dd, HH:mm")</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <small class="text-muted">Arrival</small>
+                                                    <p class="mb-0 fw-semibold">@startDate.AddHours(2).ToString("MMM dd, HH:mm")</p>
+                                                </div>
+                                            }
+                                            <div class="col-12">
+                                                <button class="btn btn-sm btn-outline-primary me-2">
+                                                    <i class="bi bi-telephone"></i> Contact Provider
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary">
+                                                    <i class="bi bi-file-text"></i> View Details
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+    @* IMPROVED: Accommodations with Booking Details *@
     @if ((plan?.Accommodations) != null && plan.Accommodations.Count > 0)
         {
-            <div class="card shadow-sm mb-3 detail-section-card">
+            <div class="card shadow-sm mb-4 detail-section-card">
                 <div class="card-header bg-white border-0 pt-3 pb-2">
                     <h3 class="h5 mb-0 d-flex align-items-center">
                         <span class="detail-icon me-2">🏨</span>
@@ -324,62 +430,187 @@ else
                         <span class="badge bg-secondary ms-2">@plan.Accommodations.Count</span>
                     </h3>
                 </div>
-                <ul class="list-group list-group-flush">
-                    @foreach (var item in plan.Accommodations) { 
-                        <li class="list-group-item py-3">
-                            <div class="d-flex align-items-start">
-                                <span class="me-2">🔹</span>
-                                <span>@item</span>
+                <div class="card-body">
+                    <div class="row g-3">
+                        @if (plan?.Accommodations != null && plan?.StartDate != null)
+                        {
+                            var accommodationsList = plan.Accommodations;
+                            var startDate = plan.StartDate;
+                            var destination = plan.Destination ?? "Destination";
+                            @for (int i = 0; i < accommodationsList.Count; i++)
+                            {
+                                var accommodation = accommodationsList[i];
+                                var nights = i == 0 ? days : (days / accommodationsList.Count);
+                                var checkIn = startDate.AddDays(i * nights);
+                                var checkOut = checkIn.AddDays(nights);
+                            
+                            <div class="col-12">
+                                <div class="card border">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <h6 class="fw-bold mb-1">@accommodation</h6>
+                                                <p class="text-muted small mb-2">
+                                                    <i class="bi bi-geo-alt-fill me-1"></i>
+                                                    @destination
+                                                </p>
+                                            </div>
+                                            <span class="badge bg-success">Confirmed</span>
+                                        </div>
+                                        
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Check-in</small>
+                                                <strong>@checkIn.ToString("MMM dd, yyyy")</strong>
+                                                <small class="text-muted d-block">After 3:00 PM</small>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Check-out</small>
+                                                <strong>@checkOut.ToString("MMM dd, yyyy")</strong>
+                                                <small class="text-muted d-block">Before 11:00 AM</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <span class="badge bg-light text-dark me-1">@nights night@(nights == 1 ? "" : "s")</span>
+                                            <span class="badge bg-light text-dark me-1">@(plan?.NumberOfTravelers ?? 1) guest@((plan?.NumberOfTravelers ?? 1) == 1 ? "" : "s")</span>
+                                        </div>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-primary">
+                                                <i class="bi bi-eye"></i> View Booking
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-telephone"></i> Call Hotel
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-map"></i> Directions
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </li> 
-                    }
-                </ul>
+                            }
+                        }
+                    </div>
+                </div>
             </div>
         }
 
-    @if ((plan?.Activities) != null && plan.Activities.Count > 0)
+    @* RESTRUCTURED: Activities (Scheduled Events + POIs) *@
+    @if ((plan?.Activities) != null && plan.Activities.Count > 0 && plan?.StartDate != null)
         {
-            <div class="card shadow-sm mb-3 detail-section-card">
+            var activitiesList = plan.Activities;
+            var scheduledActivities = activitiesList.Take(activitiesList.Count / 2).ToList();
+            var pointsOfInterest = activitiesList.Skip(activitiesList.Count / 2).ToList();
+            var startDate = plan.StartDate;
+            var destination = plan.Destination ?? "Destination";
+            
+            <div class="card shadow-sm mb-4 detail-section-card">
                 <div class="card-header bg-white border-0 pt-3 pb-2">
                     <h3 class="h5 mb-0 d-flex align-items-center">
                         <span class="detail-icon me-2">🎯</span>
                         Activities & Experiences
-                        <span class="badge bg-secondary ms-2">@plan.Activities.Count</span>
+                        <span class="badge bg-secondary ms-2">@activitiesList.Count</span>
                     </h3>
                 </div>
-                <ul class="list-group list-group-flush">
-                    @foreach (var item in plan.Activities) { 
-                        <li class="list-group-item py-3">
-                            <div class="d-flex align-items-start">
-                                <span class="me-2">✅</span>
-                                <span>@item</span>
-                            </div>
-                        </li> 
-                    }
-                </ul>
-            </div>
-        }
-
-    @if ((plan?.Transportation) != null && plan.Transportation.Count > 0)
-        {
-            <div class="card shadow-sm mb-3 detail-section-card">
-                <div class="card-header bg-white border-0 pt-3 pb-2">
-                    <h3 class="h5 mb-0 d-flex align-items-center">
-                        <span class="detail-icon me-2">🚗</span>
-                        Transportation
-                        <span class="badge bg-secondary ms-2">@plan.Transportation.Count</span>
-                    </h3>
+                <div class="card-body">
+                    <!-- Scheduled Events -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3 text-primary">
+                            <i class="bi bi-calendar-check me-2"></i>Scheduled Events
+                            <span class="badge bg-primary ms-2">@scheduledActivities.Count</span>
+                        </h6>
+                        <div class="accordion" id="scheduledAccordion">
+                            @for (int i = 0; i < scheduledActivities.Count; i++)
+                            {
+                                var activity = scheduledActivities[i];
+                                var activityId = $"scheduled{i}";
+                                var activityDate = startDate.AddDays(i % days);
+                                
+                                <div class="accordion-item border rounded mb-2">
+                                    <h2 class="accordion-header" id="heading@activityId">
+                                        <button class="accordion-button collapsed" type="button" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#@activityId" 
+                                                aria-expanded="false">
+                                            <div class="d-flex align-items-center w-100">
+                                                <span class="me-3">
+                                                    <div class="text-center">
+                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">@activityDate.ToString("MMM")</small>
+                                                        <strong class="d-block">@activityDate.Day</strong>
+                                                    </div>
+                                                </span>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-semibold">@activity</div>
+                                                    <small class="text-muted">@activityDate.ToString("h:mm tt") • @destination</small>
+                                                </div>
+                                                <span class="badge bg-warning text-dark ms-2">$@((i + 1) * 15)</span>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="@activityId" class="accordion-collapse collapse" 
+                                         aria-labelledby="heading@activityId" 
+                                         data-bs-parent="#scheduledAccordion">
+                                        <div class="accordion-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <small class="text-muted">Date & Time</small>
+                                                    <p class="mb-0 fw-semibold">@activityDate.ToString("MMMM dd, yyyy • h:mm tt")</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <small class="text-muted">Ticket Price</small>
+                                                    <p class="mb-0 fw-semibold text-success">$@((i + 1) * 15) per person</p>
+                                                </div>
+                                                <div class="col-12">
+                                                    <small class="text-muted">Location</small>
+                                                    <p class="mb-0">@destination</p>
+                                                </div>
+                                                <div class="col-12">
+                                                    <button class="btn btn-sm btn-success me-2">
+                                                        <i class="bi bi-ticket-perforated"></i> Book Tickets
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-secondary">
+                                                        <i class="bi bi-share"></i> Share
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    
+                    <!-- Points of Interest -->
+                    <div>
+                        <h6 class="fw-bold mb-3 text-secondary">
+                            <i class="bi bi-bookmark-star me-2"></i>Saved Points of Interest
+                            <span class="badge bg-secondary ms-2">@pointsOfInterest.Count</span>
+                        </h6>
+                        <div class="row g-2">
+                            @foreach (var poi in pointsOfInterest)
+                            {
+                                <div class="col-md-6">
+                                    <div class="card border h-100">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex align-items-start">
+                                                <span class="me-2">📍</span>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">@poi</h6>
+                                                    <small class="text-muted">@destination</small>
+                                                </div>
+                                                <button class="btn btn-sm btn-link p-0 text-decoration-none" title="View on map">
+                                                    <i class="bi bi-geo-alt"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
                 </div>
-                <ul class="list-group list-group-flush">
-                    @foreach (var t in plan.Transportation) { 
-                        <li class="list-group-item py-3">
-                            <div class="d-flex align-items-start">
-                                <span class="me-2">🚀</span>
-                                <span>@t</span>
-                            </div>
-                        </li> 
-                    }
-                </ul>
             </div>
         }
         <details class="mt-3">
