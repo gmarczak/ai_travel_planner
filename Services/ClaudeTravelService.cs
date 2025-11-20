@@ -40,16 +40,20 @@ namespace project.Services
             // SYSTEM & USER PROMPTS
             var systemPrompt = $"You are an expert travel planner. Create detailed, personalized travel itineraries. Always respond in JSON as specified. Respond in English (en-US).";
             var budgetValue = request.Budget ?? 0m;
-            var userPrompt = $@"Create a detailed {days}-day travel plan for {request.Destination} for {request.NumberOfTravelers} travelers with a budget of ${budgetValue}.
+            var userPrompt = $@\"Create a detailed {days}-day travel plan for {request.Destination} for {request.NumberOfTravelers} travelers with a budget of ${budgetValue}.
 
 Trip details:
 - Dates: {request.StartDate:MMM dd, yyyy} to {request.EndDate:MMM dd, yyyy}
 - Travelers: {request.NumberOfTravelers}
 - Budget: ${request.Budget}
 - Trip type: {tripType}
-- Additional preferences: {preferences}
 
-Respond with a JSON object. Return an object with these keys (names in English): 'itinerary' (the full day-by-day itinerary as a single string with line breaks), 'accommodations' (array of hotels), 'activities' (array of activities), 'transportation' (array of transport tips).";
+⚠️ CRITICAL USER PREFERENCES (must be incorporated throughout EVERY day):
+{preferences}
+
+Ensure all activities, restaurants, and experiences in the itinerary strongly reflect these preferences.
+
+Respond with a JSON object. Return an object with these keys (names in English): 'itinerary' (the full day-by-day itinerary as a single string with line breaks), 'accommodations' (array of hotels), 'activities' (array of activities), 'transportation' (array of transport tips).\";
 
             var payload = new AnthropicMessageRequest
             {

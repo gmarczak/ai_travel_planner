@@ -59,9 +59,20 @@
                             class="destination-card-link text-decoration-none">
                             <div class="destination-card card h-100 border-0 shadow-sm">
                                 <div class="destination-image-wrapper position-relative">
-                                    <img src="@(Model.DestinationImages.ContainsKey(dest.Key) ? Model.DestinationImages[dest.Key] : "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800")"
+                                    @{
+                                        var fallbackUrls = new Dictionary<string, string> {
+                                            {"paris", "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800"},
+                                            {"tokyo", "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800"},
+                                            {"new york", "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800"},
+                                            {"barcelona", "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=800"},
+                                            {"rome", "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800"},
+                                            {"london", "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800"}
+                                        };
+                                        var fallbackUrl = fallbackUrls.ContainsKey(dest.Key) ? fallbackUrls[dest.Key] : "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800";
+                                    }
+                                    <img src="@(Model.DestinationImages.ContainsKey(dest.Key) ? Model.DestinationImages[dest.Key] : fallbackUrl)"
                                         class="card-img-top destination-image" alt="@dest.Name, @dest.Country" loading="lazy"
-                                        onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800';">
+                                        onerror="this.onerror=null; this.src='@fallbackUrl';">
                                     <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3">
                                         <h5 class="text-white fw-bold mb-1">@dest.Name</h5>
                                         <p class="text-white-50 small mb-0">@dest.Country</p>

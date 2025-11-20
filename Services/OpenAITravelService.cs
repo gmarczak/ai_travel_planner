@@ -123,7 +123,11 @@ namespace project.Services
 Task: Suggest the top {days * 4} must-see places for a {days}-day trip to {request.Destination}.
 - Travelers: {request.NumberOfTravelers}
 - Trip type: {tripType}
-- Preferences: {preferences}
+
+⚠️ CRITICAL: User preferences that MUST influence place selection:
+{preferences}
+
+Select places that match these preferences.
 
 Required JSON format:
 {{
@@ -402,7 +406,11 @@ Task: Create a detailed {days}-day travel plan for {request.Destination}.
 - Budget: ${budgetValue} (approximately {(budgetValue > 0 ? (budgetValue / request.NumberOfTravelers / days).ToString("F0") : "0")} per person per day)
 - Interests: {interestsText}
 - Trip type: {tripType}
-- Preferences: {preferences}
+
+⚠️ IMPORTANT USER PREFERENCES (must be incorporated throughout the itinerary):
+{preferences}
+
+Ensure activities, restaurants, and experiences align with the above preferences in EVERY day of the itinerary.
 
 Required JSON format:
 {{
