@@ -48,8 +48,22 @@ public class IndexModel : PageModel
             "artificial intelligence technology", "map navigation gps", "hotel restaurant dining"
         };
 
+        // High-quality fallback URLs for each destination
+        var fallbackUrls = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            {"paris", "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&auto=format&fit=crop"},
+            {"tokyo", "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&auto=format&fit=crop"},
+            {"new york", "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&auto=format&fit=crop"},
+            {"barcelona", "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=800&auto=format&fit=crop"},
+            {"rome", "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&auto=format&fit=crop"},
+            {"london", "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&auto=format&fit=crop"},
+            {"artificial intelligence technology", "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop"},
+            {"map navigation gps", "https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?w=800&auto=format&fit=crop"},
+            {"hotel restaurant dining", "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop"}
+        };
+
         // Use cache for pre-loaded images with 1-hour expiration
-        const string imagesCacheKey = "HomePage_DestinationImages";
+        const string imagesCacheKey = "HomePage_DestinationImages_v2"; // Changed key to force refresh
         DestinationImages = await _cache.GetOrCreateAsync(imagesCacheKey, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
@@ -61,11 +75,16 @@ public class IndexModel : PageModel
                 try
                 {
                     var imageUrl = await _imageService.GetDestinationImageAsync(key);
-                    return (key, imageUrl ?? "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800");
+                    // Use fetched image if valid, otherwise use fallback
+                    if (!string.IsNullOrWhiteSpace(imageUrl) && imageUrl.StartsWith("http"))
+                    {
+                        return (key, imageUrl);
+                    }
+                    return (key, fallbackUrls.GetValueOrDefault(key, "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&auto=format&fit=crop"));
                 }
                 catch
                 {
-                    return (key, "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800");
+                    return (key, fallbackUrls.GetValueOrDefault(key, "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&auto=format&fit=crop"));
                 }
             });
 
