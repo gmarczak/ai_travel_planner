@@ -52,7 +52,11 @@
         // (addInteractiveMarker will handle its own InfoWindow)
         if (point.infoHtml && !point._skipAutoInfo) {
             const info = new google.maps.InfoWindow({ content: point.infoHtml });
-            marker.addListener("click", () => info.open({ anchor: marker, map }));
+            marker.addListener("click", () => {
+                if (activeInfoWindow) activeInfoWindow.close();
+                info.open({ anchor: marker, map });
+                activeInfoWindow = info;
+            });
         }
         return marker;
     }
@@ -78,7 +82,11 @@
                 content.appendChild(btnWrap);
             }
             const info = new google.maps.InfoWindow({ content });
-            marker.addListener('click', () => info.open({ anchor: marker, map }));
+            marker.addListener('click', () => {
+                if (activeInfoWindow) activeInfoWindow.close();
+                info.open({ anchor: marker, map });
+                activeInfoWindow = info;
+            });
         }
         return marker;
     }
@@ -126,6 +134,9 @@
             getLayer(name) { return layers[name]; }
         };
     }
+
+    // Global variable to track active InfoWindow
+    let activeInfoWindow = null;
 
     window.gm_authFailure = function () {
         console.error("Google Maps authentication failure.");

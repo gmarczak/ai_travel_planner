@@ -471,3 +471,164 @@
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
+/* ========== MAP POI LIST & INTERACTIONS ========== */
+/* Compact Nav Pills for Day Filter */
+#map-controls.nav-pills .nav-link {
+    transition: all 0.2s ease;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    background-color: #fff;
+}
+
+#map-controls.nav-pills .nav-link:hover {
+    background-color: #f8f9fa;
+    border-color: #198754;
+    transform: translateY(-1px);
+}
+
+#map-controls.nav-pills .nav-link.active {
+    background-color: #198754;
+    border-color: #198754;
+    box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
+}
+
+/* POI List Styling */
+.poi-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.poi-item {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border-left: 3px solid transparent !important;
+}
+
+.poi-item:hover {
+    background-color: #f8f9fa !important;
+    border-left-color: currentColor !important;
+    transform: translateX(4px);
+}
+
+.poi-item:active {
+    transform: translateX(2px);
+}
+
+.poi-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing !important;
+}
+
+.poi-item.dragover {
+    background-color: #e7f5ff !important;
+    border-left: 3px solid #0066cc !important;
+}
+
+/* Remove button hover effect */
+.poi-item .remove-item-btn {
+    transition: all 0.2s ease;
+}
+
+.poi-item .remove-item-btn:hover {
+    opacity: 1 !important;
+    transform: scale(1.1);
+}
+
+/* Hover background utility */
+.hover-bg-white {
+    transition: background-color 0.2s ease;
+}
+
+.hover-bg-white:hover {
+    background-color: white !important;
+}
+
+/* Custom scrollbar for POI list */
+.poi-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.poi-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.poi-list::-webkit-scrollbar-thumb {
+    background: #198754;
+    border-radius: 10px;
+}
+
+.poi-list::-webkit-scrollbar-thumb:hover {
+    background: #157347;
+}
+
+/* Responsive adjustments for POI list */
+@media (max-width: 991.98px) {
+    .poi-list {
+        max-height: 300px !important;
+    }
+    
+    .poi-item {
+        padding: 10px 12px !important;
+    }
+    
+    #map-controls.nav-pills {
+        font-size: 12px;
+    }
+    
+    #map-controls.nav-pills .nav-link {
+        padding: 5px 10px !important;
+    }
+    
+    /* Mobile day filter chips */
+    #map-controls-mobile {
+        gap: 10px !important;
+        padding: 0 16px 12px !important;
+    }
+    
+    #map-controls-mobile .badge {
+        font-size: 13px !important;
+        padding: 10px 16px !important;
+        margin-right: 12px;
+    }
+    
+    #map-controls-mobile button {
+        transition: all 0.15s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        font-size: 13px !important;
+        padding: 10px 18px !important;
+        min-height: 42px;
+        white-space: nowrap;
+        border-radius: 20px !important;
+        font-weight: 500;
+    }
+    
+    #map-controls-mobile button.active,
+    #map-controls-mobile button.btn-primary {
+        box-shadow: 0 2px 6px rgba(25, 135, 84, 0.25);
+        font-weight: 600;
+    }
+    
+    /* Mobile bottom sheet adjustments */
+    #bottom-sheet-day-title {
+        color: #495057;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    
+    #bottom-sheet-day-title .badge {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+    
+    .result-map.map-container-mobile {
+        height: 450px;
+        border-radius: 12px;
+    }
+    
+    #side-panel-mobile .poi-list {
+        max-height: 350px !important;
+    }
+}

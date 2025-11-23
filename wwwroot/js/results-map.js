@@ -8,6 +8,9 @@
     let markerClusterer = null;
     const polylines = [];
     let selectedDay = null;
+    let directionsService = null;
+    let directionsRenderer = null;
+    const directionsRenderers = {};
 
     function showLoadingSpinner(show) {
         const mapEl = document.getElementById('plan-map');
@@ -71,6 +74,8 @@
         geocoder = new google.maps.Geocoder();
         gmap = GoogleMap.createMap('plan-map', { center: { lat: 52.0, lng: 19.0 }, zoom: 5 });
         layerManager = GoogleMapExt.createLayerManager(gmap);
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer({ map: gmap, suppressMarkers: true });
 
         // Hide initial loading indicator now that map is created
         const loadingEl = document.getElementById('map-loading');
@@ -253,10 +258,9 @@
 
         if (planMarkers.length) GoogleMap.fitToMarkers(gmap, planMarkers);
 
-        // Set default view to "All Days" instead of Day 1
-        if (parsed.length) {
-            setDayFilter(null); // null = show all days
-        }
+        // Set default view to All Days
+        setDayFilter(null); // Show all days by default
+        renderSidePanel(null); // Show All Days overview in sidebar
 
         if (planMarkers.length) GoogleMap.fitToMarkers(gmap, planMarkers);
     }
@@ -269,26 +273,82 @@
 
     // UI helpers
     function createLayerControls(dayCount) {
-        const container = document.getElementById('map-controls');
-        if (!container) return;
-        // Clear
-        container.innerHTML = '';
+        // Create controls for both desktop and mobile
+        const containers = [
+            document.getElementById('map-controls'),
+            document.getElementById('map-controls-mobile')
+        ];
 
-        // ALL DAYS button
-        const allBtn = document.createElement('button');
-        allBtn.textContent = 'All Days';
-        allBtn.setAttribute('data-day', 'all');
-        allBtn.addEventListener('click', () => setDayFilter(null));
-        container.appendChild(allBtn);
+        containers.forEach(container => {
+            if (!container) return;
+            
+            // Clear and set up as nav pills
+            container.innerHTML = '';
+            
+            // Check if it's mobile version
+            const isMobile = container.id === 'map-controls-mobile';
+            
+            if (!isMobile) {
+                container.className = 'nav nav-pills nav-fill mb-3';
+                container.style.cssText = 'flex-wrap: wrap; gap: 4px;';
+            } else {
+                container.className = 'day-chips-grid';
+                container.style.cssText = 'display: flex; gap: 8px; padding: 0 12px 8px;';
+            }
 
-        // Individual day buttons
-        for (let i = 1; i <= dayCount; i++) {
-            const b = document.createElement('button');
-            b.textContent = `Day ${i}`;
-            b.setAttribute('data-day', i);
-            b.addEventListener('click', () => setDayFilter(i));
-            container.appendChild(b);
-        }
+            // ALL DAYS overview badge (non-clickable, static)
+            // Count total items across all days
+            let totalItems = 0;
+            for (const [name, layer] of Object.entries(dayLayers)) {
+                if (layer.items) totalItems += layer.items.length;
+            }
+            
+            // Always show badge with total count
+            if (isMobile) {
+                const badge = document.createElement('div');
+                badge.className = 'badge bg-secondary';
+                badge.style.cssText = 'font-size: 13px; padding: 10px 16px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;';
+                badge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/></svg> All Days (${totalItems} stops)`;
+                container.appendChild(badge);
+            } else {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-light text-dark';
+                badge.style.cssText = 'font-size: 12px; padding: 8px 12px; align-self: center;';
+                badge.textContent = `All Days (${totalItems} total stops)`;
+                container.appendChild(badge);
+            }
+
+            // Individual day tabs
+            for (let i = 1; i <= dayCount; i++) {
+                const li = document.createElement('li');
+                li.className = isMobile ? '' : 'nav-item';
+                const b = document.createElement('button');
+                b.className = isMobile ? 'btn btn-sm btn-outline-primary' : 'nav-link';
+                
+                // Add color indicator circle for each day
+                const dayName = `Day ${i}`;
+                const layer = dayLayers[dayName];
+                const dayColor = layer ? layer.color : '#6c757d';
+                const itemCount = layer && layer.items ? layer.items.length : 0;
+                
+                if (isMobile) {
+                    b.innerHTML = `<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${dayColor}; margin-right: 6px;"></span>Day ${i} (${itemCount})`;
+                } else {
+                    b.innerHTML = `<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${dayColor}; margin-right: 5px;"></span>Day ${i}`;
+                }
+                
+                b.style.cssText = isMobile ? 'font-size: 12px; padding: 6px 14px; white-space: nowrap; border-radius: 20px;' : 'font-size: 13px; padding: 6px 12px;';
+                b.setAttribute('data-day', i);
+                b.addEventListener('click', () => setDayFilter(i));
+                
+                if (isMobile) {
+                    container.appendChild(b);
+                } else {
+                    li.appendChild(b);
+                    container.appendChild(li);
+                }
+            }
+        });
 
         // Initialize Places Autocomplete for the sidebar search input
         let autocomplete = null;
@@ -315,7 +375,7 @@
             } catch (e) { console.warn('Autocomplete init failed', e); }
         }
 
-        // Wire up Add button
+        // Wire up Add button (desktop)
         const addBtn = document.getElementById('add-location-btn');
         if (addBtn) {
             addBtn.addEventListener('click', () => {
@@ -336,6 +396,47 @@
             });
         }
 
+        // Wire up Add button (mobile)
+        const addBtnMobile = document.getElementById('add-location-btn-mobile');
+        const inputMobile = document.getElementById('location-search-mobile');
+        if (addBtnMobile && inputMobile) {
+            // Initialize autocomplete for mobile input
+            let autocompleteMobile;
+            try {
+                autocompleteMobile = new google.maps.places.Autocomplete(inputMobile, {
+                    fields: ['place_id', 'name', 'geometry', 'photos', 'rating', 'formatted_address', 'types', 'formatted_phone_number', 'opening_hours']
+                });
+                autocompleteMobile.addListener('place_changed', () => {
+                    const place = autocompleteMobile.getPlace();
+                    if (place && place.place_id) {
+                        const svc = new google.maps.places.PlacesService(gmap);
+                        svc.getDetails({ placeId: place.place_id, fields: ['place_id', 'name', 'geometry', 'photos', 'rating', 'formatted_address', 'types', 'formatted_phone_number', 'opening_hours'] }, (details, status) => {
+                            if (status === google.maps.places.PlacesServiceStatus.OK && details) {
+                                addPlaceResultToMap(details);
+                            } else {
+                                addPlaceResultToMap(place);
+                            }
+                        });
+                    }
+                });
+            } catch (e) { console.warn('Mobile autocomplete init failed', e); }
+
+            addBtnMobile.addEventListener('click', () => {
+                if (inputMobile.value.trim()) {
+                    const place = autocompleteMobile && autocompleteMobile.getPlace();
+                    if (place && place.place_id) {
+                        const svc = new google.maps.places.PlacesService(gmap);
+                        svc.getDetails({ placeId: place.place_id, fields: ['place_id', 'name', 'geometry', 'photos', 'rating', 'formatted_address', 'types', 'formatted_phone_number', 'opening_hours'] }, (details, status) => {
+                            if (status === google.maps.places.PlacesServiceStatus.OK && details) {
+                                addPlaceResultToMap(details);
+                                inputMobile.value = '';
+                            }
+                        });
+                    }
+                }
+            });
+        }
+
         // Attach autocomplete when maps API is ready (or try now)
         if (window.google && window.google.maps && window.google.maps.places) initAutocomplete();
         // Also expose to global callback in case maps loads later
@@ -343,61 +444,194 @@
     }
 
     function setDayFilter(dayNum) {
+        // Clear all direction renderers first
+        for (const key in directionsRenderers) {
+            if (directionsRenderers[key]) {
+                directionsRenderers[key].setMap(null);
+            }
+        }
+
+        // Collect bounds for fitBounds
+        const bounds = new google.maps.LatLngBounds();
+        let hasVisibleMarkers = false;
+
         // show only markers and polylines for dayNum (null => all)
         for (const name in dayLayers) {
             const layer = dayLayers[name];
             const show = !dayNum || name.toLowerCase().includes(String(dayNum));
-            layerManager.setVisible(name, show);
-
-            // Update marker appearance based on filter
+            
+            // Show/hide markers
             if (layer.items) {
                 layer.items.forEach((it, idx) => {
                     if (!it.marker) return;
+                    it.marker.setVisible(show);
 
-                    if (dayNum) {
-                        // Individual day view: show numbers in sequence
+                    if (show) {
+                        hasVisibleMarkers = true;
+                        bounds.extend(new google.maps.LatLng(it.lat, it.lng));
+                    }
+
+                    if (dayNum && show) {
+                        // Individual day view: show numbers in sequence with larger pins
                         it.marker.setLabel({
                             text: String(idx + 1),
                             color: '#ffffff',
-                            fontSize: '12px',
+                            fontSize: '13px',
                             fontWeight: 'bold'
                         });
-                    } else {
+                        it.marker.setIcon({
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 14,
+                            fillColor: layer.color,
+                            fillOpacity: 1,
+                            strokeColor: '#ffffff',
+                            strokeWeight: 3
+                        });
+                    } else if (show) {
                         // All days view: show day color markers without numbers
                         it.marker.setLabel(null);
                         it.marker.setIcon({
                             path: google.maps.SymbolPath.CIRCLE,
                             scale: 10,
                             fillColor: layer.color,
-                            fillOpacity: 1,
+                            fillOpacity: 0.9,
                             strokeColor: '#ffffff',
                             strokeWeight: 2
                         });
                     }
                 });
             }
+
+            // Handle polylines/directions
+            if (dayNum && show) {
+                // Single day view: use Directions API for route along streets
+                if (layer.items && layer.items.length > 1) {
+                    renderDirectionsForDay(name, layer);
+                }
+            } else if (!dayNum) {
+                // All Days view: hide all polylines and directions
+                if (layer.polyline) {
+                    layer.polyline.setMap(null);
+                }
+                if (directionsRenderers[name]) {
+                    directionsRenderers[name].setMap(null);
+                }
+            } else {
+                // Hide polylines for non-selected days
+                if (layer.polyline) {
+                    layer.polyline.setMap(null);
+                }
+            }
         }
         selectedDay = dayNum;
 
-        // Update active state on day filter buttons
-        const container = document.getElementById('map-controls');
-        if (container) {
-            const buttons = container.querySelectorAll('button');
+        // Fit bounds to visible markers
+        if (hasVisibleMarkers && dayNum) {
+            gmap.fitBounds(bounds);
+            // Add slight padding
+            const padding = { top: 50, right: 50, bottom: 50, left: 50 };
+            setTimeout(() => {
+                try {
+                    if (bounds.getNorthEast() && bounds.getSouthWest()) {
+                        gmap.fitBounds(bounds, padding);
+                    }
+                } catch (e) { /* ignore */ }
+            }, 100);
+        }
+
+        // Update active state on day filter buttons (both desktop and mobile)
+        const containers = [
+            document.getElementById('map-controls'),
+            document.getElementById('map-controls-mobile')
+        ];
+        
+        containers.forEach(container => {
+            if (!container) return;
+            
+            const isMobile = container.id === 'map-controls-mobile';
+            const selector = isMobile ? 'button' : 'button.nav-link';
+            const buttons = container.querySelectorAll(selector);
+            
             buttons.forEach(btn => {
                 const btnDay = btn.getAttribute('data-day');
-                if (btnDay === 'all' && !dayNum) {
+                // Only handle day buttons (skip badge elements)
+                if (!btnDay || isNaN(parseInt(btnDay))) return;
+                
+                if (parseInt(btnDay) === dayNum) {
                     btn.classList.add('active');
-                } else if (btnDay && parseInt(btnDay) === dayNum) {
-                    btn.classList.add('active');
+                    if (isMobile) {
+                        btn.classList.remove('btn-outline-primary');
+                        btn.classList.add('btn-primary');
+                    }
                 } else {
                     btn.classList.remove('active');
+                    if (isMobile) {
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-outline-primary');
+                    }
                 }
             });
-        }
+        });
 
         renderSidePanel(dayNum);
         // refresh clusters to reflect visibility change
         updateCluster();
+    }
+
+    function renderDirectionsForDay(dayName, layer) {
+        if (!directionsService || !layer.items || layer.items.length < 2) return;
+
+        // Create waypoints from all locations
+        const waypoints = layer.items.map(it => ({
+            location: new google.maps.LatLng(it.lat, it.lng),
+            stopover: true
+        }));
+
+        const origin = waypoints[0].location;
+        const destination = waypoints[waypoints.length - 1].location;
+        const waypointsMiddle = waypoints.slice(1, -1);
+
+        // Create or reuse renderer for this day
+        if (!directionsRenderers[dayName]) {
+            directionsRenderers[dayName] = new google.maps.DirectionsRenderer({
+                map: gmap,
+                suppressMarkers: true,
+                preserveViewport: true,
+                polylineOptions: {
+                    strokeColor: layer.color,
+                    strokeWeight: 4,
+                    strokeOpacity: 0.7
+                }
+            });
+        }
+
+        const request = {
+            origin: origin,
+            destination: destination,
+            waypoints: waypointsMiddle,
+            travelMode: google.maps.TravelMode.WALKING,
+            optimizeWaypoints: false
+        };
+
+        directionsService.route(request, (result, status) => {
+            if (status === google.maps.DirectionsStatus.OK) {
+                directionsRenderers[dayName].setDirections(result);
+                directionsRenderers[dayName].setMap(gmap);
+            } else {
+                // Fallback to simple polyline if Directions fails
+                console.warn('Directions request failed:', status, '- Enable Directions API in Google Cloud Console');
+                
+                // Show user-friendly message if API key doesn't have Directions API enabled
+                if (status === 'REQUEST_DENIED') {
+                    console.info('💡 To enable street-based routes: Go to Google Cloud Console → APIs & Services → Enable "Directions API"');
+                }
+                
+                // Use simple polyline as fallback
+                if (layer.polyline) {
+                    layer.polyline.setMap(gmap);
+                }
+            }
+        });
     }
 
     function addMarkerToPlan(day, marker) {
@@ -430,64 +664,97 @@
 
         // Update bottom sheet title on mobile
         const titleEl = document.getElementById('bottom-sheet-day-title');
-        if (titleEl && window.innerWidth < 992) {
+        if (titleEl) {
             if (dayNum) {
                 const name = `Day ${dayNum}`;
-                const parsedDay = travelPlan?.parsedDays?.find(d => d.day === dayNum);
-                const dateStr = parsedDay?.date || '';
-                titleEl.textContent = dateStr ? `${name} - ${dateStr}` : name;
+                const layer = dayLayers[name];
+                const itemCount = layer && layer.items ? layer.items.length : 0;
+                titleEl.innerHTML = `📍 Day ${dayNum} <span class="badge bg-primary ms-2">${itemCount} stops</span>`;
             } else {
-                titleEl.textContent = 'All Days';
+                // All Days view
+                let totalItems = 0;
+                for (const [name, layer] of Object.entries(dayLayers)) {
+                    if (layer.items) totalItems += layer.items.length;
+                }
+                titleEl.innerHTML = `📍 All Days Overview <span class="badge bg-secondary ms-2">${totalItems} stops</span>`;
             }
-        }
-
-        // Hide placeholder when content loaded
-        const placeholder = document.getElementById('bottom-sheet-placeholder');
-        if (placeholder) {
-            placeholder.style.display = dayNum ? 'none' : 'block';
         }
 
         // Attach events if showing specific day
         if (dayNum) {
             attachSidePanelEvents(dayNum);
+        } else {
+            // Attach events for All Days overview (day buttons)
+            attachAllDaysEvents();
         }
     }
 
     function generateSidePanelContent(dayNum) {
         if (!dayNum) {
-            return `
-                <div class="px-2 py-2">
-                    <h6 class="text-muted mb-2">📍 All Days View</h6>
-                    <p class="small text-muted">Showing all markers from all days. Each day has a unique color:</p>
-                    <ul class="list-unstyled small">
-                        ${Object.keys(dayLayers).map((name, idx) => {
-                const layer = dayLayers[name];
-                const colors = ['#2b7cff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#ffcc00'];
-                const colorNames = ['Blue', 'Green', 'Orange', 'Red', 'Purple', 'Yellow'];
-                return `<li class="mb-1">
-                                <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${layer.color || colors[idx % colors.length]};margin-right:6px;"></span>
-                                <strong>${name}</strong> - ${layer.items ? layer.items.length : 0} stops
-                            </li>`;
-            }).join('')}
-                    </ul>
-                    <p class="small text-muted mt-2">Select a specific day to see detailed list and reorder stops.</p>
-                </div>
+            // Generate All Days overview with day summary
+            let html = `
+                <div class="px-3 py-3">
+                    <h6 class="text-muted mb-3" style="font-size: 14px; font-weight: 600;">📍 All Days Overview</h6>
+                    <p class="small text-muted mb-3">Select a day below to see detailed route with directions.</p>
             `;
+            
+            // List each day with color and count
+            for (const [name, layer] of Object.entries(dayLayers)) {
+                const itemCount = layer.items ? layer.items.length : 0;
+                const dayMatch = name.match(/Day (\d+)/);
+                const dayNum = dayMatch ? dayMatch[1] : '?';
+                
+                html += `
+                    <button class="btn btn-outline-secondary w-100 mb-2 text-start d-flex align-items-center justify-content-between day-select-btn" data-day="${dayNum}" style="border-radius: 8px;">
+                        <span>
+                            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: ${layer.color}; margin-right: 8px;"></span>
+                            <strong>Day ${dayNum}</strong>
+                        </span>
+                        <span class="badge bg-light text-dark">${itemCount} stops</span>
+                    </button>
+                `;
+            }
+            
+            html += `</div>`;
+            return html;
         }
+        
+        // Individual day view
         const name = `Day ${dayNum}`;
         const layer = dayLayers[name];
         if (!layer) {
-            return '<div class="px-2 py-2 text-muted">No points for this day.</div>';
+            return '<div class="px-3 py-3 text-muted">No points for this day.</div>';
         }
 
-        // Build HTML for the list
-        let html = '<ul class="list-group list-group-flush" id="day-items-list">';
+        // Build HTML for POI list with hover interactions
+        let html = `
+            <div class="px-3 py-2">
+                <h6 class="text-muted mb-2" style="font-size: 13px; font-weight: 600;">📍 Points of Interest (${layer.items.length})</h6>
+                <p class="small text-muted mb-3" style="font-size: 12px;">Click to view details • Drag to reorder</p>
+            </div>
+            <ul class="list-group list-group-flush poi-list" id="day-items-list" style="max-height: 400px; overflow-y: auto;">`;
+        
         layer.items.forEach((it, idx) => {
             html += `
-                <li class="list-group-item d-flex align-items-center" draggable="true" data-idx="${idx}">
-                    <span class="badge bg-primary me-2">${idx + 1}</span>
-                    <div class="flex-grow-1">${it.text}</div>
-                    <button class="btn btn-sm btn-outline-danger ms-2 remove-item-btn" data-day="${dayNum}" data-idx="${idx}">Remove</button>
+                <li class="list-group-item poi-item d-flex align-items-center" 
+                    draggable="true" 
+                    data-idx="${idx}"
+                    data-lat="${it.lat}"
+                    data-lng="${it.lng}"
+                    style="cursor: grab; transition: all 0.2s; border-left: 3px solid transparent; padding: 12px 16px;">
+                    <div class="d-flex align-items-center flex-grow-1" style="min-width: 0;">
+                        <span class="badge" style="background-color: ${layer.color}; color: white; font-size: 13px; min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-right: 12px; border-radius: 50%; font-weight: bold;">${idx + 1}</span>
+                        <div class="flex-grow-1" style="min-width: 0;">
+                            <div style="font-size: 14px; font-weight: 500; color: #212529; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.text}</div>
+                            <div class="small text-muted" style="font-size: 11px;">Stop #${idx + 1}</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-link text-danger p-1 remove-item-btn" data-day="${dayNum}" data-idx="${idx}" title="Remove" style="opacity: 0.7;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                        </svg>
+                    </button>
                 </li>
             `;
         });
@@ -496,15 +763,67 @@
     }
 
     function attachSidePanelEvents(dayNum) {
-        // Attach drag & drop and remove events to all panels
+        // Attach drag & drop, hover, click, and remove events to all panels
         const panels = getSidePanelElements();
         panels.forEach(panel => {
             const list = panel.querySelector('#day-items-list');
             if (!list) return;
 
+            const name = `Day ${dayNum}`;
+            const layer = dayLayers[name];
+
+            // POI list item interactions (hover and click)
+            list.querySelectorAll('.poi-item').forEach((li, itemIdx) => {
+                const idx = parseInt(li.dataset.idx);
+                const item = layer && layer.items ? layer.items[idx] : null;
+                
+                // Hover effect: highlight marker on map
+                li.addEventListener('mouseenter', () => {
+                    li.style.backgroundColor = '#f8f9fa';
+                    li.style.borderLeftColor = layer.color;
+                    if (item && item.marker) {
+                        // Subtle pulse effect instead of bounce
+                        const currentIcon = item.marker.getIcon();
+                        if (currentIcon && typeof currentIcon === 'object') {
+                            const pulseIcon = {
+                                ...currentIcon,
+                                scale: (currentIcon.scale || 10) * 1.2
+                            };
+                            item.marker.setIcon(pulseIcon);
+                            setTimeout(() => item.marker.setIcon(currentIcon), 300);
+                        }
+                        item.marker.setZIndex(1000);
+                    }
+                });
+                
+                li.addEventListener('mouseleave', () => {
+                    li.style.backgroundColor = '';
+                    li.style.borderLeftColor = 'transparent';
+                    if (item && item.marker) {
+                        item.marker.setAnimation(null);
+                        item.marker.setZIndex(null);
+                    }
+                });
+                
+                // Click: center map and open info window
+                li.addEventListener('click', (e) => {
+                    // Don't trigger if clicking remove button
+                    if (e.target.closest('.remove-item-btn')) return;
+                    
+                    if (item && item.marker) {
+                        gmap.setCenter(new google.maps.LatLng(item.lat, item.lng));
+                        // Use zoom 14 on mobile, 16 on desktop
+                        const isMobile = window.innerWidth < 992;
+                        gmap.setZoom(isMobile ? 14 : 16);
+                        google.maps.event.trigger(item.marker, 'click');
+                    }
+                });
+            });
+
             // Remove button events
             list.querySelectorAll('.remove-item-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent triggering click on list item
                     const day = parseInt(btn.dataset.day);
                     const idx = parseInt(btn.dataset.idx);
                     removeItemFromDay(day, idx);
@@ -534,6 +853,20 @@
                 li.addEventListener('dragend', () => {
                     li.classList.remove('dragging');
                 });
+            });
+        });
+    }
+
+    function attachAllDaysEvents() {
+        // Attach click events to day buttons in All Days overview
+        const buttons = document.querySelectorAll('.day-select-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const dayNum = parseInt(btn.dataset.day);
+                if (dayNum) {
+                    setDayFilter(dayNum);
+                    renderSidePanel(dayNum);
+                }
             });
         });
     }

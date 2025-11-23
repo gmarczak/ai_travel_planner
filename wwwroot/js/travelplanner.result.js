@@ -1,4 +1,4 @@
-(function(){
+(function () {
   // Shared Google Places Autocomplete helper used by forms in Details tab
   function ensureMapsReady() {
     return new Promise((resolve, reject) => {
@@ -30,7 +30,7 @@
     } catch { return ''; }
   }
 
-  function wireAutocomplete(inputId, targetSelector, addBtnId){
+  function wireAutocomplete(inputId, targetSelector, addBtnId) {
     const inputEl = document.getElementById(inputId);
     const target = document.querySelector(targetSelector);
     const addBtn = document.getElementById(addBtnId);
@@ -39,7 +39,7 @@
     let autocomplete = null;
     let lastPlace = null;
 
-    function applyPlace(p){
+    function applyPlace(p) {
       if (!p) return;
       const line = lineForPlace(p);
       if (!line) return;
@@ -54,7 +54,7 @@
     ensureMapsReady().then(() => {
       try {
         autocomplete = new google.maps.places.Autocomplete(inputEl, { types: ['establishment', 'geocode'] });
-        autocomplete.setFields(['place_id','name','geometry','photos','rating','formatted_address','types']);
+        autocomplete.setFields(['place_id', 'name', 'geometry', 'photos', 'rating', 'formatted_address', 'types']);
         autocomplete.addListener('place_changed', () => {
           const place = autocomplete.getPlace();
           lastPlace = place || null;
@@ -68,7 +68,7 @@
           // Prefer details to enrich fields
           try {
             const svc = new google.maps.places.PlacesService(document.createElement('div'));
-            svc.getDetails({ placeId: lastPlace.place_id, fields: ['place_id','name','geometry','photos','rating','formatted_address','types','formatted_phone_number','opening_hours'] }, (details, status) => {
+            svc.getDetails({ placeId: lastPlace.place_id, fields: ['place_id', 'name', 'geometry', 'photos', 'rating', 'formatted_address', 'types', 'formatted_phone_number', 'opening_hours'] }, (details, status) => {
               if (status === google.maps.places.PlacesServiceStatus.OK && details) applyPlace(details);
               else applyPlace(lastPlace);
             });
@@ -88,7 +88,7 @@
     }
   }
 
-  function init(){
+  function init() {
     // Wire Details tab inputs if present
     wireAutocomplete('accommodation-search', 'textarea[name="accommodations"]', 'add-accommodation-btn');
     wireAutocomplete('activity-search', 'textarea[name="activities"]', 'add-activity-btn');
