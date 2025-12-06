@@ -21,16 +21,16 @@ const i18n = {
     // Translate key to current language
     t(key) {
         const lang = this.currentLanguage || 'en';
-        
+
         if (this.data[lang] && this.data[lang][key]) {
             return this.data[lang][key];
         }
-        
+
         if (this.data['en'] && this.data['en'][key]) {
             console.warn(`[i18n] Missing translation for "${key}" in language "${lang}", using English fallback`);
             return this.data['en'][key];
         }
-        
+
         console.warn(`[i18n] Missing key "${key}" in both "${lang}" and English`);
         return key;
     },
@@ -66,9 +66,9 @@ const Intl18n = {
     // Format currency
     formatCurrency(num, locale = 'en', currency = 'USD') {
         try {
-            return new Intl.NumberFormat(locale, { 
-                style: 'currency', 
-                currency: currency 
+            return new Intl.NumberFormat(locale, {
+                style: 'currency',
+                currency: currency
             }).format(num);
         } catch (error) {
             console.error(`[Intl18n] Currency format error: ${error}`);

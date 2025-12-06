@@ -168,26 +168,30 @@
                         @Html.AntiForgeryToken()
                         <!-- DESTINATION & DATES -->
                         <fieldset class="mb-4">
-                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">@Localizer["destinationDates"]
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">
+                                @Localizer["destinationDates"]
                             </legend>
                             <div class="row g-2 g-md-3">
                                 <div class="col-12 col-md-6">
-                                    <label asp-for="TravelRequest.Destination" class="form-label">@Localizer["whereYouWantToGo"] <span class="text-danger">*</span></label>
+                                    <label asp-for="TravelRequest.Destination"
+                                        class="form-label">@Localizer["whereYouWantToGo"] <span
+                                            class="text-danger">*</span></label>
                                     <input asp-for="TravelRequest.Destination" id="destinationInput"
-                                        class="form-control"
-                                        placeholder="@Localizer["exampleDestinations"]" autocomplete="off"
-                                        autocapitalize="words" required />
+                                        class="form-control" placeholder="@Localizer["exampleDestinations"]"
+                                        autocomplete="off" autocapitalize="words" required />
                                     <span asp-validation-for="TravelRequest.Destination"
                                         class="text-danger small"></span>
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <label asp-for="TravelRequest.StartDate" class="form-label small">@Localizer["start"] *</label>
+                                    <label asp-for="TravelRequest.StartDate"
+                                        class="form-label small">@Localizer["start"] *</label>
                                     <input asp-for="TravelRequest.StartDate" type="date"
                                         class="form-control form-control-sm form-control-md-normal" required />
                                     <span asp-validation-for="TravelRequest.StartDate" class="text-danger small"></span>
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <label asp-for="TravelRequest.EndDate" class="form-label small">@Localizer["end"] *</label>
+                                    <label asp-for="TravelRequest.EndDate" class="form-label small">@Localizer["end"]
+                                        *</label>
                                     <input asp-for="TravelRequest.EndDate" type="date"
                                         class="form-control form-control-sm form-control-md-normal" required />
                                     <span asp-validation-for="TravelRequest.EndDate" class="text-danger small"></span>
@@ -197,11 +201,13 @@
 
                         <!-- TRAVELERS / BUDGET / TYPE -->
                         <fieldset class="mb-4">
-                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">@Localizer["peopleBudget"]
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">
+                                @Localizer["peopleBudget"]
                             </legend>
                             <div class="row g-2 g-md-3">
                                 <div class="col-6 col-md-4">
-                                    <label asp-for="TravelRequest.NumberOfTravelers" class="form-label small">@Localizer["travelers"]
+                                    <label asp-for="TravelRequest.NumberOfTravelers"
+                                        class="form-label small">@Localizer["travelers"]
                                         *</label>
                                     <div class="input-group input-group-sm">
                                         <button class="btn btn-outline-secondary travelers-btn" type="button"
@@ -230,7 +236,8 @@
                                     <span asp-validation-for="TravelRequest.Budget" class="text-danger small"></span>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <label asp-for="TravelRequest.TripType" class="form-label small">@Localizer["tripType"]</label>
+                                    <label asp-for="TravelRequest.TripType"
+                                        class="form-label small">@Localizer["tripType"]</label>
                                     <select asp-for="TravelRequest.TripType"
                                         class="form-select form-select-sm form-select-md-normal">
                                         <option value="">@Localizer["optional"]</option>
@@ -246,18 +253,21 @@
 
                         <!-- TRANSPORT MODE -->
                         <fieldset class="mb-4">
-                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">@Localizer["transport"]</legend>
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">
+                                @Localizer["transport"]</legend>
                             <div class="row g-2 g-md-3">
                                 <div class="col-12 col-md-6">
-                                    <label asp-for="TravelRequest.DepartureLocation" class="form-label">@Localizer["travelingFrom"] <span class="text-muted fw-normal">(@Localizer["optional"])</span></label>
+                                    <label asp-for="TravelRequest.DepartureLocation"
+                                        class="form-label">@Localizer["travelingFrom"] <span
+                                            class="text-muted fw-normal">(@Localizer["optional"])</span></label>
                                     <input asp-for="TravelRequest.DepartureLocation" id="departureInput"
-                                        class="form-control"
-                                        placeholder="@Localizer["exampleStartingPoints"]"
+                                        class="form-control" placeholder="@Localizer["exampleStartingPoints"]"
                                         autocomplete="off" autocapitalize="words" />
                                     <small class="form-text mt-1 d-block">💡 @Localizer["helpsFindBestFlights"]</small>
                                 </div>
                                 <div class="col-12 col-md-6">
-                                    <label asp-for="TravelRequest.TransportMode" class="form-label small">@Localizer["howAreYouTraveling"]</label>
+                                    <label asp-for="TravelRequest.TransportMode"
+                                        class="form-label small">@Localizer["howAreYouTraveling"]</label>
                                     <select asp-for="TravelRequest.TransportMode"
                                         class="form-select form-select-sm form-select-md-normal">
                                         <option value="">@Localizer["optionalAiSuggest"]</option>
@@ -266,7 +276,8 @@
                                         <option value="Train">@Localizer["train"]</option>
                                         <option value="Bus">@Localizer["bus"]</option>
                                     </select>
-                                    <small class="form-text text-muted mt-1 d-block">💡 @Localizer["helpsAiSuggest"]</small>
+                                    <small class="form-text text-muted mt-1 d-block">💡
+                                        @Localizer["helpsAiSuggest"]</small>
                                 </div>
                             </div>
                         </fieldset>
@@ -275,7 +286,8 @@
 
                         <!-- PREFERENCES -->
                         <fieldset class="mb-3 mb-md-4">
-                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-2 mb-md-3">@Localizer["additionalPreferences"]</legend>
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-2 mb-md-3">
+                                @Localizer["additionalPreferences"]</legend>
                             <textarea asp-for="TravelRequest.TravelPreferences"
                                 class="form-control form-control-sm form-control-md-normal" rows="3"
                                 placeholder="@Localizer["examplesPreferences"]"></textarea>

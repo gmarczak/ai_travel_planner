@@ -145,14 +145,14 @@
                 <!-- Language Selector -->
                 <li class="nav-item ms-2 ps-2 border-start border-light">
                     <div class="btn-group" role="group">
-                        <a href="/set-language?culture=en&returnUrl=@(Context.Request.Path + Context.Request.QueryString)" 
-                           class="btn btn-sm @(htmlLang.StartsWith("en") ? "btn-light text-dark" : "btn-outline-light text-white")"
-                           title="English">
+                        <a href="/set-language?culture=en&returnUrl=@(Context.Request.Path + Context.Request.QueryString)"
+                            class="btn btn-sm @(htmlLang.StartsWith("en") ? "btn-light text-dark" : "btn-outline-light text-white")"
+                            title="English">
                             🇬🇧 EN
                         </a>
-                        <a href="/set-language?culture=pl&returnUrl=@(Context.Request.Path + Context.Request.QueryString)" 
-                           class="btn btn-sm @(htmlLang.StartsWith("pl") ? "btn-light text-dark" : "btn-outline-light text-white")"
-                           title="Polski">
+                        <a href="/set-language?culture=pl&returnUrl=@(Context.Request.Path + Context.Request.QueryString)"
+                            class="btn btn-sm @(htmlLang.StartsWith("pl") ? "btn-light text-dark" : "btn-outline-light text-white")"
+                            title="Polski">
                             🇵🇱 PL
                         </a>
                     </div>

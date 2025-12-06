@@ -9,7 +9,7 @@ namespace project.Pages
         public IActionResult OnGet(string culture, string returnUrl = "/")
         {
             var supportedCultures = new[] { "en", "pl" };
-            
+
             if (string.IsNullOrWhiteSpace(culture) || !supportedCultures.Contains(culture))
             {
                 culture = "en";
@@ -19,8 +19,8 @@ namespace project.Pages
             Response.Cookies.Append(
                 CookieRequestCultureProvider.DefaultCookieName,
                 cookieValue,
-                new CookieOptions 
-                { 
+                new CookieOptions
+                {
                     Expires = DateTimeOffset.UtcNow.AddYears(1),
                     IsEssential = true,
                     HttpOnly = false
@@ -38,7 +38,7 @@ namespace project.Pages
         public IActionResult OnPost(string culture, string? returnUrl = null)
         {
             var supportedCultures = new[] { "en", "pl" };
-            
+
             if (string.IsNullOrWhiteSpace(culture) || !supportedCultures.Contains(culture))
             {
                 culture = "en";
