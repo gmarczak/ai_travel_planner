@@ -5,6 +5,7 @@
         if (!window.google || !google.maps || !google.maps.places) { return; }
         const homeInput = document.getElementById('homeDestinationInput');
         const plannerInput = document.getElementById('destinationInput');
+        const departureInput = document.getElementById('departureInput');
         const options = { types: ['(cities)'] }; // Suggest cities primarily
         try {
             if (homeInput && !homeInput.__gm_autocomplete) {
@@ -31,6 +32,18 @@
                     if (place) {
                         // Use formatted_address if available, otherwise use name
                         plannerInput.value = place.formatted_address || place.name || plannerInput.value;
+                    }
+                });
+            }
+            if (departureInput && !departureInput.__gm_autocomplete) {
+                const departureAutocomplete = new google.maps.places.Autocomplete(departureInput, options);
+                departureInput.__gm_autocomplete = departureAutocomplete;
+                // Update input value on selection - keep full formatted address
+                departureAutocomplete.addListener('place_changed', function () {
+                    const place = departureAutocomplete.getPlace();
+                    if (place) {
+                        // Use formatted_address if available, otherwise use name
+                        departureInput.value = place.formatted_address || place.name || departureInput.value;
                     }
                 });
             }

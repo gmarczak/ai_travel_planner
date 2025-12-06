@@ -118,6 +118,24 @@ namespace project.Services
             var days = (request.EndDate - request.StartDate).Days + 1;
             var tripType = !string.IsNullOrWhiteSpace(request.TripType) ? request.TripType : "General";
             var preferences = !string.IsNullOrWhiteSpace(request.TravelPreferences) ? request.TravelPreferences : "None specified";
+
+            var transportContext = "";
+            if (!string.IsNullOrWhiteSpace(request.TransportMode))
+            {
+                var departureInfo = !string.IsNullOrWhiteSpace(request.DepartureLocation)
+                    ? $" from {request.DepartureLocation}"
+                    : "";
+
+                transportContext = request.TransportMode switch
+                {
+                    "Flight" => $"\n\n✈️ TRANSPORT MODE: Flying{departureInfo}\n- Suggest nearby alternative airports for both departure and arrival (budget airlines, better connections)\n- Mention flight duration and typical costs{departureInfo}\n- Airport transfer options (bus, train, taxi estimates)\n- Include specific airport codes",
+                    "Car" => "\n\n🚗 TRANSPORT MODE: Driving\n- Mention scenic routes and road trip highlights\n- Include parking information for attractions\n- If water crossing needed, mention ferry routes with booking tips",
+                    "Train" => "\n\n🚆 TRANSPORT MODE: Train\n- Mention main train stations and connections\n- Include information about regional rail passes\n- Suggest train-accessible destinations and day trips",
+                    "Bus" => "\n\n🚌 TRANSPORT MODE: Bus\n- Mention main bus terminals and international routes (FlixBus, etc.)\n- Include information about city bus passes\n- Suggest bus-accessible destinations",
+                    _ => ""
+                };
+            }
+
             return $@"You must respond with ONLY valid JSON. No additional text, no markdown formatting, no code blocks.
 
 Task: Suggest the top {days * 4} must-see places for a {days}-day trip to {request.Destination}.
@@ -125,7 +143,7 @@ Task: Suggest the top {days * 4} must-see places for a {days}-day trip to {reque
 - Trip type: {tripType}
 
 ⚠️ CRITICAL: User preferences that MUST influence place selection:
-{preferences}
+{preferences}{transportContext}
 
 Select places that match these preferences.
 
@@ -318,6 +336,8 @@ Keep it under 100 words total.";
                     NumberOfTravelers = request.NumberOfTravelers,
                     Budget = request.Budget ?? 0m,
                     TravelPreferences = request.TravelPreferences ?? "",
+                    TransportMode = request.TransportMode,
+                    DepartureLocation = request.DepartureLocation,
                     CreatedAt = DateTime.Now,
                     GeneratedItinerary = itineraryText,
                     Accommodations = GetFallbackAccommodations(request.Destination),
@@ -398,6 +418,26 @@ Return ONLY the JSON array above.";
             var preferences = !string.IsNullOrWhiteSpace(request.TravelPreferences) ? request.TravelPreferences : "None specified";
             var budgetValue = request.Budget ?? 0m;
 
+            var transportInstructions = "";
+            if (!string.IsNullOrWhiteSpace(request.TransportMode))
+            {
+                var departureInfo = !string.IsNullOrWhiteSpace(request.DepartureLocation)
+                    ? $" from {request.DepartureLocation}"
+                    : " from major international hubs";
+                var departureDetail = !string.IsNullOrWhiteSpace(request.DepartureLocation)
+                    ? $" Analyze best routes FROM {request.DepartureLocation} TO {request.Destination}."
+                    : "";
+
+                transportInstructions = request.TransportMode switch
+                {
+                    "Flight" => $"\n\n✈️ TRANSPORT MODE: Flying{departureInfo}\nIn the 'transportation' array, include:\n- Specific flight routes: {request.DepartureLocation ?? "major hubs"} → {request.Destination} (with nearby alternative airports for BOTH cities)\n- Example: Barcelona has El Prat-BCN (main), Girona-GRO (Ryanair), Reus-REU (budget)\n- Estimated flight duration and typical costs for this specific route\n- Airport transfer options at destination (train, bus, taxi) with prices\n- Best booking websites and timing tips{departureDetail}",
+                    "Car" => "\n\n🚗 TRANSPORT MODE: Driving\nIn the 'transportation' array, include:\n- Scenic driving routes and road trip highlights\n- Parking information and costs at major attractions\n- Car rental tips and estimated costs\n- Ferry routes if water crossing needed (e.g., Portsmouth-Santander for Spain) with booking websites",
+                    "Train" => "\n\n🚆 TRANSPORT MODE: Train\nIn the 'transportation' array, include:\n- Main train stations and connections\n- Regional/national rail passes (Eurail, etc.) with prices\n- Recommended day trips accessible by train\n- Booking websites (Trainline, local railways)",
+                    "Bus" => "\n\n🚌 TRANSPORT MODE: Bus\nIn the 'transportation' array, include:\n- Main bus terminals and international routes\n- FlixBus, Eurolines, or regional bus companies\n- Long-distance bus passes and prices\n- Booking websites and tips",
+                    _ => ""
+                };
+            }
+
             return $@"You must respond with ONLY valid JSON. No additional text, no markdown formatting, no code blocks.
 
 Task: Create a detailed {days}-day travel plan for {request.Destination}.
@@ -408,7 +448,7 @@ Task: Create a detailed {days}-day travel plan for {request.Destination}.
 - Trip type: {tripType}
 
 ⚠️ IMPORTANT USER PREFERENCES (must be incorporated throughout the itinerary):
-{preferences}
+{preferences}{transportInstructions}
 
 Ensure activities, restaurants, and experiences align with the above preferences in EVERY day of the itinerary.
 
@@ -450,6 +490,8 @@ CRITICAL: Include ALL {days} days. Use \\n for line breaks in the itinerary stri
                 NumberOfTravelers = request.NumberOfTravelers,
                 Budget = request.Budget ?? 0m,
                 TravelPreferences = request.TravelPreferences ?? string.Empty,
+                TransportMode = request.TransportMode,
+                DepartureLocation = request.DepartureLocation,
                 CreatedAt = DateTime.Now,
                 GeneratedItinerary = itinerary,
                 Accommodations = GetFallbackAccommodations(request.Destination),
@@ -465,37 +507,13 @@ CRITICAL: Include ALL {days} days. Use \\n for line breaks in the itinerary stri
         }
 
         private List<string> GetFallbackAccommodations(string destination)
-        {
-            return new List<string>
-            {
-                $"Recommended Hotel in {destination}",
-                $"Boutique Accommodation near {destination}",
-                $"Budget-Friendly Option in {destination}",
-                $"Luxury Resort in {destination}"
-            };
-        }
+            => TravelPlanFallbackHelper.GetFallbackAccommodations(destination);
 
         private List<string> GetFallbackActivities(string destination)
-        {
-            return new List<string>
-            {
-                $"City Tour of {destination}",
-                $"Local Food Experience in {destination}",
-                $"Historic Sites in {destination}",
-                $"Shopping District in {destination}"
-            };
-        }
+            => TravelPlanFallbackHelper.GetFallbackActivities(destination);
 
         private List<string> GetFallbackTransportation()
-        {
-            return new List<string>
-            {
-                "Airport Transfer Service",
-                "Public Transportation Pass",
-                "Car Rental Options",
-                "Taxi and Ride-sharing Services"
-            };
-        }
+            => TravelPlanFallbackHelper.GetFallbackTransportation();
 
         private List<TravelSuggestion> GetFallbackDestinationSuggestions(string query)
         {

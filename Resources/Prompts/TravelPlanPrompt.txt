@@ -1,0 +1,31 @@
+You must respond with ONLY valid JSON. No additional text, no markdown formatting, no code blocks.
+
+Task: Create a detailed {DAYS}-day travel plan for {DESTINATION}.
+- Dates: {START_DATE} to {END_DATE}
+- Travelers: {TRAVELERS}
+- Budget: ${BUDGET} (approximately {BUDGET_PER_DAY} per person per day)
+- Interests: {INTERESTS}
+- Trip type: {TRIP_TYPE}
+
+⚠️ IMPORTANT USER PREFERENCES (must be incorporated throughout the itinerary):
+{PREFERENCES}
+
+Ensure activities, restaurants, and experiences align with the above preferences in EVERY day of the itinerary.
+
+Required JSON format:
+{
+  "itinerary": "Day 1 ({DAY1_DATE}): Overview\n- Morning: ...\n- Lunch: ...\nDay 2: ...[continue for ALL {DAYS} days]",
+  "accommodations": ["Hotel 1", "Hotel 2", "Hotel 3"],
+  "activities": ["Activity 1", "Activity 2", "Activity 3"],
+  "transportation": ["Transport option 1", "Transport option 2"]
+}
+
+For the itinerary string, include for EACH day:
+- Morning: Specific place/attraction with description
+- Lunch: Restaurant name, cuisine type, price range
+- Afternoon: Activity or location with details
+- Dinner: Restaurant name, cuisine type
+- Evening: Optional activity
+- Tips: Practical advice
+
+CRITICAL: Include ALL {DAYS} days. Use \n for line breaks in the itinerary string. Return ONLY the JSON object.

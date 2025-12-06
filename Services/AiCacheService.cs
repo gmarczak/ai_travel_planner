@@ -19,6 +19,12 @@ namespace project.Services
         private readonly ILogger<AiCacheService> _logger;
         private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
+        // Cache statistics (thread-safe counters)
+        private long _cacheHits = 0;
+        private long _cacheMisses = 0;
+        private DateTime _lastStatsLog = DateTime.UtcNow;
+        private readonly TimeSpan _statsLogInterval = TimeSpan.FromMinutes(5);
+
         public AiCacheService(IServiceScopeFactory scopeFactory, ILogger<AiCacheService> logger)
         {
             _scopeFactory = scopeFactory;
@@ -40,16 +46,25 @@ namespace project.Services
 
             if (cached != null)
             {
+                Interlocked.Increment(ref _cacheHits);
                 _logger.LogInformation("Cache HIT for prompt hash: {Hash}", hash);
 
                 // Zwiększ licznik trafień
                 cached.HitCount++;
                 await context.SaveChangesAsync();
 
+                // Log statistics periodically
+                LogStatisticsIfNeeded();
+
                 return cached.Response;
             }
 
+            Interlocked.Increment(ref _cacheMisses);
             _logger.LogInformation("Cache MISS for prompt hash: {Hash}", hash);
+
+            // Log statistics periodically
+            LogStatisticsIfNeeded();
+
             return null;
         }
 
@@ -127,6 +142,39 @@ namespace project.Services
             var bytes = Encoding.UTF8.GetBytes(input);
             var hash = sha256.ComputeHash(bytes);
             return Convert.ToHexString(hash).ToLowerInvariant();
+        }
+
+        private void LogStatisticsIfNeeded()
+        {
+            var now = DateTime.UtcNow;
+            if ((now - _lastStatsLog) < _statsLogInterval)
+                return;
+
+            var hits = Interlocked.Read(ref _cacheHits);
+            var misses = Interlocked.Read(ref _cacheMisses);
+            var total = hits + misses;
+
+            if (total > 0)
+            {
+                var hitRate = (double)hits / total * 100;
+                _logger.LogInformation(
+                    "AI Cache Statistics: Hits={Hits}, Misses={Misses}, Total={Total}, Hit Rate={HitRate:F2}%",
+                    hits, misses, total, hitRate);
+            }
+
+            _lastStatsLog = now;
+        }
+
+        /// <summary>
+        /// Gets current cache statistics (for monitoring/admin dashboard)
+        /// </summary>
+        public (long hits, long misses, double hitRate) GetStatistics()
+        {
+            var hits = Interlocked.Read(ref _cacheHits);
+            var misses = Interlocked.Read(ref _cacheMisses);
+            var total = hits + misses;
+            var hitRate = total > 0 ? (double)hits / total * 100 : 0;
+            return (hits, misses, hitRate);
         }
     }
 }

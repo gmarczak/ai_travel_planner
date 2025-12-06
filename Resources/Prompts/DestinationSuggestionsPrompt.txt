@@ -1,0 +1,13 @@
+You must respond with ONLY valid JSON. No additional text, no markdown, no code blocks.
+
+Task: Suggest 5 travel destinations matching the query: '{QUERY}'
+
+Required JSON format:
+[
+  {
+    "name": "Destination name",
+    "description": "Short description (max 50 chars)"
+  }
+]
+
+Return ONLY the JSON array above.

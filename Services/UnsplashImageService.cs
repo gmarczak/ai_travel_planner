@@ -8,20 +8,21 @@ namespace project.Services
     public class UnsplashImageService : IImageService
     {
         private readonly HttpClient _httpClient;
-        private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext _db;
         private readonly IConfiguration _configuration;
         private readonly ILogger<UnsplashImageService> _logger;
         private readonly string? _unsplashAccessKey;
         private readonly string? _googleMapsApiKey;
+        private static readonly SemaphoreSlim _cacheSemaphore = new SemaphoreSlim(1, 1);
 
         public UnsplashImageService(
             HttpClient httpClient,
-            ApplicationDbContext context,
+            ApplicationDbContext db,
             IConfiguration configuration,
             ILogger<UnsplashImageService> logger)
         {
             _httpClient = httpClient;
-            _context = context;
+            _db = db;
             _configuration = configuration;
             _logger = logger;
 
@@ -56,24 +57,40 @@ namespace project.Services
 
             _logger.LogInformation("Fetching image for destination: {Destination}", destination);
 
+            // Clean noisy queries (remove emojis, long prefixes like "ℹ️", "📍", non-word chars, excessive length)
+            var cleanedOriginal = CleanQuery(destination);
+            if (!string.Equals(cleanedOriginal, destination, StringComparison.Ordinal))
+            {
+                _logger.LogDebug("Cleaned incoming destination query from '{Original}' to '{Cleaned}'", destination, cleanedOriginal);
+                destination = cleanedOriginal;
+            }
+
             var normalizedDestination = NormalizeDestination(destination);
             _logger.LogDebug("Normalized destination: {Normalized}", normalizedDestination);
 
-            // 1. Check cache first (expires after 90 days)
-            var cachedImage = await _context.DestinationImages
-                .Where(di => di.Destination == normalizedDestination)
-                .Where(di => di.CachedAt > DateTime.UtcNow.AddDays(-90))
-                .FirstOrDefaultAsync();
-
-            if (cachedImage != null)
+            // 1. Check cache first (expires after 90 days) - serialize to avoid concurrency
+            await _cacheSemaphore.WaitAsync();
+            try
             {
-                _logger.LogInformation("Using cached image for {Destination} from {Source}", destination, cachedImage.Source);
+                var cachedImage = await _db.DestinationImages
+                    .Where(di => di.Destination == normalizedDestination)
+                    .Where(di => di.CachedAt > DateTime.UtcNow.AddDays(-90))
+                    .FirstOrDefaultAsync();
 
-                // Update usage count
-                cachedImage.UsageCount++;
-                await _context.SaveChangesAsync();
+                if (cachedImage != null)
+                {
+                    _logger.LogInformation("Using cached image for {Destination} from {Source}", destination, cachedImage.Source);
 
-                return (cachedImage.ImageUrl, cachedImage.PhotographerName, cachedImage.PhotographerUrl);
+                    // Update usage count
+                    cachedImage.UsageCount++;
+                    await _db.SaveChangesAsync();
+
+                    return (cachedImage.ImageUrl, cachedImage.PhotographerName, cachedImage.PhotographerUrl);
+                }
+            }
+            finally
+            {
+                _cacheSemaphore.Release();
             }
 
             // 2. Try Unsplash API
@@ -108,12 +125,14 @@ namespace project.Services
                 return null;
             }
 
-            _logger.LogInformation("Calling Unsplash API for {Destination} with key length: {KeyLength}", destination, _unsplashAccessKey.Length);
+            // Final sanitization pass before building Unsplash query
+            var cleaned = CleanQuery(destination);
+            _logger.LogInformation("Calling Unsplash API for {Destination} (sanitized: '{Cleaned}') with key length: {KeyLength}", destination, cleaned, _unsplashAccessKey.Length);
 
             try
             {
-                var query = Uri.EscapeDataString(destination);
-                var url = $"https://api.unsplash.com/search/photos?query={query}&per_page=1&orientation=landscape";
+                var query = Uri.EscapeDataString(cleaned);
+                var url = $"https://api.unsplash.com/search/photos?query={query}&per_page=5&orientation=landscape";
                 _logger.LogDebug("Unsplash API URL: {Url}", url);
 
                 var response = await _httpClient.GetAsync(url);
@@ -134,9 +153,11 @@ namespace project.Services
                     return null;
                 }
 
-                var photo = result.Results[0];
+                // Randomly select one of the returned photos to reduce duplicates
+                var rand = new Random();
+                var photo = result.Results[rand.Next(result.Results.Count)];
                 var imageUrl = photo.Urls?.Regular ?? photo.Urls?.Small ?? string.Empty;
-                _logger.LogInformation("Found Unsplash image for {Destination} by {Photographer}. URL: {ImageUrl}", destination, photo.User?.Name, imageUrl);
+                _logger.LogInformation("Selected Unsplash image for {Destination} by {Photographer}. URL: {ImageUrl}", destination, photo.User?.Name, imageUrl);
 
                 return (imageUrl,
                         photo.User?.Name,
@@ -164,15 +185,15 @@ namespace project.Services
 
         private async Task CacheImageAsync(string normalizedDestination, string imageUrl, string source, string? photographerName, string? photographerUrl)
         {
+            await _cacheSemaphore.WaitAsync();
             try
             {
-                // Check if image already exists to avoid tracking conflicts
-                var existing = await _context.DestinationImages
+                // Use a fresh DbContext for isolated write operation
+                var existing = await _db.DestinationImages
                     .FirstOrDefaultAsync(di => di.Destination == normalizedDestination);
 
                 if (existing != null)
                 {
-                    // Update existing image URL and metadata
                     existing.ImageUrl = imageUrl;
                     existing.Source = source;
                     existing.PhotographerName = photographerName;
@@ -182,7 +203,6 @@ namespace project.Services
                 }
                 else
                 {
-                    // Add new image
                     var cachedImage = new DestinationImage
                     {
                         Destination = normalizedDestination,
@@ -193,21 +213,63 @@ namespace project.Services
                         CachedAt = DateTime.UtcNow,
                         UsageCount = 1
                     };
-                    _context.DestinationImages.Add(cachedImage);
+                    _db.DestinationImages.Add(cachedImage);
                 }
 
-                await _context.SaveChangesAsync();
+                await _db.SaveChangesAsync();
                 _logger.LogInformation("Cached {Source} image for {Destination}", source, normalizedDestination);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error caching image for {Destination}", normalizedDestination);
             }
+            finally
+            {
+                _cacheSemaphore.Release();
+            }
         }
 
         private static string NormalizeDestination(string destination)
         {
             return destination.Trim().ToLowerInvariant();
+        }
+
+        private static string CleanQuery(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+
+            // Remove emoji & symbol categories by filtering to letters, digits, space
+            var filteredChars = raw.Where(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c)).ToArray();
+            var filtered = new string(filteredChars);
+
+            // Collapse multiple spaces
+            while (filtered.Contains("  ")) filtered = filtered.Replace("  ", " ");
+
+            filtered = filtered.Trim();
+
+            // Remove very common filler prefixes (case-insensitive) that leak prompt text
+            var prefixes = new[] {
+                "the iconic", "the best time to visit", "a practical tip", "museum dedicated", "museum showcasing", "military museum",
+                "street", "info", "information", "details" };
+            foreach (var p in prefixes)
+            {
+                if (filtered.StartsWith(p, StringComparison.OrdinalIgnoreCase))
+                {
+                    filtered = filtered[p.Length..].Trim();
+                    break;
+                }
+            }
+
+            // Limit length to first 6 words to keep query focused
+            var words = filtered.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length > 6)
+            {
+                filtered = string.Join(' ', words.Take(6));
+            }
+
+            // If becomes empty fallback to original short trimmed
+            if (string.IsNullOrWhiteSpace(filtered)) filtered = raw.Trim();
+            return filtered;
         }
 
         // Unsplash API response models
@@ -254,7 +316,7 @@ namespace project.Services
         }
 
         /// <summary>
-        /// Fetch multiple images in parallel (optimized for 2-3 images per day)
+        /// Fetch multiple images sequentially (prevents DbContext concurrency exceptions)
         /// </summary>
         public async Task<Dictionary<string, string>> GetMultipleImagesAsync(IEnumerable<string> queries)
         {
@@ -265,28 +327,20 @@ namespace project.Services
                 return results;
             }
 
-            // Fetch all images in parallel with timeout per request
-            var tasks = queries.Distinct(StringComparer.OrdinalIgnoreCase).Select(async query =>
+            // Process images sequentially to avoid DbContext concurrency issues
+            foreach (var query in queries.Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 try
                 {
                     var url = await GetDestinationImageAsync(query);
-                    return new KeyValuePair<string, string>(query, url ?? string.Empty);
+                    if (!string.IsNullOrEmpty(url))
+                    {
+                        results[query] = url;
+                    }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to fetch image for query: {Query}", query);
-                    return new KeyValuePair<string, string>(query, string.Empty);
-                }
-            });
-
-            var completed = await Task.WhenAll(tasks);
-
-            foreach (var kvp in completed)
-            {
-                if (!string.IsNullOrEmpty(kvp.Value))
-                {
-                    results[kvp.Key] = kvp.Value;
                 }
             }
 

@@ -21,6 +21,9 @@ namespace project.Services.Background
         {
             _logger.LogInformation("CacheCleanupWorker started");
 
+            // Initial delay before first cleanup
+            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try

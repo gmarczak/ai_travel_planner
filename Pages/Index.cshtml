@@ -1,7 +1,9 @@
 ﻿@page
 @model project.Pages.IndexModel
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
 @{
-    ViewData["Title"] = "AI Travel Planner - Plan Your Perfect Journey";
+    ViewData["Title"] = Localizer["appTitle"];
 }
 
 <!-- Hero Section with Search Bar -->
@@ -10,8 +12,8 @@
     <div class="container position-relative hero-content">
         <div class="row justify-content-center">
             <div class="col-lg-10 col-xl-8 text-center">
-                <h1 class="hero-title fw-bold text-white mb-3">Plan Your Perfect Journey</h1>
-                <p class="hero-subtitle text-white mb-4">AI-powered travel planning tailored to your dreams</p>
+                <h1 class="hero-title fw-bold text-white mb-3">@Localizer["planYourJourney"]</h1>
+                <p class="hero-subtitle text-white mb-4">@Localizer["aiTravel"]</p>
 
                 <!-- Quick Search Bar -->
                 <div class="search-bar-wrapper mx-auto">
@@ -21,7 +23,7 @@
                                 <i class="bi bi-search"></i>
                             </span>
                             <input type="text" name="destination" id="homeDestinationInput"
-                                class="form-control border-0 ps-2" placeholder="Where do you want to go?"
+                                class="form-control border-0 ps-2" placeholder="@Localizer["whereToGo"]"
                                 aria-label="Search destination" autocomplete="off" autocapitalize="words" required>
                         </div>
                     </form>
@@ -35,8 +37,8 @@
 <section class="popular-destinations-section py-5 bg-light">
     <div class="container">
         <div class="text-center mb-5">
-            <h2 class="section-title fw-bold mb-3">Popular Destinations</h2>
-            <p class="text-muted">Discover the most loved travel spots</p>
+            <h2 class="section-title fw-bold mb-3">@Localizer["popularDestinations"]</h2>
+            <p class="text-muted">@Localizer["discoverMostLoved"]</p>
         </div>
 
         <div class="row g-4">
@@ -87,10 +89,10 @@
                                 <div class="card-body d-flex flex-column">
                                     <p class="card-text text-muted small mb-3 flex-grow-1">
                                         <i class="bi bi-heart-fill text-danger me-1"></i>
-                                        Trending destination
+                                        @Localizer["trendingDestination"]
                                     </p>
                                     <div class="btn btn-outline-success w-100">
-                                        <i class="bi bi-compass me-2"></i>Plan Your Trip
+                                        <i class="bi bi-compass me-2"></i>@Localizer["planTrip"]
                                     </div>
                                 </div>
                             </div>
@@ -106,8 +108,8 @@
 <section class="how-it-works-section py-5 bg-white">
     <div class="container">
         <div class="text-center mb-5">
-            <h2 class="section-title fw-bold mb-3">How It Works</h2>
-            <p class="text-muted">Three simple steps to your perfect journey</p>
+            <h2 class="section-title fw-bold mb-3">@Localizer["howItWorks"]</h2>
+            <p class="text-muted">@Localizer["threeSimplesSteps"]</p>
         </div>
 
         <div class="row g-4">
@@ -117,8 +119,8 @@
                         <div class="step-number-badge">1</div>
                         <i class="bi bi-geo-alt-fill text-success fs-1"></i>
                     </div>
-                    <h3 class="h5 fw-bold mb-2">Choose Your Destination</h3>
-                    <p class="text-muted small mb-0">Tell us where you want to go, your budget, and travel dates</p>
+                    <h3 class="h5 fw-bold mb-2">@Localizer["chooseDestination"]</h3>
+                    <p class="text-muted small mb-0">@Localizer["tellUsWhereYouWant"]</p>
                 </div>
             </div>
             <div class="col-12 col-md-4">
@@ -127,9 +129,8 @@
                         <div class="step-number-badge">2</div>
                         <i class="bi bi-magic text-success fs-1"></i>
                     </div>
-                    <h3 class="h5 fw-bold mb-2">AI Creates Your Plan</h3>
-                    <p class="text-muted small mb-0">Our AI analyzes your preferences and generates a personalized
-                        itinerary</p>
+                    <h3 class="h5 fw-bold mb-2">@Localizer["aiCreatesYourPlan"]</h3>
+                    <p class="text-muted small mb-0">@Localizer["ourAiAnalyzes"]</p>
                 </div>
             </div>
             <div class="col-12 col-md-4">
@@ -138,8 +139,8 @@
                         <div class="step-number-badge">3</div>
                         <i class="bi bi-airplane-fill text-success fs-1"></i>
                     </div>
-                    <h3 class="h5 fw-bold mb-2">Enjoy Your Journey</h3>
-                    <p class="text-muted small mb-0">Download your plan and start exploring with confidence</p>
+                    <h3 class="h5 fw-bold mb-2">@Localizer["enjoyJourney"]</h3>
+                    <p class="text-muted small mb-0">@Localizer["downloadYourPlan"]</p>
                 </div>
             </div>
         </div>
@@ -156,18 +157,14 @@
                     <div class="feature-icon-badge mb-3">
                         <i class="bi bi-robot text-success fs-2"></i>
                     </div>
-                    <h3 class="h3 fw-bold mb-3">AI-Powered Planning</h3>
+                    <h3 class="h3 fw-bold mb-3">@Localizer["aiPoweredPlanning"]</h3>
                     <p class="text-muted mb-3">
-                        Our advanced AI analyzes thousands of travel patterns to create the perfect itinerary
-                        for you. Get personalized recommendations based on your interests, budget, and travel style.
+                        @Localizer["ourAdvancedAi"]
                     </p>
                     <ul class="list-unstyled">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Smart destination
-                            suggestions</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Optimized daily
-                            schedules</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Budget-friendly
-                            options</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["smartDestinationSuggestions"]</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["optimizedDailySchedules"]</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["budgetFriendlyOptions"]</li>
                     </ul>
                 </div>
             </div>
@@ -187,18 +184,16 @@
                     <div class="feature-icon-badge mb-3">
                         <i class="bi bi-map text-success fs-2"></i>
                     </div>
-                    <h3 class="h3 fw-bold mb-3">Interactive Maps & Routes</h3>
+                    <h3 class="h3 fw-bold mb-3">@Localizer["interactiveMapsRoutes"]</h3>
                     <p class="text-muted mb-3">
-                        Visualize your entire journey with integrated maps. Get turn-by-turn directions,
-                        estimated travel times, and discover points of interest along the way.
+                        @Localizer["visualizeYourEntireJourney"]
                     </p>
                     <ul class="list-unstyled">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Real-time navigation
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["realTimeNavigation"]
                         </li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Offline map access
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["offlineMapAccess"]
                         </li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Local attractions
-                            highlighted</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["localAttractionsHighlighted"]</li>
                     </ul>
                 </div>
             </div>
@@ -218,18 +213,14 @@
                     <div class="feature-icon-badge mb-3">
                         <i class="bi bi-stars text-success fs-2"></i>
                     </div>
-                    <h3 class="h3 fw-bold mb-3">Personalized Recommendations</h3>
+                    <h3 class="h3 fw-bold mb-3">@Localizer["personalizedRecommendations"]</h3>
                     <p class="text-muted mb-3">
-                        Discover hidden gems and must-see attractions tailored to your preferences.
-                        From accommodations to activities, every suggestion is handpicked for you.
+                        @Localizer["discoverHiddenGems"]
                     </p>
                     <ul class="list-unstyled">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Curated hotel
-                            selections</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Activity
-                            recommendations</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Local dining
-                            experiences</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["curatedHotelSelections"]</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["activityRecommendations"]</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["localDiningExperiences"]</li>
                     </ul>
                 </div>
             </div>

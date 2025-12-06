@@ -1,22 +1,61 @@
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Localization;
 
 namespace project.Pages
 {
     public class SetLanguageModel : PageModel
     {
-        public IActionResult OnPost(string culture, string? returnUrl = null)
+        public IActionResult OnGet(string culture, string returnUrl = "/")
         {
-            if (string.IsNullOrWhiteSpace(culture)) culture = "en-US";
-            var cookieValue = Microsoft.AspNetCore.Localization.CookieRequestCultureProvider.MakeCookieValue(new Microsoft.AspNetCore.Localization.RequestCulture(culture));
+            var supportedCultures = new[] { "en", "pl" };
+            
+            if (string.IsNullOrWhiteSpace(culture) || !supportedCultures.Contains(culture))
+            {
+                culture = "en";
+            }
+
+            var cookieValue = CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture));
             Response.Cookies.Append(
                 CookieRequestCultureProvider.DefaultCookieName,
                 cookieValue,
-                new Microsoft.AspNetCore.Http.CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1), IsEssential = true }
+                new CookieOptions 
+                { 
+                    Expires = DateTimeOffset.UtcNow.AddYears(1),
+                    IsEssential = true,
+                    HttpOnly = false
+                }
             );
 
-            if (string.IsNullOrWhiteSpace(returnUrl)) returnUrl = "/";
+            if (string.IsNullOrWhiteSpace(returnUrl))
+            {
+                returnUrl = "/";
+            }
+
+            return LocalRedirect(returnUrl);
+        }
+
+        public IActionResult OnPost(string culture, string? returnUrl = null)
+        {
+            var supportedCultures = new[] { "en", "pl" };
+            
+            if (string.IsNullOrWhiteSpace(culture) || !supportedCultures.Contains(culture))
+            {
+                culture = "en";
+            }
+
+            var cookieValue = CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture));
+            Response.Cookies.Append(
+                CookieRequestCultureProvider.DefaultCookieName,
+                cookieValue,
+                new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1), IsEssential = true, HttpOnly = false }
+            );
+
+            if (string.IsNullOrWhiteSpace(returnUrl))
+            {
+                returnUrl = "/";
+            }
+
             return LocalRedirect(returnUrl);
         }
     }

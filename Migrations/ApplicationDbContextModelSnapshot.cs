@@ -15,7 +15,7 @@ namespace project.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -221,8 +221,7 @@ namespace project.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsAdmin")
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(false);
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("INTEGER");
@@ -390,17 +389,48 @@ namespace project.Migrations
                     b.ToTable("PlanGenerationStates");
                 });
 
+            modelBuilder.Entity("project.Models.RoutePolyline", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CachedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EncodedPolyline")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RouteKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UsageCount")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CachedAt");
+
+                    b.HasIndex("RouteKey")
+                        .IsUnique();
+
+                    b.ToTable("RoutePolylines");
+                });
+
             modelBuilder.Entity("project.Models.TravelPlan", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.PrimitiveCollection<string>("Accommodations")
+                    b.Property<string>("Accommodations")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.PrimitiveCollection<string>("Activities")
+                    b.Property<string>("Activities")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -440,7 +470,10 @@ namespace project.Migrations
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("TEXT");
 
-                    b.PrimitiveCollection<string>("Transportation")
+                    b.Property<string>("TransportMode")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Transportation")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

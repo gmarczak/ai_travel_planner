@@ -1,7 +1,9 @@
 @page
 @model project.Pages.TravelPlanner.IndexModel
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
 @{
-    ViewData["Title"] = "AI Travel Planner";
+    ViewData["Title"] = Localizer["appTitle"];
 }
 
 <style>
@@ -16,18 +18,142 @@
             min-height: auto;
         }
     }
+
+    /* Improved font visibility for mobile and desktop */
+    .form-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 0.4rem;
+    }
+
+    .form-control,
+    .form-select {
+        font-size: 1rem;
+        color: #212529;
+        border: 1.5px solid #ced4da;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    }
+
+    .form-control::placeholder {
+        color: #6c757d;
+        opacity: 0.7;
+    }
+
+    .form-text {
+        font-size: 0.85rem;
+        color: #6c757d;
+        line-height: 1.4;
+    }
+
+    legend.h6 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+    }
+
+    /* Mobile optimizations */
+    @@media (max-width: 767px) {
+        .form-label {
+            font-size: 0.95rem;
+        }
+
+        .form-control,
+        .form-select {
+            font-size: 1.05rem;
+            padding: 0.6rem 0.75rem;
+        }
+
+        .form-text {
+            font-size: 0.875rem;
+        }
+
+        legend.h6 {
+            font-size: 1rem;
+        }
+    }
+
+    /* Desktop optimizations */
+    @@media (min-width: 768px) {
+        .form-label {
+            font-size: 0.9rem;
+        }
+
+        .form-control,
+        .form-select {
+            font-size: 0.95rem;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .form-text {
+            font-size: 0.8rem;
+        }
+
+        legend.h6 {
+            font-size: 0.95rem;
+        }
+    }
+
+    /* Autocomplete dropdown styling */
+    .pac-container {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-size: 1rem;
+        border-radius: 0.375rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        margin-top: 4px;
+    }
+
+    .pac-item {
+        padding: 0.6rem 0.75rem;
+        border-top: 1px solid #e9ecef;
+        cursor: pointer;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .pac-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .pac-item-selected {
+        background-color: #e7f1ff;
+    }
+
+    .pac-icon {
+        margin-top: 4px;
+    }
+
+    .pac-item-query {
+        font-weight: 600;
+        color: #212529;
+    }
+
+    @@media (max-width: 767px) {
+        .pac-container {
+            font-size: 1.05rem;
+        }
+
+        .pac-item {
+            padding: 0.75rem 0.85rem;
+            font-size: 1rem;
+        }
+    }
 </style>
 
 <div class="container mt-3 mt-md-5 px-2 px-md-3">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8">
-            <h1 class="text-center mb-3 mb-md-4 fw-bold fs-2 fs-md-1">Create Your Travel Plan</h1>
-            <p class="text-center text-muted mb-3 mb-md-4 small">Fill in the details below to generate a personalized AI
-                itinerary.
+            <h1 class="text-center mb-3 mb-md-4 fw-bold fs-2 fs-md-1">@Localizer["createTravelPlan"]</h1>
+            <p class="text-center text-muted mb-3 mb-md-4 small">@Localizer["fillInDetails"]
             </p>
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-primary text-white py-2 py-md-3">
-                    <h4 class="mb-0 fs-5 fs-md-4">Trip details</h4>
+                    <h4 class="mb-0 fs-5 fs-md-4">@Localizer["tripDetails"]</h4>
                 </div>
                 <div class="card-body p-3 p-md-4">
                     @if (!ViewData.ModelState.IsValid)
@@ -42,28 +168,26 @@
                         @Html.AntiForgeryToken()
                         <!-- DESTINATION & DATES -->
                         <fieldset class="mb-4">
-                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">Destination & Dates
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">@Localizer["destinationDates"]
                             </legend>
                             <div class="row g-2 g-md-3">
                                 <div class="col-12 col-md-6">
-                                    <label asp-for="TravelRequest.Destination" class="form-label small">Where do you
-                                        want to go?
-                                        *</label>
+                                    <label asp-for="TravelRequest.Destination" class="form-label">@Localizer["whereYouWantToGo"] <span class="text-danger">*</span></label>
                                     <input asp-for="TravelRequest.Destination" id="destinationInput"
-                                        class="form-control form-control-sm form-control-md-normal"
-                                        placeholder="e.g. Paris, Tokyo, New York..." autocomplete="off"
+                                        class="form-control"
+                                        placeholder="@Localizer["exampleDestinations"]" autocomplete="off"
                                         autocapitalize="words" required />
                                     <span asp-validation-for="TravelRequest.Destination"
                                         class="text-danger small"></span>
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <label asp-for="TravelRequest.StartDate" class="form-label small">Start *</label>
+                                    <label asp-for="TravelRequest.StartDate" class="form-label small">@Localizer["start"] *</label>
                                     <input asp-for="TravelRequest.StartDate" type="date"
                                         class="form-control form-control-sm form-control-md-normal" required />
                                     <span asp-validation-for="TravelRequest.StartDate" class="text-danger small"></span>
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <label asp-for="TravelRequest.EndDate" class="form-label small">End *</label>
+                                    <label asp-for="TravelRequest.EndDate" class="form-label small">@Localizer["end"] *</label>
                                     <input asp-for="TravelRequest.EndDate" type="date"
                                         class="form-control form-control-sm form-control-md-normal" required />
                                     <span asp-validation-for="TravelRequest.EndDate" class="text-danger small"></span>
@@ -73,11 +197,11 @@
 
                         <!-- TRAVELERS / BUDGET / TYPE -->
                         <fieldset class="mb-4">
-                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">People & Budget
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">@Localizer["peopleBudget"]
                             </legend>
                             <div class="row g-2 g-md-3">
                                 <div class="col-6 col-md-4">
-                                    <label asp-for="TravelRequest.NumberOfTravelers" class="form-label small">Travelers
+                                    <label asp-for="TravelRequest.NumberOfTravelers" class="form-label small">@Localizer["travelers"]
                                         *</label>
                                     <div class="input-group input-group-sm">
                                         <button class="btn btn-outline-secondary travelers-btn" type="button"
@@ -97,7 +221,7 @@
                                         class="text-danger small"></span>
                                 </div>
                                 <div class="col-6 col-md-4">
-                                    <label asp-for="TravelRequest.Budget" class="form-label small">Budget (USD)
+                                    <label asp-for="TravelRequest.Budget" class="form-label small">@Localizer["budget"]
                                         *</label>
                                     <input asp-for="TravelRequest.Budget" type="number" min="100" step="50"
                                         inputmode="decimal" enterkeyhint="done" autocomplete="off"
@@ -106,16 +230,43 @@
                                     <span asp-validation-for="TravelRequest.Budget" class="text-danger small"></span>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <label asp-for="TravelRequest.TripType" class="form-label small">Trip Type</label>
+                                    <label asp-for="TravelRequest.TripType" class="form-label small">@Localizer["tripType"]</label>
                                     <select asp-for="TravelRequest.TripType"
                                         class="form-select form-select-sm form-select-md-normal">
-                                        <option value="">(optional)</option>
-                                        <option value="Adventure">Adventure</option>
-                                        <option value="Relaxation">Relaxation</option>
-                                        <option value="Cultural">Cultural</option>
-                                        <option value="Business">Business</option>
-                                        <option value="Family">Family</option>
+                                        <option value="">@Localizer["optional"]</option>
+                                        <option value="Adventure">@Localizer["adventure"]</option>
+                                        <option value="Relaxation">@Localizer["relaxation"]</option>
+                                        <option value="Cultural">@Localizer["cultural"]</option>
+                                        <option value="Business">@Localizer["business"]</option>
+                                        <option value="Family">@Localizer["family"]</option>
                                     </select>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- TRANSPORT MODE -->
+                        <fieldset class="mb-4">
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-3">@Localizer["transport"]</legend>
+                            <div class="row g-2 g-md-3">
+                                <div class="col-12 col-md-6">
+                                    <label asp-for="TravelRequest.DepartureLocation" class="form-label">@Localizer["travelingFrom"] <span class="text-muted fw-normal">(@Localizer["optional"])</span></label>
+                                    <input asp-for="TravelRequest.DepartureLocation" id="departureInput"
+                                        class="form-control"
+                                        placeholder="@Localizer["exampleStartingPoints"]"
+                                        autocomplete="off" autocapitalize="words" />
+                                    <small class="form-text mt-1 d-block">💡 @Localizer["helpsFindBestFlights"]</small>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label asp-for="TravelRequest.TransportMode" class="form-label small">@Localizer["howAreYouTraveling"]</label>
+                                    <select asp-for="TravelRequest.TransportMode"
+                                        class="form-select form-select-sm form-select-md-normal">
+                                        <option value="">@Localizer["optionalAiSuggest"]</option>
+                                        <option value="Flight">@Localizer["flight"]</option>
+                                        <option value="Car">@Localizer["car"]</option>
+                                        <option value="Train">@Localizer["train"]</option>
+                                        <option value="Bus">@Localizer["bus"]</option>
+                                    </select>
+                                    <small class="form-text text-muted mt-1 d-block">💡 @Localizer["helpsAiSuggest"]</small>
                                 </div>
                             </div>
                         </fieldset>
@@ -124,13 +275,11 @@
 
                         <!-- PREFERENCES -->
                         <fieldset class="mb-3 mb-md-4">
-                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-2 mb-md-3">Additional
-                                Preferences</legend>
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-2 mb-md-3">@Localizer["additionalPreferences"]</legend>
                             <textarea asp-for="TravelRequest.TravelPreferences"
                                 class="form-control form-control-sm form-control-md-normal" rows="3"
-                                placeholder="Examples: Include nightclubs and bars in evening activities | Vegetarian restaurants only | Focus on art museums and galleries | Wheelchair accessible locations"></textarea>
-                            <small class="form-text text-muted mt-1 d-block">💡 Be specific! Instead of "partying at
-                                night", write "Include nightclubs and late-night bars" for better results.</small>
+                                placeholder="@Localizer["examplesPreferences"]"></textarea>
+                            <small class="form-text text-muted mt-1 d-block">💡 @Localizer["beSpecific"]</small>
                         </fieldset>
 
                         <div class="d-grid">
@@ -138,7 +287,7 @@
                                 style="min-height: 44px;">
                                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"
                                     style="display: none;" id="loadingSpinner"></span>
-                                <span id="buttonText">Generate Travel Plan</span>
+                                <span id="buttonText">@Localizer["generatePlan"]</span>
                             </button>
                         </div>
 
@@ -151,13 +300,13 @@
                                     <span id="formProgressText" class="fw-bold small">10%</span>
                                 </div>
                             </div>
-                            <div class="small text-muted" id="progressStatus">Preparing...</div>
+                            <div class="small text-muted" id="progressStatus">@Localizer["preparing"]</div>
                         </div>
 
                         <!-- Language selection removed from form. Language is taken from the header selector (cookie). -->
                         <div class="mt-3 text-center">
-                            <small class="text-muted d-block d-sm-inline">* Required fields</small>
-                            <small class="text-muted d-none d-sm-inline"> — Processing time: a few seconds</small>
+                            <small class="text-muted d-block d-sm-inline">* @Localizer["requiredFields"]</small>
+                            <small class="text-muted d-none d-sm-inline"> — @Localizer["processingTime"]</small>
                         </div>
                     </form>
                 </div>
@@ -410,7 +559,7 @@
                 if (btn && spn && txt) {
                     btn.disabled = true;
                     spn.style.display = 'inline-block';
-                    txt.textContent = 'Creating your plan...';
+                    txt.textContent = i18n.t('creatingYourPlan');
                 }
 
                 // Initialize SignalR if not already connected

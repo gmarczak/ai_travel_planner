@@ -6,6 +6,11 @@ namespace project.Models
         /// Images for this day (2-3 images: main attraction, food/activity, optional third)
         /// </summary>
         public List<DayImage> Images { get; init; } = new();
+
+        /// <summary>
+        /// Route polylines for this day (encoded Google Maps polylines)
+        /// </summary>
+        public List<string> RoutePolylines { get; init; } = new();
     }
 
     public class DayImage

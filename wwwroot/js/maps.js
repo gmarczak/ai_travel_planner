@@ -52,11 +52,7 @@
         // (addInteractiveMarker will handle its own InfoWindow)
         if (point.infoHtml && !point._skipAutoInfo) {
             const info = new google.maps.InfoWindow({ content: point.infoHtml });
-            marker.addListener("click", () => {
-                if (activeInfoWindow) activeInfoWindow.close();
-                info.open({ anchor: marker, map });
-                activeInfoWindow = info;
-            });
+            marker.addListener("click", () => info.open({ anchor: marker, map }));
         }
         return marker;
     }
@@ -82,11 +78,7 @@
                 content.appendChild(btnWrap);
             }
             const info = new google.maps.InfoWindow({ content });
-            marker.addListener('click', () => {
-                if (activeInfoWindow) activeInfoWindow.close();
-                info.open({ anchor: marker, map });
-                activeInfoWindow = info;
-            });
+            marker.addListener('click', () => info.open({ anchor: marker, map }));
         }
         return marker;
     }
@@ -129,14 +121,19 @@
                 l.markers.forEach(m => m.setMap(visible ? map : null));
                 l.polylines.forEach(p => p.setMap(visible ? map : null));
             },
+            setMarkersVisible(name, visible) {
+                const l = layers[name]; if (!l) return;
+                l.markers.forEach(m => m.setMap(visible ? map : null));
+            },
+            setPolylinesVisible(name, visible) {
+                const l = layers[name]; if (!l) return;
+                l.polylines.forEach(p => p.setMap(visible ? map : null));
+            },
             clearLayer(name) { const l = layers[name]; if (!l) return; l.markers.forEach(m => m.setMap(null)); l.polylines.forEach(p => p.setMap(null)); layers[name] = { markers: [], polylines: [], visible: false }; },
             getLayerNames() { return Object.keys(layers); },
             getLayer(name) { return layers[name]; }
         };
     }
-
-    // Global variable to track active InfoWindow
-    let activeInfoWindow = null;
 
     window.gm_authFailure = function () {
         console.error("Google Maps authentication failure.");

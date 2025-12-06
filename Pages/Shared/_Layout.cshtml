@@ -24,6 +24,7 @@
     <link href="~/css/travel-form.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/offcanvas-styles.css" rel="stylesheet" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    @await RenderSectionAsync("Styles", required: false)
     <style>
         html {
             height: 100%;
@@ -141,6 +142,21 @@
                     </li>
                     <li class="nav-item"><a href="/Account/Register" class="btn btn-light btn-sm px-3">Sign Up</a></li>
                 }
+                <!-- Language Selector -->
+                <li class="nav-item ms-2 ps-2 border-start border-light">
+                    <div class="btn-group" role="group">
+                        <a href="/set-language?culture=en&returnUrl=@(Context.Request.Path + Context.Request.QueryString)" 
+                           class="btn btn-sm @(htmlLang.StartsWith("en") ? "btn-light text-dark" : "btn-outline-light text-white")"
+                           title="English">
+                            🇬🇧 EN
+                        </a>
+                        <a href="/set-language?culture=pl&returnUrl=@(Context.Request.Path + Context.Request.QueryString)" 
+                           class="btn btn-sm @(htmlLang.StartsWith("pl") ? "btn-light text-dark" : "btn-outline-light text-white")"
+                           title="Polski">
+                            🇵🇱 PL
+                        </a>
+                    </div>
+                </li>
             </ul>
 
             <!-- Mobile hamburger menu -->
@@ -292,6 +308,7 @@
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
     <script src="~/js/toast-helper.js" asp-append-version="true"></script>
+    <script src="~/js/i18n-helper.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/maps.js" asp-append-version="true"></script>
     <script src="~/js/results-map.js" asp-append-version="true"></script>
@@ -321,7 +338,7 @@
             };
         </script>
         <script async defer
-            src="https://maps.googleapis.com/maps/api/js?key=@mapsKey&libraries=places&callback=__gmapsOnLoad&loading=async"></script>
+            src="https://maps.googleapis.com/maps/api/js?key=@mapsKey&libraries=places,geometry&callback=__gmapsOnLoad&loading=async"></script>
         <script async defer
             src="https://unpkg.com/@@google/markerclustererplus@@1.0.3/dist/markerclustererplus.min.js"></script>
     }

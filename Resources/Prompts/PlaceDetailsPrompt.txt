@@ -1,0 +1,4 @@
+Provide a brief, structured description for '{PLACE_NAME}' in {DESTINATION}.
+Format your response as a single paragraph with 1-2 short sentences.
+Focus on: what makes it special, best time to visit, and one practical tip.
+Keep it under 100 words total.

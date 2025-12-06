@@ -1,16 +1,23 @@
 @page "{id?}"
 @model project.Pages.TravelPlanner.ResultModel
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
 @{
-    ViewData["Title"] = "Your Travel Plan";
+    ViewData["Title"] = Localizer["yourTravelPlan"];
     var plan = Model.TravelPlan;
     var planId = Model.PlanId ?? (Model.RouteData.Values["id"] as string);
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/details.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/timeline.css" asp-append-version="true" />
 }
 
 
 @if (plan == null)
 {
-    <div class="alert alert-warning">No travel plan data was found. Please create a new plan.</div>
-    <p><a asp-page="Index" class="btn btn-primary">Back to planner</a></p>
+    <div class="alert alert-warning">@Localizer["noPlanFound"]</div>
+    <p><a asp-page="Index" class="btn btn-primary">@Localizer["backToPlanner"]</a></p>
 }
 else
 {
@@ -67,34 +74,71 @@ else
         </div>
     </header>
 
+    @if (!string.IsNullOrWhiteSpace(plan?.TransportMode))
+    {
+        var transportIcon = plan.TransportMode switch
+        {
+            "Flight" => "✈️",
+            "Car" => "🚗",
+            "Train" => "🚆",
+            "Bus" => "🚌",
+            _ => "🚶"
+        };
+        var transportDescription = plan.TransportMode switch
+        {
+            "Flight" => "Flying - Check AI suggestions for nearby airports and transfer options",
+            "Car" => "Driving - Scenic routes and parking info included",
+            "Train" => "Train travel - Main stations and rail passes suggested",
+            "Bus" => "Bus routes - International connections and terminals",
+            _ => plan.TransportMode
+        };
+        var routeInfo = !string.IsNullOrWhiteSpace(plan?.DepartureLocation) 
+            ? $" from {plan.DepartureLocation}" 
+            : "";
+        <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+            <span class="fs-4 me-2">@transportIcon</span>
+            <div>
+                <strong>Transport Mode:</strong> @plan.TransportMode@routeInfo → @plan.Destination!<br/>
+                <small class="text-muted">@transportDescription</small>
+            </div>
+        </div>
+    }
+
     <hr class="my-3" />
 
     <!-- Desktop navigation tabs (mobile has bottom navbar) -->
     <nav class="mb-3 d-none d-md-flex gap-2 flex-wrap main-tabs" role="tablist" aria-label="Plan views">
-        <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Plan</button>
+        <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">@Localizer["plan"]</button>
         <button type="button" data-tab="map" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Map</button>
         <button type="button" data-tab="details" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Details</button>
         <button type="button" data-tab="chat" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">AI Assistant</button>
     </nav>
 
     <section id="tab-plan" data-tab-panel style="padding-top: 0;">
-        <div class="d-flex justify-content-end gap-2 mb-3">
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="expandAllBtn" style="min-height: 36px;">Expand all</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="collapseAllBtn" style="min-height: 36px;">Collapse all</button>
-        </div>
+        <div class="row g-3 g-lg-4">
+            <!-- Main content -->
+            <div class="col-12 col-lg-8">
+                <div class="d-flex justify-content-end gap-2 mb-3">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="expandAllBtn" style="min-height: 36px;">@Localizer["expandAll"]</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="collapseAllBtn" style="min-height: 36px;">@Localizer["collapseAll"]</button>
+                </div>
 
-        @if (Model.ParsedDays.Count == 0)
-        {
-            <pre id="itineraryText" class="bg-light p-2 p-md-3 rounded border small">@Model.VisibleItinerary</pre>
-        }
-        else
-        {
-            <div id="daysContainer">
+                @if (Model.ParsedDays.Count == 0)
+                {
+                    <pre id="itineraryText" class="bg-light p-2 p-md-3 rounded border small">@Model.VisibleItinerary</pre>
+                }
+                else
+                {
+                    <div id="daysContainer">
                 @for (var i = 0; i < Model.ParsedDays.Count; i++)
                 {
                     var d = Model.ParsedDays[i];
-                    <details class="mb-3 border rounded" open>
-                        <summary class="fw-semibold p-2 p-md-3 bg-light" style="cursor: pointer; min-height: 44px; display: flex; align-items: center;">Day @d.Day @if(!string.IsNullOrWhiteSpace(d.Date)){<text>- @d.Date</text>}</summary>
+                    var lineCount = d.Lines?.Count() ?? 0;
+                    <details class="mb-3 border rounded day-timeline-card" open>
+                        <summary class="fw-semibold p-2 p-md-3 bg-light" style="cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: space-between;">
+                            <span>Day @d.Day @if(!string.IsNullOrWhiteSpace(d.Date)){<text>- @d.Date</text>}</span>
+                            <span class="badge bg-primary ms-2">@lineCount activities</span>
+                        </summary>
                         <div class="p-2 p-md-3">
                             @* Day Images - 2-3 images per day *@
                             @if (d.Images != null && d.Images.Any())
@@ -122,43 +166,80 @@ else
                                 </div>
                             }
                             
-                            @foreach (var line in d.Lines)
-                            {
-                                var trimmedLine = line.Trim();
-                                if (string.IsNullOrWhiteSpace(line))
+                            @* Simplified day content display *@
+                            <div class="day-content">
+                                @foreach (var line in d.Lines)
                                 {
-                                    <div class="mb-1"></div>
-                                    continue;
+                                    if (string.IsNullOrWhiteSpace(line))
+                                    {
+                                        <div class="mb-1"></div>
+                                        continue;
+                                    }
+                                    
+                                    if (line.TrimStart().StartsWith("📍"))
+                                    {
+                                        var category = DetectActivityCategory(line);
+                                        <div class="activity-line location-marker">
+                                            <span class="activity-icon">📍</span>
+                                            <strong>@line.Replace("📍", "").Trim()</strong>
+                                            @if (!string.IsNullOrEmpty(category))
+                                            {
+                                                <span class="activity-category-badge @category.ToLower()">@GetCategoryIcon(category) @category</span>
+                                            }
+                                        </div>
+                                    }
+                                    else if (line.TrimStart().StartsWith("🌅") || line.TrimStart().StartsWith("☀️") || line.TrimStart().StartsWith("🌆"))
+                                    {
+                                        <div class="time-period-header">@line</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="activity-line">@line</div>
+                                    }
                                 }
-                                else if (line.TrimStart().StartsWith("🌅") || line.TrimStart().StartsWith("☀️") || line.TrimStart().StartsWith("🌆"))
-                                {
-                                    <h6 class="mt-3 mb-2 text-primary">@line</h6>
-                                }
-                                else if (line.TrimStart().StartsWith("📍"))
-                                {
-                                    <div class="ms-2 mb-1"><strong>@line</strong></div>
-                                }
-                                else if (line.TrimStart().StartsWith("�"))
-                                {
-                                    <div class="ms-3 mb-1 text-secondary" style="font-size: 0.95rem;">@line</div>
-                                }
-                                else if (line.TrimStart().StartsWith("ℹ️"))
-                                {
-                                    <div class="ms-3 mb-1" style="font-size: 0.9rem;">@line</div>
-                                }
-                                else
-                                {
-                                    <div class="ms-2 mb-1">@line</div>
-                                }
-                            }
+                            </div>
                         </div>
                     </details>
                 }
-            </div>
-        }
+                    </div>
+                }
 
-            <details class="mt-3 border rounded">
-            <summary class="fw-semibold p-2 p-md-3 bg-light" style="cursor: pointer; min-height: 44px; display: flex; align-items: center;">Edit itinerary</summary>
+@functions {
+    private string DetectActivityCategory(string line)
+    {
+        var lower = line.ToLower();
+        if (lower.Contains("museum") || lower.Contains("gallery") || lower.Contains("art") || lower.Contains("theater") || lower.Contains("opera") || lower.Contains("castle") || lower.Contains("palace"))
+            return "Culture";
+        if (lower.Contains("restaurant") || lower.Contains("cafe") || lower.Contains("food") || lower.Contains("lunch") || lower.Contains("dinner") || lower.Contains("breakfast") || lower.Contains("market"))
+            return "Food";
+        if (lower.Contains("park") || lower.Contains("garden") || lower.Contains("nature") || lower.Contains("beach") || lower.Contains("lake") || lower.Contains("mountain") || lower.Contains("forest"))
+            return "Nature";
+        if (lower.Contains("shopping") || lower.Contains("shop") || lower.Contains("mall") || lower.Contains("boutique") || lower.Contains("store"))
+            return "Shopping";
+        if (lower.Contains("church") || lower.Contains("cathedral") || lower.Contains("temple") || lower.Contains("monument") || lower.Contains("historic"))
+            return "History";
+        if (lower.Contains("club") || lower.Contains("bar") || lower.Contains("nightlife") || lower.Contains("show") || lower.Contains("concert"))
+            return "Entertainment";
+        return "";
+    }
+    
+    private string GetCategoryIcon(string category)
+    {
+        return category switch
+        {
+            "Culture" => "🎨",
+            "Food" => "🍽️",
+            "Nature" => "🌳",
+            "Shopping" => "🛍️",
+            "History" => "🏛️",
+            "Entertainment" => "🎭",
+            _ => ""
+        };
+    }
+}
+
+                <details class="mt-3 border rounded">
+                <summary class="fw-semibold p-2 p-md-3 bg-light" style="cursor: pointer; min-height: 44px; display: flex; align-items: center;">Edit itinerary</summary>
             <form method="post" asp-page-handler="UpdateItinerary" asp-route-id="@planId" class="mt-2 p-2 p-md-3" id="itineraryForm">
                 <div class="position-sticky top-0 bg-white py-2 z-1 border-bottom mb-2 d-flex gap-1 gap-md-2 flex-wrap align-items-center">
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="btnDay" style="min-height: 36px;">+ Day</button>
@@ -181,15 +262,118 @@ else
                     <div class="mt-2 mt-md-3 d-flex gap-2 flex-wrap">
                     <button type="submit" class="btn btn-primary flex-fill flex-sm-grow-0" id="btnSave" style="min-height: 44px;">
                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="btnSaveSpinner"></span>
-                        <span id="btnSaveText">Save changes</span>
+                        <span id="btnSaveText">@Localizer["saveChanges"]</span>
                     </button>
                     <button type="submit" formaction="?handler=ResetItinerary&id=@planId" class="btn btn-outline-secondary flex-fill flex-sm-grow-0" id="btnReset" style="min-height: 44px;">
                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="btnResetSpinner"></span>
                         <span id="btnResetText"><span class="d-none d-sm-inline">Reset to AI version</span><span class="d-inline d-sm-none">Reset</span></span>
                     </button>
+                    </div>
+                </form>
+            </details>
+            </div>
+            
+            <!-- Sticky Sidebar (Desktop only) -->
+            <div class="col-12 col-lg-4 d-none d-lg-block">
+                <div class="sticky-summary-sidebar">
+                    <div class="summary-card">
+                        <h5 class="summary-title">📋 Trip Summary</h5>
+                        
+                        <div class="summary-section">
+                            <div class="summary-label">Duration</div>
+                            <div class="summary-value">@days days</div>
+                            <div class="summary-dates">@plan.StartDate!.ToString("MMM dd") - @plan.EndDate!.ToString("MMM dd, yyyy")</div>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <div class="summary-label">Budget</div>
+                            <div class="summary-value text-success">$@(plan?.Budget ?? 0)</div>
+                            <div class="summary-subtext">$@perPersonPerDay.ToString("F0")/person/day</div>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <div class="summary-label">Travelers</div>
+                            <div class="summary-value">@(plan?.NumberOfTravelers ?? 0) @((plan?.NumberOfTravelers ?? 0) == 1 ? "person" : "people")</div>
+                        </div>
+                        
+                        @if (!string.IsNullOrWhiteSpace(plan?.TransportMode))
+                        {
+                            <div class="summary-section">
+                                <div class="summary-label">Transport</div>
+                                <div class="summary-value">
+                                    @{
+                                        var icon = plan.TransportMode switch
+                                        {
+                                            "Flight" => "✈️",
+                                            "Car" => "🚗",
+                                            "Train" => "🚆",
+                                            "Bus" => "🚌",
+                                            _ => "🚶"
+                                        };
+                                    }
+                                    @icon @plan.TransportMode
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(plan?.DepartureLocation))
+                                {
+                                    <div class="summary-route">@plan.DepartureLocation → @plan.Destination!</div>
+                                }
+                            </div>
+                        }
+                        
+                        <div class="summary-section">
+                            <div class="summary-label">Activities</div>
+                            <div class="summary-stats">
+                                <div class="summary-stat-item">
+                                    <span class="summary-stat-number">@((plan?.Accommodations?.Count ?? 0))</span>
+                                    <span class="summary-stat-label">Stays</span>
+                                </div>
+                                <div class="summary-stat-item">
+                                    <span class="summary-stat-number">@((plan?.Activities?.Count ?? 0))</span>
+                                    <span class="summary-stat-label">Activities</span>
+                                </div>
+                                <div class="summary-stat-item">
+                                    <span class="summary-stat-number">@((plan?.Transportation?.Count ?? 0))</span>
+                                    <span class="summary-stat-label">Tips</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrWhiteSpace(plan?.TravelPreferences))
+                        {
+                            <div class="summary-section">
+                                <div class="summary-label">Preferences</div>
+                                <div class="summary-preferences">@plan.TravelPreferences</div>
+                            </div>
+                        }
+                        
+                        <div class="summary-actions">
+                            <button type="button" class="btn btn-sm btn-outline-primary w-100 mb-2" onclick="window.print()">
+                                <i class="bi bi-printer"></i> Print Plan
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="window.TravelPlanner.copyToClipboard('@plan?.Destination @days-day trip')">
+                                <i class="bi bi-share"></i> Share
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Links -->
+                    <div class="summary-card mt-3">
+                        <h6 class="summary-subtitle">🔗 Quick Links</h6>
+                        <div class="quick-links">
+                            <a href="#tab-map" class="quick-link-item" data-tab="map">
+                                <i class="bi bi-map"></i> View Map
+                            </a>
+                            <a href="#tab-details" class="quick-link-item" data-tab="details">
+                                <i class="bi bi-list-check"></i> Full Details
+                            </a>
+                            <a href="#tab-chat" class="quick-link-item" data-tab="chat">
+                                <i class="bi bi-chat-dots"></i> AI Assistant
+                            </a>
+                        </div>
+                    </div>
                 </div>
-            </form>
-        </details>
+            </div>
+        </div>
     </section>
 
     <!-- PLAN DATA FOR CLIENT-SIDE SCRIPTS -->
@@ -206,7 +390,7 @@ else
         transportation = (plan?.Transportation ?? new List<string>()),
         generatedItinerary = plan?.GeneratedItinerary ?? string.Empty,
         createdAt = plan?.CreatedAt ?? DateTime.MinValue,
-        parsedDays = (Model.ParsedDays?.Select(d => new { day = d.Day, date = d.Date, lines = d.Lines }).ToArray()) ?? Array.Empty<object>()
+        parsedDays = (Model.ParsedDays?.Select(d => new { day = d.Day, date = d.Date, lines = d.Lines, routePolylines = d.RoutePolylines }).ToArray()) ?? Array.Empty<object>()
     }, new System.Text.Json.JsonSerializerOptions { WriteIndented = false }))</script>
     @Html.AntiForgeryToken()
 
@@ -227,20 +411,17 @@ else
             </div>
 
             <!-- Right column: Sidebar (desktop only visible) -->
-            <div class="col-12 col-lg-4 d-none d-lg-block">
+            <div class="col-12 col-lg-4">
                 <div class="map-sidebar">
                     <!-- Destination Hero Card removed (no duplication) -->
 
                     <!-- Day Filter Chips (desktop: grid, mobile: horizontal scroll) -->
                     <div class="mb-3">
-                        <h6 class="mb-2 text-muted small text-uppercase" style="font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">Filter by day</h6>
+                        <h6 class="mb-2 text-muted small text-uppercase">Filter by day</h6>
                         <div class="day-chips-container">
                             <div id="map-controls" class="day-chips-grid"></div>
                         </div>
                     </div>
-
-                    <!-- POI List Panel (Desktop) -->
-                    <div id="side-panel" class="mb-3"></div>
 
                     <!-- Search/Add Location Section -->
                     <div class="card shadow-sm">
@@ -265,49 +446,6 @@ else
                 </div>
             </div>
         </div>
-
-        <!-- Mobile: Bottom Sheet for Day Filter & POI List -->
-        <div class="d-lg-none mt-3">
-            <!-- Day Filter Chips for Mobile -->
-            <div class="mb-3">
-                <div class="day-chips-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 4px 0;">
-                    <div id="map-controls-mobile" class="day-chips-grid" style="display: flex;"></div>
-                </div>
-            </div>
-            
-            <!-- Bottom Sheet Container -->
-            <div class="card border shadow-sm" style="border-radius: 12px;">
-                <div class="card-header bg-light border-bottom">
-                    <h6 class="mb-0" id="bottom-sheet-day-title" style="font-size: 14px; font-weight: 600; color: #495057;">📍 Select a day to view locations</h6>
-                </div>
-                
-                <div class="card-body" style="max-height: 350px; overflow-y: auto;">
-                    <!-- POI List Panel (Mobile) -->
-                    <div id="side-panel-mobile"></div>
-                </div>
-            </div>
-
-            <!-- Mobile: Add Location Section -->
-            <div class="card shadow-sm mt-3">
-                <div class="card-body">
-                    <h6 class="card-title mb-3">Add Location</h6>
-                    <div class="input-group mb-2 search-input-mobile">
-                        <span class="input-group-text bg-white border-end-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-                            </svg>
-                        </span>
-                        <input type="text" id="location-search-mobile" class="form-control border-start-0" placeholder="Search places..." />
-                    </div>
-                    <button type="button" class="btn btn-primary w-100 add-location-btn" id="add-location-btn-mobile">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1" viewBox="0 0 16 16">
-                            <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-                        </svg>
-                        Add to Map
-                    </button>
-                </div>
-            </div>
-        </div>
     </section>
 
     <section id="tab-details" data-tab-panel hidden>
@@ -315,7 +453,7 @@ else
         <div class="card shadow-sm mb-4 details-hero-card">
             <div class="card-body p-4">
                 <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h2 class="h4 mb-0">📊 Trip Overview</h2>
+                    <h2 class="h3 mb-0 fw-bold text-dark">📊 Trip Overview</h2>
                     <button type="button" class="btn badge bg-success fs-5 border-0" 
                             data-bs-toggle="collapse" 
                             data-bs-target="#budgetBreakdown" 
@@ -359,7 +497,7 @@ else
                             <div class="stat-content">
                                 <div class="stat-label">Duration</div>
                                 <div class="stat-value">@days days</div>
-                                <div class="stat-subtext">@plan?.StartDate.ToString("MMM dd") - @plan?.EndDate.ToString("MMM dd, yyyy")</div>
+                                <div class="stat-subtext">@plan.StartDate!.ToString("MMM dd") - @plan.EndDate!.ToString("MMM dd, yyyy")</div>
                             </div>
                         </div>
                     </div>
@@ -387,6 +525,108 @@ else
             </div>
         </div>
 
+    @* Next Steps Checklist Section *@
+    <div class="card shadow-sm mb-4 detail-section-card next-steps-card">
+        <div class="card-header bg-white border-0 pt-3 pb-2">
+            <h3 class="h3 mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
+                <span class="detail-icon me-2">✅</span>
+                <span>Next Steps - Pre-Departure Checklist</span>
+            </h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3 small">Stay organized with this checklist to ensure you're ready for your trip:</p>
+            
+            <div class="next-steps-list">
+                <div class="next-step-item">
+                    <div class="form-check">
+                        <input class="form-check-input next-step-checkbox" type="checkbox" id="checkPassport" data-step="passport">
+                        <label class="form-check-label" for="checkPassport">
+                            <div class="d-flex align-items-start">
+                                <span class="step-icon me-3">📋</span>
+                                <div>
+                                    <strong>Check Passport & Visas</strong>
+                                    <p class="text-muted small mb-0">Verify passport validity (6+ months) and visa requirements for @(plan?.Destination ?? "your destination")</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="next-step-item">
+                    <div class="form-check">
+                        <input class="form-check-input next-step-checkbox" type="checkbox" id="checkInsurance" data-step="insurance">
+                        <label class="form-check-label" for="checkInsurance">
+                            <div class="d-flex align-items-start">
+                                <span class="step-icon me-3">🛡️</span>
+                                <div>
+                                    <strong>Purchase Travel Insurance</strong>
+                                    <p class="text-muted small mb-0">Get coverage for trip cancellation, medical emergencies, and lost baggage</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="next-step-item">
+                    <div class="form-check">
+                        <input class="form-check-input next-step-checkbox" type="checkbox" id="checkReservations" data-step="reservations">
+                        <label class="form-check-label" for="checkReservations">
+                            <div class="d-flex align-items-start">
+                                <span class="step-icon me-3">🎫</span>
+                                <div>
+                                    <strong>Confirm All Reservations</strong>
+                                    <p class="text-muted small mb-0">Double-check flights, accommodations, and activity bookings</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="next-step-item">
+                    <div class="form-check">
+                        <input class="form-check-input next-step-checkbox" type="checkbox" id="checkCurrency" data-step="currency">
+                        <label class="form-check-label" for="checkCurrency">
+                            <div class="d-flex align-items-start">
+                                <span class="step-icon me-3">💵</span>
+                                <div>
+                                    <strong>Arrange Currency & Payment Methods</strong>
+                                    <p class="text-muted small mb-0">Notify your bank, get local currency, and prepare backup payment options</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="next-step-item">
+                    <div class="form-check">
+                        <input class="form-check-input next-step-checkbox" type="checkbox" id="checkApps" data-step="apps">
+                        <label class="form-check-label" for="checkApps">
+                            <div class="d-flex align-items-start">
+                                <span class="step-icon me-3">📱</span>
+                                <div>
+                                    <strong>Download Essential Mobile Apps</strong>
+                                    <p class="text-muted small mb-0">Maps, translation, ride-sharing, and offline guides for @(plan?.Destination ?? "your destination")</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <span id="checklistProgress">0/5 completed</span>
+                    </small>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="resetChecklist()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @if (!string.IsNullOrWhiteSpace(plan?.TravelPreferences))
         {
             <div class="alert alert-info mb-4">
@@ -400,86 +640,162 @@ else
             var transportationList = plan.Transportation;
             var startDate = plan.StartDate;
             
-            <div class="card shadow-sm mb-4 detail-section-card">
+            <div class="card shadow-sm mb-4 detail-section-card transport-card">
                 <div class="card-header bg-white border-0 pt-3 pb-2">
-                    <h3 class="h5 mb-0 d-flex align-items-center">
-                        <span class="detail-icon me-2">✈️</span>
-                        Transport & Logistics
-                        <span class="badge bg-primary ms-2">@transportationList.Count</span>
+                    <h3 class="h3 mb-0 fw-bold d-flex align-items-center flex-wrap gap-2 text-dark">
+                        @{
+                            var selectedModeIcon = plan?.TransportMode switch
+                            {
+                                "Flight" => "✈️",
+                                "Car" => "🚗",
+                                "Train" => "🚆",
+                                "Bus" => "🚌",
+                                _ => "✈️"
+                            };
+                        }
+                        <span class="detail-icon me-2">@selectedModeIcon</span>
+                        <span>Transport & Logistics</span>
+                        @if (!string.IsNullOrWhiteSpace(plan?.TransportMode))
+                        {
+                            <span class="badge bg-success ms-2">@plan.TransportMode Mode</span>
+                        }
+                        <span class="badge bg-primary ms-2">@transportationList.Count tips</span>
                     </h3>
                 </div>
                 <div class="card-body">
-                    <div class="accordion" id="transportAccordion">
-                        @for (int i = 0; i < transportationList.Count; i++)
-                        {
-                            var transport = transportationList[i];
-                            var transportId = $"transport{i}";
-                            var isExpanded = i == 0 ? "show" : "";
-                            
-                            <div class="accordion-item border rounded mb-2">
-                                <h2 class="accordion-header" id="heading@transportId">
-                                    <button class="accordion-button @(i == 0 ? "" : "collapsed")" type="button" 
-                                            data-bs-toggle="collapse" 
-                                            data-bs-target="#@transportId" 
-                                            aria-expanded="@(i == 0 ? "true" : "false")" 
-                                            aria-controls="@transportId"
-                                            style="background-color: #f8f9fa; color: #212529;">
-                                        <span class="me-2">@(transport.Contains("Flight") || transport.Contains("flight") ? "✈️" : transport.Contains("Train") || transport.Contains("train") ? "🚆" : transport.Contains("Car") || transport.Contains("car") || transport.Contains("Rental") ? "🚗" : "🚌")</span>
-                                        <span class="fw-semibold text-dark">@(transport.Length > 50 ? transport.Substring(0, 50) + "..." : transport)</span>
-                                        <span class="badge bg-success ms-auto me-2">Confirmed</span>
-                                    </button>
-                                </h2>
-                                <div id="@transportId" class="accordion-collapse collapse @isExpanded" 
-                                     aria-labelledby="heading@transportId" 
-                                     data-bs-parent="#transportAccordion">
-                                    <div class="accordion-body">
-                                        <div class="row g-3">
-                                            <div class="col-12">
-                                                <p class="mb-2"><i class="bi bi-info-circle me-2 text-primary"></i>@transport</p>
-                                            </div>
-                                            @if (transport.Contains("Airport") || transport.Contains("airport") || transport.Contains("Flight") || transport.Contains("flight"))
-                                            {
-                                                <div class="col-md-6">
-                                                    <small class="text-muted">Departure</small>
-                                                    <p class="mb-0 fw-semibold">@startDate.ToString("MMM dd, HH:mm")</p>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <small class="text-muted">Arrival</small>
-                                                    <p class="mb-0 fw-semibold">@startDate.AddHours(2).ToString("MMM dd, HH:mm")</p>
-                                                </div>
-                                            }
-                                            <div class="col-12">
-                                                @if (transport.Contains("Flight") || transport.Contains("flight"))
-                                                {
-                                                    <button class="btn btn-sm btn-outline-primary me-2" onclick="window.open('https://www.skyscanner.com/', '_blank')">
-                                                        <i class="bi bi-search"></i> Search Flights
-                                                    </button>
-                                                    <button class="btn btn-sm btn-outline-secondary" onclick="window.open('https://www.google.com/travel/flights', '_blank')">
-                                                        <i class="bi bi-airplane"></i> Google Flights
-                                                    </button>
-                                                }
-                                                else if (transport.Contains("Train") || transport.Contains("train"))
-                                                {
-                                                    <button class="btn btn-sm btn-outline-primary me-2" onclick="window.open('https://www.thetrainline.com/', '_blank')">
-                                                        <i class="bi bi-train-front"></i> Book Train
-                                                    </button>
-                                                    <button class="btn btn-sm btn-outline-secondary" onclick="window.open('https://www.rome2rio.com/', '_blank')">
-                                                        <i class="bi bi-map"></i> Route Planner
-                                                    </button>
-                                                }
-                                                else
-                                                {
-                                                    <button class="btn btn-sm btn-outline-primary me-2" onclick="window.open('https://www.rome2rio.com/', '_blank')">
-                                                        <i class="bi bi-signpost-2"></i> Plan Route
-                                                    </button>
-                                                    <button class="btn btn-sm btn-outline-secondary" onclick="window.open('https://www.google.com/maps', '_blank')">
-                                                        <i class="bi bi-map"></i> View Map
-                                                    </button>
-                                                }
-                                            </div>
-                                        </div>
+                    @if (!string.IsNullOrWhiteSpace(plan?.DepartureLocation))
+                    {
+                        <div class="alert alert-light border mb-3 route-banner">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-3 me-3">@selectedModeIcon</span>
+                                    <div>
+                                        <strong>Route:</strong> @plan.DepartureLocation → @plan.Destination<br/>
+                                        <small class="text-muted">Traveling by @(plan.TransportMode ?? "various modes")</small>
                                     </div>
                                 </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a href="https://www.google.com/travel/flights?q=@Uri.EscapeDataString($"Flights from {plan.DepartureLocation} to {plan.Destination} on {plan.StartDate!.ToString("yyyy-MM-dd")}")"
+                                       target="_blank"
+                                       class="btn btn-sm btn-primary">
+                                        <i class="bi bi-google"></i> Google Flights
+                                    </a>
+                                    <a href="https://www.booking.com/flights/?type=roundtrip&adults=@(plan.NumberOfTravelers)&from=@Uri.EscapeDataString(plan.DepartureLocation)&to=@Uri.EscapeDataString(plan.Destination!)&depart=@plan.StartDate!.ToString("yyyy-MM-dd")"
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-search"></i> Booking.com Flights
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    
+                    <div class="list-group">
+                        @for (int j = 0; j < transportationList.Count; j++)
+                        {
+                            var transport = transportationList[j];
+                            var transportIcon = transport.Contains("Flight") || transport.Contains("flight") || transport.Contains("Airport") || transport.Contains("airport") ? "✈️" 
+                                : transport.Contains("Train") || transport.Contains("train") || transport.Contains("Station") || transport.Contains("station") ? "🚆"
+                                : transport.Contains("Car") || transport.Contains("car") || transport.Contains("Rental") || transport.Contains("rental") || transport.Contains("Ferry") || transport.Contains("ferry") ? "🚗"
+                                : transport.Contains("Bus") || transport.Contains("bus") ? "🚌"
+                                : "ℹ️";
+                            
+                            <div class="list-group-item @(j == 0 ? "border-primary" : "")">
+                                <div class="d-flex w-100 justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-1">
+                                        <span class="me-2">@transportIcon</span>
+                                        @if (transport.Contains("→") || transport.Contains("to"))
+                                        {
+                                            var routePart = transport.Split(new[] { '.', '!' }, 2)[0];
+                                            <strong>@routePart</strong>
+                                        }
+                                        else if (transport.Length > 60)
+                                        {
+                                            <strong>@transport.Substring(0, 60)...</strong>
+                                        }
+                                        else
+                                        {
+                                            <strong>@transport</strong>
+                                        }
+                                    </h6>
+                                    @if (j == 0 && !string.IsNullOrWhiteSpace(plan?.TransportMode))
+                                    {
+                                        <span class="badge bg-primary">@plan.TransportMode</span>
+                                    }
+                                </div>
+                                <p class="mb-2 text-muted small">@transport</p>
+                                
+                                @if (transport.Contains("Airport") || transport.Contains("airport") || transport.Contains("Flight") || transport.Contains("flight"))
+                                {
+                                    <div class="mt-2 pt-2 border-top">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-clock me-1"></i> Best to book 2-3 months in advance for better prices
+                                        </small>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            @if (!string.IsNullOrWhiteSpace(plan?.DepartureLocation))
+                                            {
+                                                <a href="https://www.google.com/travel/flights?q=@Uri.EscapeDataString($"Flights from {plan.DepartureLocation} to {plan.Destination} on {plan.StartDate!.ToString("yyyy-MM-dd")}")"
+                                                   target="_blank"
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-google"></i> Google Flights
+                                                </a>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                
+                                @if (transport.Contains("Train") || transport.Contains("train") || transport.Contains("Station") || transport.Contains("station") || transport.Contains("Rail") || transport.Contains("rail"))
+                                {
+                                    <div class="mt-2 pt-2 border-top">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-ticket-perforated me-1"></i> Consider rail passes for multiple journeys
+                                        </small>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            @if (!string.IsNullOrWhiteSpace(plan?.DepartureLocation))
+                                            {
+                                                <a href="https://www.thetrainline.com/book/results?origin=@Uri.EscapeDataString(plan.DepartureLocation)&destination=@Uri.EscapeDataString(plan.Destination!)&outwardDate=@plan.StartDate!.ToString("yyyy-MM-dd")&outwardDateType=departAfter" 
+                                                   target="_blank" 
+                                                   class="btn btn-sm btn-outline-success">
+                                                    <i class="bi bi-train-front"></i> Trainline
+                                                </a>
+                                                <a href="https://www.omio.com/search?departureDate=@plan.StartDate!.ToString("yyyy-MM-dd")&from=@Uri.EscapeDataString(plan.DepartureLocation)&to=@Uri.EscapeDataString(plan.Destination!)&transportTypes=train" 
+                                                   target="_blank" 
+                                                   class="btn btn-sm btn-outline-info">
+                                                    <i class="bi bi-search"></i> Omio
+                                                </a>
+                                                <a href="https://www.raileurope.com/us" 
+                                                   target="_blank" 
+                                                   class="btn btn-sm btn-outline-secondary">
+                                                    <i class="bi bi-train-front"></i> Rail Europe
+                                                </a>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                
+                                @if (transport.Contains("Bus") || transport.Contains("bus"))
+                                {
+                                    <div class="mt-2 pt-2 border-top">
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-calendar-check me-1"></i> FlixBus often has early bird discounts
+                                        </small>
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-search me-1"></i> Check: FlixBus, Eurolines, BlaBlaBus
+                                        </small>
+                                    </div>
+                                }
+                                
+                                @if (transport.Contains("Car") || transport.Contains("car") || transport.Contains("Rental") || transport.Contains("rental") || transport.Contains("Ferry") || transport.Contains("ferry"))
+                                {
+                                    <div class="mt-2 pt-2 border-top">
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-shield-check me-1"></i> Book early for better rates and availability
+                                        </small>
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-search me-1"></i> Compare: Rentalcars.com, Kayak, local providers
+                                        </small>
+                                    </div>
+                                }
                             </div>
                         }
                     </div>
@@ -490,77 +806,74 @@ else
     @* IMPROVED: Accommodations with Booking Details *@
     @if ((plan?.Accommodations) != null && plan.Accommodations.Count > 0)
         {
-            <div class="card shadow-sm mb-4 detail-section-card">
+            <div class="card shadow-sm mb-4 detail-section-card accommodations-card">
                 <div class="card-header bg-white border-0 pt-3 pb-2">
-                    <h3 class="h5 mb-0 d-flex align-items-center">
+                    <h3 class="h3 mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
                         <span class="detail-icon me-2">🏨</span>
-                        Accommodations
+                        <span>Accommodations</span>
                         <span class="badge bg-secondary ms-2">@plan.Accommodations.Count</span>
                     </h3>
                 </div>
                 <div class="card-body">
-                    <div class="row g-3">
-                        @if (plan?.Accommodations != null && plan?.StartDate != null)
-                        {
-                            var accommodationsList = plan.Accommodations;
-                            var startDate = plan.StartDate;
-                            var destination = plan.Destination ?? "Destination";
-                            @for (int i = 0; i < accommodationsList.Count; i++)
-                            {
-                                var accommodation = accommodationsList[i];
-                                var nights = i == 0 ? days : (days / accommodationsList.Count);
-                                var checkIn = startDate.AddDays(i * nights);
-                                var checkOut = checkIn.AddDays(nights);
+                    @if (plan?.StartDate != null)
+                    {
+                        var startDate = plan.StartDate;
+                        var endDate = startDate.AddDays(days);
+                        var destination = plan.Destination ?? "Destination";
+                        
+                        <div class="text-center py-4">
+                            <div class="mb-4">
+                                <i class="bi bi-building display-4 text-primary"></i>
+                                <h5 class="mt-3 mb-2 fw-bold text-dark">Find Your Perfect Stay in @destination</h5>
+                                <p class="text-secondary mb-0">Browse hotels on the map and compare prices</p>
+                            </div>
                             
-                            <div class="col-12">
-                                <div class="card border">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start mb-3">
-                                            <div>
-                                                <h6 class="fw-bold mb-1">@accommodation</h6>
-                                                <p class="text-muted small mb-2">
-                                                    <i class="bi bi-geo-alt-fill me-1"></i>
-                                                    @destination
-                                                </p>
-                                            </div>
-                                            <span class="badge bg-success">Confirmed</span>
+                            <div class="row g-3 mb-4 text-start">
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-calendar-check fs-4 text-primary me-3"></i>
+                                        <div>
+                                            <small class="text-secondary d-block fw-semibold">Check-in</small>
+                                            <strong class="text-dark">@startDate.ToString("MMM dd, yyyy")</strong>
                                         </div>
-                                        
-                                        <div class="row g-2 mb-3">
-                                            <div class="col-6">
-                                                <small class="text-muted d-block">Check-in</small>
-                                                <strong>@checkIn.ToString("MMM dd, yyyy")</strong>
-                                                <small class="text-muted d-block">After 3:00 PM</small>
-                                            </div>
-                                            <div class="col-6">
-                                                <small class="text-muted d-block">Check-out</small>
-                                                <strong>@checkOut.ToString("MMM dd, yyyy")</strong>
-                                                <small class="text-muted d-block">Before 11:00 AM</small>
-                                            </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-calendar-x fs-4 text-primary me-3"></i>
+                                        <div>
+                                            <small class="text-secondary d-block fw-semibold">Check-out</small>
+                                            <strong class="text-dark">@endDate.ToString("MMM dd, yyyy")</strong>
                                         </div>
-                                        
-                                        <div class="mb-3">
-                                            <span class="badge bg-light text-dark me-1">@nights night@(nights == 1 ? "" : "s")</span>
-                                            <span class="badge bg-light text-dark me-1">@(plan?.NumberOfTravelers ?? 1) guest@((plan?.NumberOfTravelers ?? 1) == 1 ? "" : "s")</span>
-                                        </div>
-                                        
-                                        <div class="d-flex gap-2 flex-wrap">
-                                            <button class="btn btn-sm btn-primary" onclick="window.open('https://www.booking.com/searchresults.html?ss=@Uri.EscapeDataString(accommodation + ", " + destination)', '_blank')">
-                                                <i class="bi bi-building"></i> Book on Booking.com
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-primary" onclick="window.open('https://www.hotels.com/search.do?q-destination=@Uri.EscapeDataString(accommodation + ", " + destination)', '_blank')">
-                                                <i class="bi bi-house-door"></i> Hotels.com
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary" onclick="window.open('https://www.google.com/maps/search/?api=1&query=@Uri.EscapeDataString(accommodation + ", " + destination)', '_blank')">
-                                                <i class="bi bi-geo-alt"></i> View on Map
-                                            </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-people fs-4 text-primary me-3"></i>
+                                        <div>
+                                            <small class="text-secondary d-block fw-semibold">Guests</small>
+                                            <strong class="text-dark">@(plan?.NumberOfTravelers ?? 1) guest@((plan?.NumberOfTravelers ?? 1) == 1 ? "" : "s")</strong>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            }
-                        }
-                    </div>
+                            
+                            <div class="d-flex gap-3 justify-content-center">
+                                <a href="https://www.booking.com/searchresults.html?ss=@Uri.EscapeDataString(destination)&checkin=@startDate.ToString("yyyy-MM-dd")&checkout=@endDate.ToString("yyyy-MM-dd")&group_adults=@(plan?.NumberOfTravelers ?? 1)&no_rooms=1&map=1"
+                                   target="_blank"
+                                   class="btn btn-primary btn-lg">
+                                    <i class="bi bi-search me-2"></i> Search Hotels on Booking.com
+                                </a>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <small class="text-secondary">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Opens with map view to browse all available accommodations
+                                </small>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
         }
@@ -574,11 +887,11 @@ else
             var startDate = plan.StartDate;
             var destination = plan.Destination ?? "Destination";
             
-            <div class="card shadow-sm mb-4 detail-section-card">
+            <div class="card shadow-sm mb-4 detail-section-card activities-card">
                 <div class="card-header bg-white border-0 pt-3 pb-2">
-                    <h3 class="h5 mb-0 d-flex align-items-center">
+                    <h3 class="h3 mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
                         <span class="detail-icon me-2">🎯</span>
-                        Activities & Experiences
+                        <span>Activities & Experiences</span>
                         <span class="badge bg-secondary ms-2">@activitiesList.Count</span>
                     </h3>
                 </div>
@@ -589,14 +902,14 @@ else
                             <i class="bi bi-calendar-check me-2"></i>Scheduled Events
                             <span class="badge bg-primary ms-2">@scheduledActivities.Count</span>
                         </h6>
-                        <div class="accordion" id="scheduledAccordion">
-                            @for (int i = 0; i < scheduledActivities.Count; i++)
+                        <div class="accordion activity-accordion" id="scheduledAccordion">
+                            @for (int m = 0; m < scheduledActivities.Count; m++)
                             {
-                                var activity = scheduledActivities[i];
-                                var activityId = $"scheduled{i}";
-                                var activityDate = startDate.AddDays(i % days);
+                                var activity = scheduledActivities[m];
+                                var activityId = $"scheduled{m}";
+                                var activityDate = startDate.AddDays(m % days);
                                 
-                                <div class="accordion-item border rounded mb-2">
+                                    <div class="accordion-item mb-2">
                                     <h2 class="accordion-header" id="heading@activityId">
                                         <button class="accordion-button collapsed" type="button" 
                                                 data-bs-toggle="collapse" 
@@ -614,7 +927,7 @@ else
                                                     <div class="fw-semibold">@activity</div>
                                                     <small class="text-muted">@activityDate.ToString("h:mm tt") • @destination</small>
                                                 </div>
-                                                <span class="badge bg-warning text-dark ms-2">$@((i + 1) * 15)</span>
+                                                <span class="badge bg-warning text-dark ms-2">$@((m + 1) * 15)</span>
                                             </div>
                                         </button>
                                     </h2>
@@ -629,7 +942,7 @@ else
                                                 </div>
                                                 <div class="col-md-6">
                                                     <small class="text-muted">Ticket Price</small>
-                                                    <p class="mb-0 fw-semibold text-success">$@((i + 1) * 15) per person</p>
+                                                    <p class="mb-0 fw-semibold text-success">$@((m + 1) * 15) per person</p>
                                                 </div>
                                                 <div class="col-12">
                                                     <small class="text-muted">Location</small>
@@ -691,11 +1004,11 @@ else
                 <div class="row g-3">
                     <div class="col-sm-6 col-md-3">
                         <label class="form-label">Start</label>
-                        <input type="date" name="startDate" value="@plan?.StartDate.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                        <input type="date" name="startDate" value="@plan.StartDate!.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
                     </div>
                     <div class="col-sm-6 col-md-3">
                         <label class="form-label">End</label>
-                        <input type="date" name="endDate" value="@plan?.EndDate.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                        <input type="date" name="endDate" value="@plan.EndDate!.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
                     </div>
                     <div class="col-sm-6 col-md-3">
                         <label class="form-label">Travelers</label>
@@ -741,7 +1054,7 @@ else
                     </div>
                 </div>
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary" @(Model.IsProcessing?"disabled":"")>Save details</button>
+                    <button type="submit" class="btn btn-primary" @(Model.IsProcessing?"disabled":"")>@Localizer["saveDetails"]</button>
                     <a asp-page="Result" asp-route-id="@planId" class="btn btn-outline-secondary">Cancel</a>
                 </div>
             </form>
@@ -753,7 +1066,10 @@ else
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <div>
-                    <h3 class="h5 mb-0">🤖 AI Travel Assistant</h3>
+                    <h3 class="h3 mb-0 fw-bold d-flex align-items-center gap-2">
+                        <span>🤖</span>
+                        <span>AI Travel Assistant</span>
+                    </h3>
                     <small class="text-white-50">Ask questions or request changes to your itinerary</small>
                 </div>
                 <div class="btn-group" role="group">
@@ -813,6 +1129,7 @@ else
     </section>
 }
 @* End of main else block *@
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/%40microsoft/signalr@7.0.14/dist/browser/signalr.min.js"></script>
     <script src="~/js/travelplanner.result.js" asp-append-version="true"></script>
@@ -1842,4 +2159,78 @@ else
             // Load history on page load
             loadPlanHistory();
         })();
+
+        // Next Steps Checklist functionality
+        (function() {
+            const STORAGE_KEY = 'travelPlanChecklist';
+            const checkboxes = document.querySelectorAll('.next-step-checkbox');
+            const progressSpan = document.getElementById('checklistProgress');
+
+            if (!checkboxes.length || !progressSpan) return;
+
+            // Load saved state from localStorage
+            function loadChecklistState() {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) {
+                        const state = JSON.parse(saved);
+                        checkboxes.forEach(cb => {
+                            const step = cb.dataset.step;
+                            if (state[step]) {
+                                cb.checked = true;
+                            }
+                        });
+                        updateProgress();
+                    }
+                } catch (e) {
+                    console.error('Failed to load checklist state:', e);
+                }
+            }
+
+            // Save state to localStorage
+            function saveChecklistState() {
+                try {
+                    const state = {};
+                    checkboxes.forEach(cb => {
+                        state[cb.dataset.step] = cb.checked;
+                    });
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                } catch (e) {
+                    console.error('Failed to save checklist state:', e);
+                }
+            }
+
+            // Update progress counter
+            function updateProgress() {
+                const total = checkboxes.length;
+                const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+                progressSpan.textContent = `${checked}/${total} completed`;
+                
+                // Add visual feedback when all done
+                if (checked === total) {
+                    progressSpan.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>${checked}/${total} completed - All set!`;
+                }
+            }
+
+            // Reset checklist
+            window.resetChecklist = function() {
+                if (confirm('Are you sure you want to reset all checklist items?')) {
+                    checkboxes.forEach(cb => cb.checked = false);
+                    localStorage.removeItem(STORAGE_KEY);
+                    updateProgress();
+                }
+            };
+
+            // Event listeners
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    saveChecklistState();
+                    updateProgress();
+                });
+            });
+
+            // Initialize
+            loadChecklistState();
+        })();
     </script>
+}

@@ -105,6 +105,10 @@ namespace project.Pages.TravelPlanner
                 TravelRequest.TravelPreferences = null;
             if (string.IsNullOrWhiteSpace(TravelRequest.TripType))
                 TravelRequest.TripType = null;
+            if (string.IsNullOrWhiteSpace(TravelRequest.TransportMode))
+                TravelRequest.TransportMode = null;
+            if (string.IsNullOrWhiteSpace(TravelRequest.DepartureLocation))
+                TravelRequest.DepartureLocation = null;
 
             // INTERESTS REMOVED FROM FORM
 

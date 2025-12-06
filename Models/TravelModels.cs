@@ -37,6 +37,12 @@ namespace project.Models
 
         // Destination image URL from Unsplash or fallback
         public string? DestinationImageUrl { get; set; }
+
+        // Transport mode (optional): Flight, Car, Train, Bus
+        public string? TransportMode { get; set; }
+
+        // Departure location (where user is traveling from)
+        public string? DepartureLocation { get; set; }
     }
 
     public class TravelPlanRequest
@@ -70,7 +76,11 @@ namespace project.Models
         [Display(Name = "Trip Type")]
         public string? TripType { get; set; }
 
+        [Display(Name = "Transport Mode")]
+        public string? TransportMode { get; set; }
 
+        [Display(Name = "Traveling From")]
+        public string? DepartureLocation { get; set; }
     }
 
     public class TravelSuggestion

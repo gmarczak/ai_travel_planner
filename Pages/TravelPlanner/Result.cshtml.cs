@@ -26,10 +26,11 @@ namespace project.Pages.TravelPlanner
         private readonly IImageService _imageService;
         private readonly IImageCaptionService _captionService;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IDirectionsService _directionsService;
         private const string SavedPlansKeyPrefix = "savedplans:";
         private const string AnonymousCookieName = "anon_saved_plans_id";
 
-        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env, project.Data.ApplicationDbContext db, IImageService imageService, IImageCaptionService captionService, IServiceScopeFactory scopeFactory)
+        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env, project.Data.ApplicationDbContext db, IImageService imageService, IImageCaptionService captionService, IServiceScopeFactory scopeFactory, IDirectionsService directionsService)
         {
             _logger = logger;
             _cache = cache;
@@ -40,6 +41,7 @@ namespace project.Pages.TravelPlanner
             _imageService = imageService;
             _captionService = captionService;
             _scopeFactory = scopeFactory;
+            _directionsService = directionsService;
         }
 
         public string? PlanId { get; private set; }
@@ -186,6 +188,9 @@ namespace project.Pages.TravelPlanner
 
                 // Load 2-3 images per day (async, optimized with cache)
                 await LoadDayImagesAsync(plan.Destination);
+
+                // Load route polylines for map display (road-based paths)
+                await LoadDayRoutesAsync(plan.Destination);
 
                 return Page();
             }
@@ -498,6 +503,8 @@ namespace project.Pages.TravelPlanner
             }
 
             // Map images back to days with AI-generated captions (or fallback to original)
+            // Track used URLs to avoid duplicates across days
+            var usedUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var dayImagesMap = allQueries
                 .Where(q => imageResults.ContainsKey(q.Query) && !string.IsNullOrEmpty(imageResults[q.Query]))
                 .GroupBy(q => q.DayNumber);
@@ -507,19 +514,31 @@ namespace project.Pages.TravelPlanner
                 var day = ParsedDays.FirstOrDefault(d => d.Day == dayGroup.Key);
                 if (day != null)
                 {
-                    day.Images.AddRange(dayGroup.Select(item => new DayImage
+                    foreach (var item in dayGroup)
                     {
-                        Url = imageResults[item.Query],
-                        Query = item.Query,
-                        Description = aiCaptions.ContainsKey(item.Description)
-                            ? aiCaptions[item.Description]
-                            : item.Description,
-                        IsPrimary = item.IsPrimary
-                    }));
+                        var imageUrl = imageResults[item.Query];
+                        // Skip if this URL was already used in a previous day
+                        if (usedUrls.Contains(imageUrl))
+                        {
+                            _logger.LogDebug("Skipping duplicate image URL for day {Day}: {Url}", day.Day, imageUrl);
+                            continue;
+                        }
+
+                        day.Images.Add(new DayImage
+                        {
+                            Url = imageUrl,
+                            Query = item.Query,
+                            Description = aiCaptions.ContainsKey(item.Description)
+                                ? aiCaptions[item.Description]
+                                : item.Description,
+                            IsPrimary = item.IsPrimary
+                        });
+                        usedUrls.Add(imageUrl);
+                    }
                 }
             }
 
-            _logger.LogInformation("Loaded {Count} images with AI captions across {Days} days",
+            _logger.LogInformation("Loaded {Count} unique images with AI captions across {Days} days",
                 ParsedDays.Sum(d => d.Images.Count), ParsedDays.Count);
         }
 
@@ -585,6 +604,111 @@ namespace project.Pages.TravelPlanner
             }
 
             return results.Take(3).ToList();
+        }
+
+        /// <summary>
+        /// Load route polylines for each day (road-based paths from Google Directions API)
+        /// </summary>
+        private async Task LoadDayRoutesAsync(string destination)
+        {
+            if (ParsedDays == null || !ParsedDays.Any())
+            {
+                _logger.LogDebug("No parsed days available for route loading");
+                return;
+            }
+
+            _logger.LogInformation("Starting route polyline loading for {Days} days in {Destination}", ParsedDays.Count, destination);
+
+            foreach (var day in ParsedDays)
+            {
+                var dayLines = day.Lines.Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
+                if (!dayLines.Any()) continue;
+
+                // Extract locations from this day
+                var locations = ExtractLocationsFromDay(dayLines, destination);
+
+                _logger.LogInformation("Day {Day}: Found {Count} locations for routing", day.Day, locations.Count);
+
+                if (locations.Count < 2)
+                {
+                    _logger.LogDebug("Day {Day} has fewer than 2 locations, skipping route generation", day.Day);
+                    continue;
+                }
+
+                // Fetch route polylines for sequential location pairs
+                for (int i = 0; i < locations.Count - 1; i++)
+                {
+                    try
+                    {
+                        var start = locations[i];
+                        var end = locations[i + 1];
+
+                        _logger.LogDebug("Fetching route: {Start} -> {End}", start, end);
+                        var polyline = await _directionsService.GetRoutePolylineAsync(start, end);
+                        if (!string.IsNullOrEmpty(polyline))
+                        {
+                            day.RoutePolylines.Add(polyline);
+                            _logger.LogDebug("Added polyline (length: {Length}) for Day {Day} segment {Segment}",
+                                polyline.Length, day.Day, i);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Empty polyline returned for Day {Day} segment {Segment}", day.Day, i);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to fetch route for day {Day} segment {Segment}", day.Day, i);
+                    }
+                }
+            }
+
+            _logger.LogInformation("Loaded {Count} route polylines across {Days} days",
+                ParsedDays.Sum(d => d.RoutePolylines.Count), ParsedDays.Count);
+        }
+
+        /// <summary>
+        /// Extract location names from day content (similar to key phrases but for routing)
+        /// </summary>
+        private List<string> ExtractLocationsFromDay(List<string> dayLines, string destination)
+        {
+            var locations = new List<string>();
+
+            foreach (var line in dayLines.Take(25)) // Check first 25 lines for locations
+            {
+                // Look for lines with location marker emoji 📍
+                if (line.Contains("📍"))
+                {
+                    // Extract location name after the emoji
+                    var cleaned = line.Replace("📍", "").Trim();
+
+                    // Remove other common markers and formatting
+                    cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"[*#\-•]", "").Trim();
+                    cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"^\d+[\.\)]\s*", "").Trim();
+
+                    // Remove trailing punctuation
+                    cleaned = cleaned.Trim(',', '.', '!', '?', ':');
+
+                    if (cleaned.Length > 3)
+                    {
+                        // Add destination context for better geocoding
+                        locations.Add($"{cleaned}, {destination}");
+                        _logger.LogDebug("Extracted location for routing: {Location}", cleaned);
+                    }
+                }
+            }
+
+            // If fewer than 2 locations found, add generic destination markers
+            if (locations.Count < 2)
+            {
+                locations.Add(destination); // Start point
+                if (locations.Count < 2)
+                {
+                    locations.Add($"{destination} city center");
+                }
+            }
+
+            return locations.Distinct().ToList();
         }
 
         public IActionResult OnGetStatus(string id)

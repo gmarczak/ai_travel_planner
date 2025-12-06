@@ -89,44 +89,12 @@ namespace project.Services
         }
 
         private List<string> GetAccommodations(string destination)
-        {
-            return new List<string>
-            {
-                $"Premium Hotel in {destination}",
-                $"Boutique Accommodation {destination}",
-                $"Budget-Friendly Option {destination}",
-                $"Vacation Rental {destination}"
-            };
-        }
+            => TravelPlanFallbackHelper.GetFallbackAccommodations(destination);
 
         private List<string> GetActivities(string destination, List<string>? interests)
-        {
-            interests ??= new List<string>();
-            var activities = new List<string>
-            {
-                $"Walking Tour of {destination}",
-                $"{destination} Food Experience",
-                $"Cultural Sites in {destination}",
-                $"Local Markets and Shopping"
-            };
-
-            if (interests.Contains("Adventure"))
-                activities.Add($"Adventure Activities in {destination}");
-            if (interests.Contains("Culture"))
-                activities.Add($"Museums and Historic Sites");
-
-            return activities;
-        }
+            => TravelPlanFallbackHelper.GetFallbackActivities(destination);
 
         private List<string> GetTransportation()
-        {
-            return new List<string>
-            {
-                "Airport Transfer Service",
-                "Public Transportation Pass",
-                "Rental Car Options",
-                "Taxi and Ride-sharing"
-            };
-        }
+            => TravelPlanFallbackHelper.GetFallbackTransportation();
     }
 }

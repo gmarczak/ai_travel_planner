@@ -16,11 +16,11 @@ namespace project.Services
         private const string AnthropicApiUrl = "https://api.anthropic.com/v1/messages";
         private const string AnthropicVersion = "2023-06-01";
 
-        public ClaudeTravelService(ILogger<ClaudeTravelService> logger, IConfiguration configuration)
+        public ClaudeTravelService(ILogger<ClaudeTravelService> logger, IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
             _configuration = configuration;
-            _http = new HttpClient();
+            _http = httpClientFactory.CreateClient();
         }
 
         public async Task<TravelPlan> GenerateTravelPlanAsync(TravelPlanRequest request)
@@ -40,6 +40,27 @@ namespace project.Services
             // SYSTEM & USER PROMPTS
             var systemPrompt = $"You are an expert travel planner. Create detailed, personalized travel itineraries. Always respond in JSON as specified. Respond in English (en-US).";
             var budgetValue = request.Budget ?? 0m;
+
+            var transportInstructions = "";
+            if (!string.IsNullOrWhiteSpace(request.TransportMode))
+            {
+                var departureInfo = !string.IsNullOrWhiteSpace(request.DepartureLocation)
+                    ? $" from {request.DepartureLocation}"
+                    : " from major international hubs";
+                var departureDetail = !string.IsNullOrWhiteSpace(request.DepartureLocation)
+                    ? $" Analyze best routes FROM {request.DepartureLocation} TO {request.Destination}."
+                    : "";
+
+                transportInstructions = request.TransportMode switch
+                {
+                    "Flight" => $"\n\n✈️ TRANSPORT MODE: Flying{departureInfo}\nIn the 'transportation' array, include:\n- Specific flight routes: {request.DepartureLocation ?? "major hubs"} → {request.Destination} (with nearby alternative airports for BOTH cities)\n- Estimated flight duration and typical costs for this specific route\n- Airport transfer options at destination (train, bus, taxi) with prices\n- Best booking websites and timing tips{departureDetail}",
+                    "Car" => "\n\n🚗 TRANSPORT MODE: Driving\nIn the 'transportation' array, include:\n- Scenic driving routes and road trip highlights\n- Parking information and costs at major attractions\n- Car rental tips and estimated costs\n- Ferry routes if water crossing needed (e.g., Portsmouth-Santander for Spain) with booking websites",
+                    "Train" => "\n\n🚆 TRANSPORT MODE: Train\nIn the 'transportation' array, include:\n- Main train stations and connections\n- Regional/national rail passes (Eurail, etc.) with prices\n- Recommended day trips accessible by train\n- Booking websites (Trainline, local railways)",
+                    "Bus" => "\n\n🚌 TRANSPORT MODE: Bus\nIn the 'transportation' array, include:\n- Main bus terminals and international routes\n- FlixBus, Eurolines, or regional bus companies\n- Long-distance bus passes and prices\n- Booking websites and tips",
+                    _ => ""
+                };
+            }
+
             var userPrompt = $@"Create a detailed {days}-day travel plan for {request.Destination} for {request.NumberOfTravelers} travelers with a budget of ${budgetValue}.
 
 Trip details:
@@ -49,7 +70,7 @@ Trip details:
 - Trip type: {tripType}
 
 CRITICAL USER PREFERENCES (must be incorporated throughout EVERY day):
-{preferences}
+{preferences}{transportInstructions}
 
 Ensure all activities, restaurants, and experiences in the itinerary strongly reflect these preferences.
 
@@ -106,6 +127,8 @@ Respond with a JSON object. Return an object with these keys (names in English):
                     NumberOfTravelers = request.NumberOfTravelers,
                     Budget = request.Budget ?? 0m,
                     TravelPreferences = request.TravelPreferences ?? string.Empty,
+                    TransportMode = request.TransportMode,
+                    DepartureLocation = request.DepartureLocation,
                     CreatedAt = DateTime.Now,
                     GeneratedItinerary = aiResponse?.Itinerary ?? text,
                     Accommodations = aiResponse?.Accommodations ?? GetFallbackAccommodations(request.Destination),
@@ -159,6 +182,8 @@ Respond with a JSON object. Return an object with these keys (names in English):
                 NumberOfTravelers = request.NumberOfTravelers,
                 Budget = request.Budget ?? 0m,
                 TravelPreferences = request.TravelPreferences ?? string.Empty,
+                TransportMode = request.TransportMode,
+                DepartureLocation = request.DepartureLocation,
                 CreatedAt = DateTime.Now,
                 GeneratedItinerary = text,
                 Accommodations = GetFallbackAccommodations(request.Destination),
@@ -167,26 +192,14 @@ Respond with a JSON object. Return an object with these keys (names in English):
             };
         }
 
-        private List<string> GetFallbackAccommodations(string destination) => new()
-        {
-            $"Recommended Hotel in {destination}",
-            $"Boutique Stay near {destination}",
-            $"Budget Option in {destination}"
-        };
+        private List<string> GetFallbackAccommodations(string destination)
+            => TravelPlanFallbackHelper.GetFallbackAccommodations(destination);
 
-        private List<string> GetFallbackActivities(string destination) => new()
-        {
-            $"City Tour of {destination}",
-            $"Local Food Experience in {destination}",
-            $"Historic Sites in {destination}"
-        };
+        private List<string> GetFallbackActivities(string destination)
+            => TravelPlanFallbackHelper.GetFallbackActivities(destination);
 
-        private List<string> GetFallbackTransportation() => new()
-        {
-            "Airport Transfer",
-            "Public Transport Pass",
-            "Taxi / Rideshare"
-        };
+        private List<string> GetFallbackTransportation()
+            => TravelPlanFallbackHelper.GetFallbackTransportation();
 
         // DTOs for Anthropic
         private class AnthropicMessageRequest

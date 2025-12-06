@@ -15,14 +15,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AiResponseCache> AiResponseCaches { get; set; } = null!;
     public DbSet<PlanGenerationState> PlanGenerationStates { get; set; } = null!;
     public DbSet<DestinationImage> DestinationImages { get; set; } = null!;
+    public DbSet<RoutePolyline> RoutePolylines { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
-
-        // Ignore pending model changes warning to allow migrations to run in production
-        optionsBuilder.ConfigureWarnings(warnings =>
-            warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -122,6 +119,16 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.PhotographerUrl).HasMaxLength(500);
             entity.Property(e => e.Source).HasMaxLength(50);
             entity.HasIndex(e => e.Destination).IsUnique();
+            entity.HasIndex(e => e.CachedAt);
+        });
+
+        // Configure RoutePolyline entity (cache for Google Directions API)
+        builder.Entity<RoutePolyline>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.RouteKey).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.EncodedPolyline).IsRequired();
+            entity.HasIndex(e => e.RouteKey).IsUnique();
             entity.HasIndex(e => e.CachedAt);
         });
     }

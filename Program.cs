@@ -11,6 +11,10 @@ using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.Data.SqlClient;
 using project.Services.AI;
+using Polly;
+using Polly.CircuitBreaker;
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,13 +107,14 @@ if (builder.Environment.IsProduction())
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseSqlServer(connectionString, sql =>
         {
-            // Enable resilient SQL connections in Azure
             sql.EnableRetryOnFailure(
                 maxRetryCount: 5,
                 maxRetryDelay: TimeSpan.FromSeconds(10),
                 errorNumbersToAdd: null);
             sql.CommandTimeout(120);
         }));
+    // Factory (uses same options internally; no custom lambda to avoid scoped->singleton mismatch)
+    // Removed AddDbContextFactory (not required; causing lifetime validation issue)
     Console.WriteLine("[INFO] Using SQL Server (Azure SQL Database)");
 }
 else
@@ -118,6 +123,7 @@ else
         ?? "Data Source=travelplanner.db";
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseSqlite(connectionString));
+    // Removed AddDbContextFactory (not required; causing lifetime validation issue)
     Console.WriteLine($"[INFO] Using SQLite: {connectionString}");
 }
 
@@ -189,6 +195,9 @@ builder.Services.AddSingleton<IPlanJobQueue, PlanGenerationQueue>();
 builder.Services.AddHostedService<PlanGenerationWorker>();
 builder.Services.AddHostedService<CacheCleanupWorker>();
 
+// GLOBAL API RATE LIMITER (for cost control)
+builder.Services.AddSingleton<ApiRateLimiter>();
+
 // PROVIDER SELECTION (OPENAI OR CLAUDE)
 var provider = builder.Configuration["AI:Provider"] ?? "OpenAI";
 var openAiApiKey = builder.Configuration["OPENAI_API_KEY"] ?? builder.Configuration["OpenAI:ApiKey"];
@@ -207,6 +216,12 @@ builder.Services.AddLocalization(options => options.ResourcesPath = "Resources")
 // ERROR MONITORING
 builder.Services.AddScoped<IErrorMonitoringService, ErrorMonitoringService>();
 
+// RESILIENCE & RETRY POLICIES
+builder.Services.AddSingleton<ResiliencePolicyService>();
+
+// CACHE HEADERS SERVICE
+builder.Services.AddCacheHeaderService();
+
 // AI CACHE SERVICE
 builder.Services.AddScoped<IAiCacheService, AiCacheService>();
 
@@ -224,6 +239,12 @@ builder.Services.AddHttpClient<IImageService, UnsplashImageService>();
 
 // Image Caption Service (AI-generated descriptions for activity images)
 builder.Services.AddScoped<IImageCaptionService, ImageCaptionService>();
+
+// Google Directions Service (road-based routes for map display)
+builder.Services.AddHttpClient<IDirectionsService, GoogleDirectionsService>();
+
+// PROMPT TEMPLATE SERVICE (external prompt files for easy modification)
+builder.Services.AddScoped<PromptTemplateService>();
 
 // AI ASSISTANT SERVICES (chat-based plan editing)
 builder.Services.AddScoped<GptMiniAssistantService>();
@@ -320,6 +341,34 @@ if (app.Environment.IsDevelopment())
         else
         {
             Console.WriteLine("[DEV] SQLite database schema already exists.");
+            // Ensure new tables added after initial creation (EnsureCreated does not add them later)
+            try
+            {
+                var routeTableExists = db.Database.ExecuteSqlRaw(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='RoutePolylines';") == 1; // returns number of rows affected (always 0)
+            }
+            catch
+            {
+                // If querying sqlite_master fails or table missing, attempt to create it
+                Console.WriteLine("[DEV] Ensuring 'RoutePolylines' table exists...");
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS RoutePolylines (
+                        Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        RouteKey TEXT NOT NULL,
+                        EncodedPolyline TEXT NOT NULL,
+                        CachedAt TEXT NOT NULL,
+                        UsageCount INTEGER NOT NULL,
+                        CONSTRAINT IX_RoutePolylines_RouteKey UNIQUE (RouteKey)
+                    );");
+                    db.Database.ExecuteSqlRaw(@"CREATE INDEX IF NOT EXISTS IX_RoutePolylines_CachedAt ON RoutePolylines (CachedAt);");
+                    Console.WriteLine("[DEV] 'RoutePolylines' table ensured.");
+                }
+                catch (Exception tableEx)
+                {
+                    Console.WriteLine($"[DEV][WARN] Failed to create RoutePolylines table manually: {tableEx.Message}");
+                }
+            }
         }
 
         // Seed admin account (email/username: admin@local, password: adminadmin)
@@ -389,8 +438,21 @@ if (app.Environment.IsDevelopment())
     }
 }
 
-// Configure request localization
-// (Localization removed) - app uses default request culture
+// Configure request localization (PL + EN support)
+var supportedCultures = new[] { "en", "pl" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture("en")
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+
+localizationOptions.RequestCultureProviders = new IRequestCultureProvider[]
+{
+    new CookieRequestCultureProvider(),
+    new QueryStringRequestCultureProvider(),
+    new AcceptLanguageHeaderRequestCultureProvider()
+};
+
+app.UseRequestLocalization(localizationOptions);
 
 if (!app.Environment.IsDevelopment())
 {
@@ -398,8 +460,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// ERROR HANDLING MIDDLEWARE
+app.UseErrorHandling();
+
 app.UseResponseCompression();
 app.UseHttpsRedirection();
+app.UseCacheHeaders();
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
@@ -488,6 +554,48 @@ try
                 Console.WriteLine("[DATABASE] Creating SQLite database schema...");
                 db.Database.EnsureCreated();
                 Console.WriteLine("[DATABASE] SQLite database created successfully.");
+                // Development: ensure RoutePolylines table exists (added after initial schema)
+                try
+                {
+                    db.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS RoutePolylines (
+                        Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        RouteKey TEXT NOT NULL,
+                        EncodedPolyline TEXT NOT NULL,
+                        CachedAt TEXT NOT NULL,
+                        UsageCount INTEGER NOT NULL,
+                        CONSTRAINT IX_RoutePolylines_RouteKey UNIQUE (RouteKey)
+                    );");
+                    db.Database.ExecuteSqlRaw(@"CREATE INDEX IF NOT EXISTS IX_RoutePolylines_CachedAt ON RoutePolylines (CachedAt);");
+                    Console.WriteLine("[DATABASE] RoutePolylines table ensured.");
+                }
+                catch (Exception rpEx)
+                {
+                    Console.WriteLine($"[DEV][WARN] Failed ensuring RoutePolylines table: {rpEx.Message}");
+                }
+
+                // Ensure TransportMode column exists in TravelPlans (added after initial schema)
+                try
+                {
+                    db.Database.ExecuteSqlRaw("SELECT TransportMode FROM TravelPlans LIMIT 1;");
+                    Console.WriteLine("[DATABASE] TransportMode column exists.");
+                }
+                catch
+                {
+                    db.Database.ExecuteSqlRaw("ALTER TABLE TravelPlans ADD COLUMN TransportMode TEXT NULL;");
+                    Console.WriteLine("[DATABASE] Added TransportMode column to TravelPlans.");
+                }
+
+                // Ensure DepartureLocation column exists in TravelPlans
+                try
+                {
+                    db.Database.ExecuteSqlRaw("SELECT DepartureLocation FROM TravelPlans LIMIT 1;");
+                    Console.WriteLine("[DATABASE] DepartureLocation column exists.");
+                }
+                catch
+                {
+                    db.Database.ExecuteSqlRaw("ALTER TABLE TravelPlans ADD COLUMN DepartureLocation TEXT NULL;");
+                    Console.WriteLine("[DATABASE] Added DepartureLocation column to TravelPlans.");
+                }
             }
             else
             {
@@ -602,16 +710,23 @@ try
         }
         catch (Exception migEx)
         {
-            // Catch-all for migration/ensure errors
+            // Log migration errors but allow Azure to handle startup failures
             Console.WriteLine($"[ERROR] Migration/Ensure step failed: {migEx.Message}");
+            if (app.Environment.IsDevelopment())
+            {
+                Console.WriteLine($"[DEV] Stack trace: {migEx.StackTrace}");
+            }
         }
     }
 }
 catch (Exception ex)
 {
-    // Log to console - avoid throwing so startup can continue and the app can surface
-    // friendly errors rather than crashing during host start in Azure.
+    // Log to console - Azure App Service will capture these logs
     Console.WriteLine($"[ERROR] Unexpected error while preparing database: {ex.Message}");
+    if (app.Environment.IsDevelopment())
+    {
+        Console.WriteLine($"[DEV] Stack trace: {ex.StackTrace}");
+    }
 }
 
 if (!useOpenAI && !useClaude)

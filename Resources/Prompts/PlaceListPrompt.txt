@@ -1,0 +1,24 @@
+You must respond with ONLY valid JSON. No additional text, no markdown formatting, no code blocks.
+
+Task: Suggest the top {PLACES_COUNT} must-see places for a {DAYS}-day trip to {DESTINATION}.
+- Travelers: {TRAVELERS}
+- Trip type: {TRIP_TYPE}
+
+⚠️ CRITICAL: User preferences that MUST influence place selection:
+{PREFERENCES}
+
+Select places that match these preferences.
+
+Required JSON format:
+{
+  "places": [
+    {
+      "name": "Place name",
+      "type": "attraction/restaurant/museum/etc",
+      "location": "Specific area or address",
+      "description": "Brief description (1-2 sentences)"
+    }
+  ]
+}
+
+Return ONLY the JSON object above. No extra text before or after.
