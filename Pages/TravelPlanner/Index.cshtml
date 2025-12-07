@@ -152,7 +152,8 @@
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8">
             <h1 class="text-center mb-3 mb-md-4 fw-bold fs-2 fs-md-1">@Localizer["createTravelPlan"]</h1>
-            <p class="text-center text-muted mb-3 mb-md-4 small">@Localizer["fillInDetails"]</p>
+            <p class="text-center text-muted mb-3 mb-md-4 small">@Localizer["fillInDetails"]
+            </p>
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-primary text-white py-2 py-md-3">
                     <h4 class="mb-0 fs-5 fs-md-4">@Localizer["tripDetails"]</h4>
@@ -242,7 +243,7 @@
                                         class="form-label small">Trip Type</label>
                                     <select asp-for="TravelRequest.TripType"
                                         class="form-select form-select-sm form-select-md-normal">
-                                        <option value="">@Localizer["optionalAiSuggest"]</option>
+                                        <option value="">Optional</option>
                                         <option value="Adventure">Adventure</option>
                                         <option value="Relaxation">Relaxation</option>
                                         <option value="Cultural">Cultural</option>
@@ -265,7 +266,7 @@
                                     <input asp-for="TravelRequest.DepartureLocation" id="departureInput"
                                         class="form-control" placeholder="e.g., Warsaw, London, Los Angeles"
                                         autocomplete="off" autocapitalize="words" />
-                                    <small class="form-text mt-1 d-block">💡 Helps us suggest the best flights and routes for you</small>
+                                    <small class="form-text mt-1 d-block">💡 Helps us find the best flights and routes for you</small>
                                 </div>
                                 <div class="col-12 col-md-6">
                                     <label asp-for="TravelRequest.TransportMode"
@@ -288,7 +289,8 @@
 
                         <!-- PREFERENCES -->
                         <fieldset class="mb-3 mb-md-4">
-                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-2 mb-md-3">@Localizer["additionalPreferences"]</legend>
+                            <legend class="h6 text-uppercase small fw-semibold text-secondary mb-2 mb-md-3">
+                                @Localizer["additionalPreferences"]</legend>
                             <textarea asp-for="TravelRequest.TravelPreferences"
                                 class="form-control form-control-sm form-control-md-normal" rows="3"
                                 placeholder="@Localizer["examplesPreferences"]"></textarea>
@@ -572,7 +574,7 @@
                 if (btn && spn && txt) {
                     btn.disabled = true;
                     spn.style.display = 'inline-block';
-                    txt.textContent = 'Creating your plan...';
+                    txt.textContent = i18n.t('creatingYourPlan');
                 }
 
                 // Initialize SignalR if not already connected

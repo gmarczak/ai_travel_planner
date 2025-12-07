@@ -216,25 +216,7 @@ var useClaude = provider.Equals("Claude", StringComparison.OrdinalIgnoreCase) &&
 builder.Services.AddSignalR();
 
 // RAZOR PAGES
-builder.Services.AddRazorPages()
-    .AddViewLocalization();
-
-// Enable localization services and view localization
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-
-builder.Services.Configure<RequestLocalizationOptions>(options =>
-{
-    var supportedCultures = new[] { new System.Globalization.CultureInfo("en-US"), new System.Globalization.CultureInfo("pl-PL") };
-    options.DefaultRequestCulture = new RequestCulture("en-US");
-    options.SupportedCultures = supportedCultures;
-    options.SupportedUICultures = supportedCultures;
-
-    // Only use cookie and query string providers so browser Accept-Language cannot override default
-    options.RequestCultureProviders = new Microsoft.AspNetCore.Localization.IRequestCultureProvider[] {
-        new CookieRequestCultureProvider(),
-        new QueryStringRequestCultureProvider()
-    };
-});
+builder.Services.AddRazorPages();
 
 // ERROR MONITORING
 builder.Services.AddScoped<IErrorMonitoringService, ErrorMonitoringService>();
@@ -349,9 +331,6 @@ else
 }
 
 var app = builder.Build();
-
-// Apply request localization early in the pipeline
-app.UseRequestLocalization(app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<RequestLocalizationOptions>>().Value);
 
 // Ensure SQLite schema is created in Development without applying SQL Server migrations
 if (app.Environment.IsDevelopment())
