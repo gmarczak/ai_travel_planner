@@ -103,11 +103,9 @@
                 <li class="nav-item"><a href="/"
                         class="nav-link text-white @(currentPath == "/" ? "fw-bold" : null)">Home</a></li>
                 <li class="nav-item"><a href="/TravelPlanner"
-                        class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner") && !currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">Plan
-                        Trip</a></li>
+                        class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner") && !currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">Plan a Trip</a></li>
                 <li class="nav-item"><a href="/TravelPlanner/SavedPlans"
-                        class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">Saved
-                        Trips</a></li>
+                        class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">Saved Plans</a></li>
                 @if (SignInManager.IsSignedIn(User))
                 {
                     var email = User?.Identity?.Name ?? "Account";
@@ -138,10 +136,21 @@
                 }
                 else
                 {
-                    <li class="nav-item"><a href="/Account/Login" class="btn btn-outline-light btn-sm px-3 me-2">Login</a>
+                    <li class="nav-item"><a href="/Account/Login" class="btn btn-outline-light btn-sm px-3 me-2">Log in</a>
                     </li>
-                    <li class="nav-item"><a href="/Account/Register" class="btn btn-light btn-sm px-3">Sign Up</a></li>
+                    <li class="nav-item"><a href="/Account/Register" class="btn btn-light btn-sm px-3">Sign up</a></li>
                 }
+
+                <!-- Language selector (EN/PL) -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        @((uiCulture?.StartsWith("pl", StringComparison.OrdinalIgnoreCase) ?? false) ? "PL" : "EN")
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
+                        <li><a class="dropdown-item" href="/SetLanguage?culture=en&returnUrl=@returnUrl">English</a></li>
+                        <li><a class="dropdown-item" href="/SetLanguage?culture=pl&returnUrl=@returnUrl">Polski</a></li>
+                    </ul>
+                </li>
             </ul>
 
             <!-- Mobile hamburger menu -->
@@ -167,11 +176,9 @@
                     <li class="nav-item"><a href="/"
                             class="nav-link @(currentPath == "/" ? "fw-bold text-primary" : "text-dark")">Home</a></li>
                     <li class="nav-item"><a href="/TravelPlanner"
-                            class="nav-link @(currentPath.StartsWith("/TravelPlanner") && !currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold text-primary" : "text-dark")">Plan
-                            Trip</a></li>
+                            class="nav-link @(currentPath.StartsWith("/TravelPlanner") && !currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold text-primary" : "text-dark")">Plan a Trip</a></li>
                     <li class="nav-item"><a href="/TravelPlanner/SavedPlans"
-                            class="nav-link @(currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold text-primary" : "text-dark")">Saved
-                            Trips</a></li>
+                            class="nav-link @(currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold text-primary" : "text-dark")">Saved Plans</a></li>
                     <li class="nav-item mt-3 pt-3 border-top">
                         @if (SignInManager.IsSignedIn(User))
                         {
@@ -193,9 +200,15 @@
                         }
                         else
                         {
-                            <a href="/Account/Login?returnUrl=@returnUrl" class="btn btn-primary w-100 mb-2">Login</a>
-                            <a href="/Account/Register" class="btn btn-outline-primary w-100">Sign Up</a>
+                            <a href="/Account/Login?returnUrl=@returnUrl" class="btn btn-primary w-100 mb-2">Log in</a>
+                            <a href="/Account/Register" class="btn btn-outline-primary w-100">Sign up</a>
                         }
+
+                        <!-- Mobile language links -->
+                        <div class="mt-3 d-flex gap-2">
+                            <a class="btn btn-sm btn-outline-secondary w-50" href="/SetLanguage?culture=en&returnUrl=@returnUrl">English</a>
+                            <a class="btn btn-sm btn-outline-secondary w-50" href="/SetLanguage?culture=pl&returnUrl=@returnUrl">Polski</a>
+                        </div>
                     </li>
                 </ul>
             </div>
@@ -261,15 +274,14 @@
             <div class="row">
                 <div class="col-md-6 mb-3 mb-md-0">
                     <h6 class="text-primary fw-bold mb-2">AI Travel Planner</h6>
-                    <p class="small text-muted mb-0">Plan your perfect trip with AI-powered recommendations</p>
+                    <p class="small text-muted mb-0">Plan your next trip with AI-powered recommendations</p>
                 </div>
                 <div class="col-md-3 mb-3 mb-md-0">
                     <h6 class="text-primary fw-bold mb-2 small">Quick Links</h6>
                     <ul class="list-unstyled small">
                         <li><a href="/" class="text-decoration-none text-muted">Home</a></li>
-                        <li><a href="/TravelPlanner" class="text-decoration-none text-muted">Plan Trip</a></li>
-                        <li><a href="/TravelPlanner/SavedPlans" class="text-decoration-none text-muted">Saved
-                                Trips</a></li>
+                        <li><a href="/TravelPlanner" class="text-decoration-none text-muted">Plan a Trip</a></li>
+                        <li><a href="/TravelPlanner/SavedPlans" class="text-decoration-none text-muted">Saved Plans</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3">
@@ -282,7 +294,7 @@
             <hr class="my-3">
             <div class="d-flex justify-content-between align-items-center small">
                 <span>&copy; 2025 AI Travel Planner. All rights reserved.</span>
-                <span>Powered by AI</span>
+                <span>Built with AI</span>
             </div>
         </div>
     </footer>
@@ -293,7 +305,6 @@
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
     <script src="~/js/toast-helper.js" asp-append-version="true"></script>
-    <script src="~/js/i18n-helper.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/maps.js" asp-append-version="true"></script>
     <script src="~/js/results-map.js" asp-append-version="true"></script>

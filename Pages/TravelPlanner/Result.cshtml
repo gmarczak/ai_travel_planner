@@ -14,8 +14,8 @@
 
 @if (plan == null)
 {
-    <div class="alert alert-warning">@Localizer["noPlanFound"]</div>
-    <p><a asp-page="Index" class="btn btn-primary">@Localizer["backToPlanner"]</a></p>
+    <div class="alert alert-warning">No travel plan found. Please create a new plan.</div>
+    <p><a asp-page="Index" class="btn btn-primary">Back to Planner</a></p>
 }
 else
 {
@@ -106,7 +106,7 @@ else
 
     <!-- Desktop navigation tabs (mobile has bottom navbar) -->
     <nav class="mb-3 d-none d-md-flex gap-2 flex-wrap main-tabs" role="tablist" aria-label="Plan views">
-        <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">@Localizer["plan"]</button>
+        <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Plan</button>
         <button type="button" data-tab="map" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Map</button>
         <button type="button" data-tab="details" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Details</button>
         <button type="button" data-tab="chat" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">AI Assistant</button>
@@ -117,8 +117,8 @@ else
             <!-- Main content -->
             <div class="col-12 col-lg-8">
                 <div class="d-flex justify-content-end gap-2 mb-3">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="expandAllBtn" style="min-height: 36px;">@Localizer["expandAll"]</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="collapseAllBtn" style="min-height: 36px;">@Localizer["collapseAll"]</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="expandAllBtn" style="min-height: 36px;">Expand all</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="collapseAllBtn" style="min-height: 36px;">Collapse all</button>
                 </div>
 
                 @if (Model.ParsedDays.Count == 0)
@@ -260,7 +260,7 @@ else
                     <div class="mt-2 mt-md-3 d-flex gap-2 flex-wrap">
                     <button type="submit" class="btn btn-primary flex-fill flex-sm-grow-0" id="btnSave" style="min-height: 44px;">
                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="btnSaveSpinner"></span>
-                        <span id="btnSaveText">@Localizer["saveChanges"]</span>
+                        <span id="btnSaveText">Save changes</span>
                     </button>
                     <button type="submit" formaction="?handler=ResetItinerary&id=@planId" class="btn btn-outline-secondary flex-fill flex-sm-grow-0" id="btnReset" style="min-height: 44px;">
                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;" id="btnResetSpinner"></span>
@@ -515,7 +515,7 @@ else
                             <div class="stat-content">
                                 <div class="stat-label">Accommodations</div>
                                 <div class="stat-value">@((plan?.Accommodations?.Count ?? 0)) stays</div>
-                                <div class="stat-subtext">@((plan?.Activities?.Count ?? 0)) activities planned</div>
+                                <div class="stat-subtext>@((plan?.Activities?.Count ?? 0)) activities planned</div>
                             </div>
                         </div>
                     </div>
@@ -1052,7 +1052,7 @@ else
                     </div>
                 </div>
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary" @(Model.IsProcessing?"disabled":"")>@Localizer["saveDetails"]</button>
+                    <button type="submit" class="btn btn-primary" @(Model.IsProcessing?"disabled":"")>Save details</button>
                     <a asp-page="Result" asp-route-id="@planId" class="btn btn-outline-secondary">Cancel</a>
                 </div>
             </form>

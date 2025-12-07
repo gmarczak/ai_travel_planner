@@ -224,7 +224,7 @@ builder.Services.AddLocalization(options => options.ResourcesPath = "Resources")
 
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
-    var supportedCultures = new[] { new System.Globalization.CultureInfo("en-US") };
+    var supportedCultures = new[] { new System.Globalization.CultureInfo("en-US"), new System.Globalization.CultureInfo("pl-PL") };
     options.DefaultRequestCulture = new RequestCulture("en-US");
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;

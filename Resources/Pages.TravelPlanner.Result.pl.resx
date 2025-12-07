@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, ...</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, ...</value></resheader>
+  <data name="noPlanFound" xml:space="preserve"><value>Nie znaleziono planu podróży. Utwórz nowy plan.</value></data>
+  <data name="backToPlanner" xml:space="preserve"><value>Powrót do planera</value></data>
+  <data name="plan" xml:space="preserve"><value>Plan</value></data>
+  <data name="expandAll" xml:space="preserve"><value>Rozwiń wszystko</value></data>
+  <data name="collapseAll" xml:space="preserve"><value>Zwiń wszystko</value></data>
+  <data name="saveChanges" xml:space="preserve"><value>Zapisz zmiany</value></data>
+  <data name="saveDetails" xml:space="preserve"><value>Zapisz szczegóły</value></data>
+</root>
