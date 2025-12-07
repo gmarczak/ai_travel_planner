@@ -4,10 +4,12 @@
 @{
     var currentPath = Context?.Request?.Path.Value ?? string.Empty;
     var returnUrl = (Context?.Request?.Path.Value ?? "/") + (Context?.Request?.QueryString.Value ?? string.Empty);
-    var htmlLang = "en";
+    // Determine UI culture for html lang attribute (server-side)
+    var uiCulture = System.Threading.Thread.CurrentThread.CurrentUICulture?.Name ?? "en-US";
+    var htmlLang = (uiCulture?.Split('-')[0] ?? "en").ToLowerInvariant();
 }
 <!DOCTYPE html>
-<html lang="en">
+<html lang="@htmlLang">
 
 <head>
     <meta charset="utf-8" />
@@ -84,7 +86,8 @@
     @{
         var currentPath = Context?.Request?.Path.Value ?? string.Empty;
         var returnUrl = (Context?.Request?.Path.Value ?? "/") + (Context?.Request?.QueryString.Value ?? string.Empty);
-        var uiCulture = System.Threading.Thread.CurrentThread.CurrentUICulture?.Name ?? "en-US";
+        // uiCulture already set above
+        // var uiCulture = System.Threading.Thread.CurrentThread.CurrentUICulture?.Name ?? "en-US";
         var htmlLang = "en";
     }
     <header class="border-bottom bg-primary fixed-top shadow-sm">

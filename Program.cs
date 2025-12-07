@@ -228,6 +228,12 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.DefaultRequestCulture = new RequestCulture("en-US");
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;
+
+    // Only use cookie and query string providers so browser Accept-Language cannot override default
+    options.RequestCultureProviders = new Microsoft.AspNetCore.Localization.IRequestCultureProvider[] {
+        new CookieRequestCultureProvider(),
+        new QueryStringRequestCultureProvider()
+    };
 });
 
 // ERROR MONITORING
