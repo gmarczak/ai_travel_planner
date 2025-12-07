@@ -1,9 +1,7 @@
 @page "{id?}"
 @model project.Pages.TravelPlanner.ResultModel
-@using Microsoft.AspNetCore.Mvc.Localization
-@inject IViewLocalizer Localizer
 @{
-    ViewData["Title"] = Localizer["yourTravelPlan"];
+    ViewData["Title"] = "Your Travel Plan";
     var plan = Model.TravelPlan;
     var planId = Model.PlanId ?? (Model.RouteData.Values["id"] as string);
 }
