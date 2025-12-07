@@ -30,26 +30,33 @@ var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsProduction())
 {
-    // PRODUCTION: Use Azure Key Vault
+    // PRODUCTION: Use Azure App Service Configuration (Environment Variables)
+    Console.WriteLine("[INFO] Production environment: Using Azure App Service Configuration");
+    
+    // Optional: Try Azure Key Vault if configured
     var keyVaultName = builder.Configuration["KeyVault:Name"];
-    if (!string.IsNullOrEmpty(keyVaultName) && keyVaultName != "your-keyvault-name")
+    if (!string.IsNullOrEmpty(keyVaultName) && 
+        keyVaultName != "your-keyvault-name-here" && 
+        !keyVaultName.StartsWith("your-keyvault-name"))
     {
-        var keyVaultUri = new Uri($"https://{keyVaultName}.vault.azure.net/");
-
-        // Use DefaultAzureCredential which tries multiple auth methods:
-        // - Environment variables (for Azure deployment)
-        // - Managed Identity (for Azure App Service/Functions)
-        // - Azure CLI (for local development)
-        builder.Configuration.AddAzureKeyVault(
-            keyVaultUri,
-            new DefaultAzureCredential()
-        );
-
-        Console.WriteLine($"[INFO] Loaded secrets from Azure Key Vault: {keyVaultName}");
+        try
+        {
+            var keyVaultUri = new Uri($"https://{keyVaultName}.vault.azure.net/");
+            builder.Configuration.AddAzureKeyVault(
+                keyVaultUri,
+                new DefaultAzureCredential()
+            );
+            Console.WriteLine($"[INFO] Loaded secrets from Azure Key Vault: {keyVaultName}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WARN] Failed to connect to Key Vault: {ex.Message}");
+            Console.WriteLine("[INFO] Continuing with App Service Configuration...");
+        }
     }
     else
     {
-        Console.WriteLine("[WARN] KeyVault:Name not configured. Add to appsettings.Production.json");
+        Console.WriteLine("[INFO] Key Vault not configured - using App Service Configuration only");
     }
 }
 else if (builder.Environment.IsDevelopment())
