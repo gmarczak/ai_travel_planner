@@ -15,7 +15,6 @@ using Polly;
 using Polly.CircuitBreaker;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
-using Microsoft.AspNetCore.Mvc.Razor;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -217,12 +216,7 @@ var useClaude = provider.Equals("Claude", StringComparison.OrdinalIgnoreCase) &&
 builder.Services.AddSignalR();
 
 // RAZOR PAGES
-builder.Services.AddRazorPages()
-    .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix)
-    .AddDataAnnotationsLocalization();
-
-// LOCALIZATION SERVICES
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddRazorPages();
 
 // ERROR MONITORING
 builder.Services.AddScoped<IErrorMonitoringService, ErrorMonitoringService>();
@@ -448,22 +442,6 @@ if (app.Environment.IsDevelopment())
         Console.WriteLine($"[DEV][ERROR] Failed to EnsureCreated: {ex.Message}");
     }
 }
-
-// Configure request localization (PL + EN support)
-var supportedCultures = new[] { "en", "pl" };
-var localizationOptions = new RequestLocalizationOptions()
-    .SetDefaultCulture("en")
-    .AddSupportedCultures(supportedCultures)
-    .AddSupportedUICultures(supportedCultures);
-
-localizationOptions.RequestCultureProviders = new IRequestCultureProvider[]
-{
-    new CookieRequestCultureProvider(),
-    new QueryStringRequestCultureProvider(),
-    new AcceptLanguageHeaderRequestCultureProvider()
-};
-
-app.UseRequestLocalization(localizationOptions);
 
 if (!app.Environment.IsDevelopment())
 {
