@@ -15,6 +15,7 @@ using Polly;
 using Polly.CircuitBreaker;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc.Razor;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -216,8 +217,11 @@ var useClaude = provider.Equals("Claude", StringComparison.OrdinalIgnoreCase) &&
 builder.Services.AddSignalR();
 
 // RAZOR PAGES
-builder.Services.AddRazorPages();
-// Ensure localization services are available to satisfy any leftover view injections
+builder.Services.AddRazorPages()
+    .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix)
+    .AddDataAnnotationsLocalization();
+
+// LOCALIZATION SERVICES
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
 // ERROR MONITORING
