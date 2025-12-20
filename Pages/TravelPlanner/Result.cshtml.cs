@@ -844,10 +844,10 @@ namespace project.Pages.TravelPlanner
             return RedirectToPage("Result", new { id });
         }
 
-        public async Task<IActionResult> OnPostUpdateDetails(string id, string? startDate, string? endDate, int? numberOfTravelers, decimal? budget, string? travelPreferences, string? accommodations, string? activities, string? transportation)
+        public Task<IActionResult> OnPostUpdateDetails(string id, string? startDate, string? endDate, int? numberOfTravelers, decimal? budget, string? travelPreferences, string? accommodations, string? activities, string? transportation)
         {
-            if (string.IsNullOrWhiteSpace(id)) { TempData["ErrorMessage"] = "No travel plan found to update."; return RedirectToPage("Index"); }
-            if (!_cache.TryGetValue(id, out TravelPlan? plan) || plan == null) { TempData["ErrorMessage"] = "No travel plan found to update."; return RedirectToPage("Index"); }
+            if (string.IsNullOrWhiteSpace(id)) { TempData["ErrorMessage"] = "No travel plan found to update."; return Task.FromResult<IActionResult>(RedirectToPage("Index")); }
+            if (!_cache.TryGetValue(id, out TravelPlan? plan) || plan == null) { TempData["ErrorMessage"] = "No travel plan found to update."; return Task.FromResult<IActionResult>(RedirectToPage("Index")); }
             // PARSE INCOMING DATES
             DateTime parsedStart = plan.StartDate;
             DateTime parsedEnd = plan.EndDate;
@@ -863,17 +863,17 @@ namespace project.Pages.TravelPlanner
             if (parsedEnd <= parsedStart)
             {
                 TempData["ErrorMessage"] = "End date must be after start date.";
-                return RedirectToPage("Result", new { id });
+                return Task.FromResult<IActionResult>(RedirectToPage("Result", new { id }));
             }
             if (parsedTravelers < 1 || parsedTravelers > 100)
             {
                 TempData["ErrorMessage"] = "Number of travelers must be between 1 and 100.";
-                return RedirectToPage("Result", new { id });
+                return Task.FromResult<IActionResult>(RedirectToPage("Result", new { id }));
             }
             if (parsedBudget < 0)
             {
                 TempData["ErrorMessage"] = "Budget must be zero or more.";
-                return RedirectToPage("Result", new { id });
+                return Task.FromResult<IActionResult>(RedirectToPage("Result", new { id }));
             }
 
             bool shouldRegenerate = parsedStart != plan.StartDate || parsedEnd != plan.EndDate || parsedTravelers != plan.NumberOfTravelers || parsedBudget != plan.Budget || incomingPreferences != (plan.TravelPreferences ?? string.Empty);
@@ -914,7 +914,7 @@ namespace project.Pages.TravelPlanner
                 _ = _queue.EnqueueAsync(new PlanGenerationJob(id, req, userId, anonymousCookieId));
 
                 TempData["SuccessMessage"] = "Regeneration enqueued. Please wait a moment while the plan is regenerated.";
-                return RedirectToPage("Result", new { id, processing = true });
+                return Task.FromResult<IActionResult>(RedirectToPage("Result", new { id, processing = true }));
             }
 
             // If not regenerating (or regeneration failed), persist lists and preferences only
@@ -929,7 +929,7 @@ namespace project.Pages.TravelPlanner
             _cache.Set(id, plan, TimeSpan.FromMinutes(30));
             ParseItinerary(plan.GeneratedItinerary);
             TempData["SuccessMessage"] = shouldRegenerate ? "Plan regenerated." : "Details updated.";
-            return RedirectToPage("Result", new { id });
+            return Task.FromResult<IActionResult>(RedirectToPage("Result", new { id }));
         }
 
         // Persist reordered days/lines sent from client as JSON payload

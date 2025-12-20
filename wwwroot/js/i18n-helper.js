@@ -9,8 +9,13 @@ const i18n = {
             const response = await fetch('/js/i18n.json');
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             this.data = await response.json();
-            this.currentLanguage = document.documentElement.lang || 'en';
+
+            // Get language from html lang attribute and normalize it (en-US -> en, pl-PL -> pl)
+            let htmlLang = document.documentElement.lang || 'en';
+            this.currentLanguage = htmlLang.split('-')[0]; // Take first part before hyphen
+
             console.log(`[i18n] Loaded translations for languages: ${Object.keys(this.data).join(', ')}`);
+            console.log(`[i18n] Current language: ${this.currentLanguage}`);
         } catch (error) {
             console.error('[i18n] Failed to load translations:', error);
             // Fallback: create minimal English object

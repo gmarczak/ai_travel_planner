@@ -10,8 +10,8 @@
     <div class="container position-relative hero-content">
         <div class="row justify-content-center">
             <div class="col-lg-10 col-xl-8 text-center">
-                <h1 class="hero-title fw-bold text-white mb-3">Plan Your Perfect Journey</h1>
-                <p class="hero-subtitle text-white mb-4">AI-powered travel planning made simple</p>
+                <h1 class="hero-title fw-bold text-white mb-3">@Localizer["planYourPerfectJourney"]</h1>
+                <p class="hero-subtitle text-white mb-4">@Localizer["aiPoweredPlanningSimple"]</p>
 
                 <!-- Quick Search Bar -->
                 <div class="search-bar-wrapper mx-auto">
@@ -21,7 +21,7 @@
                                 <i class="bi bi-search"></i>
                             </span>
                             <input type="text" name="destination" id="homeDestinationInput"
-                                class="form-control border-0 ps-2" placeholder="Where do you want to go?"
+                                class="form-control border-0 ps-2" placeholder="@Localizer["whereDoYouWantToGo"]"
                                 aria-label="Search destination" autocomplete="off" autocapitalize="words" required>
                         </div>
                     </form>
@@ -35,24 +35,24 @@
 <section class="popular-destinations-section py-5 bg-light">
     <div class="container">
         <div class="text-center mb-5">
-            <h2 class="section-title fw-bold mb-3">Popular Destinations</h2>
-            <p class="text-muted">Discover the most loved destinations</p>
+            <h2 class="section-title fw-bold mb-3">@Localizer["popularDestinations"]</h2>
+            <p class="text-muted">@Localizer["discoverMostLovedDestinations"]</p>
         </div>
 
         <div class="row g-4">
             @{
                 var defaultDestinations = new[] {
-                        new { Name = "Paris", Country = "France", Key = "paris" },
-                        new { Name = "Tokyo", Country = "Japan", Key = "tokyo" },
-                        new { Name = "New York", Country = "USA", Key = "new york" },
-                        new { Name = "Barcelona", Country = "Spain", Key = "barcelona" },
-                        new { Name = "Rome", Country = "Italy", Key = "rome" },
-                        new { Name = "London", Country = "UK", Key = "london" }
+                        new { Name = Localizer["paris"].Value, Country = Localizer["france"].Value, Key = "paris", SearchName = "Paris", SearchCountry = "France" },
+                        new { Name = Localizer["tokyo"].Value, Country = Localizer["japan"].Value, Key = "tokyo", SearchName = "Tokyo", SearchCountry = "Japan" },
+                        new { Name = Localizer["newYork"].Value, Country = Localizer["usa"].Value, Key = "new york", SearchName = "New York", SearchCountry = "USA" },
+                        new { Name = Localizer["barcelona"].Value, Country = Localizer["spain"].Value, Key = "barcelona", SearchName = "Barcelona", SearchCountry = "Spain" },
+                        new { Name = Localizer["rome"].Value, Country = Localizer["italy"].Value, Key = "rome", SearchName = "Rome", SearchCountry = "Italy" },
+                        new { Name = Localizer["london"].Value, Country = Localizer["uk"].Value, Key = "london", SearchName = "London", SearchCountry = "UK" }
                         };
 
                 foreach (var dest in defaultDestinations)
                 {
-                    var fullDestination = $"{dest.Name}, {dest.Country}";
+                    var fullDestination = $"{dest.SearchName}, {dest.SearchCountry}";
                     <div class="col-12 col-md-6 col-lg-4">
                         <a href="/TravelPlanner?destination=@Uri.EscapeDataString(fullDestination)"
                             class="destination-card-link text-decoration-none">
@@ -77,7 +77,7 @@
                                         "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&auto=format&fit=crop";
                                     }
                                     <img src="@(Model.DestinationImages.ContainsKey(dest.Key) ? Model.DestinationImages[dest.Key] : fallbackUrl)"
-                                        class="card-img-top destination-image" alt="@dest.Name, @dest.Country" loading="lazy"
+                                        class="card-img-top destination-image" alt="@dest.SearchName, @dest.SearchCountry" loading="lazy"
                                         onerror="this.onerror=null; this.src='@fallbackUrl';">
                                     <div class="destination-overlay position-absolute bottom-0 start-0 w-100 p-3">
                                         <h5 class="text-white fw-bold mb-1">@dest.Name</h5>
@@ -87,10 +87,10 @@
                                 <div class="card-body d-flex flex-column">
                                     <p class="card-text text-muted small mb-3 flex-grow-1">
                                         <i class="bi bi-heart-fill text-danger me-1"></i>
-                                        Trending destination
+                                        @Localizer["trendingDestination"]
                                     </p>
                                     <div class="btn btn-outline-success w-100">
-                                        <i class="bi bi-compass me-2"></i>Plan Trip
+                                        <i class="bi bi-compass me-2"></i>@Localizer["planTrip"]
                                     </div>
                                 </div>
                             </div>
@@ -106,8 +106,8 @@
 <section class="how-it-works-section py-5 bg-white">
     <div class="container">
         <div class="text-center mb-5">
-            <h2 class="section-title fw-bold mb-3">How It Works</h2>
-            <p class="text-muted">Three simple steps to your perfect trip</p>
+            <h2 class="section-title fw-bold mb-3">@Localizer["howItWorks"]</h2>
+            <p class="text-muted">@Localizer["threeSimpleSteps"]</p>
         </div>
 
         <div class="row g-4">
@@ -117,8 +117,8 @@
                         <div class="step-number-badge">1</div>
                         <i class="bi bi-geo-alt-fill text-success fs-1"></i>
                     </div>
-                    <h3 class="h5 fw-bold mb-2">Choose Destination</h3>
-                    <p class="text-muted small mb-0">Tell us where you want to go and your preferences</p>
+                    <h3 class="h5 fw-bold mb-2">@Localizer["chooseDestination"]</h3>
+                    <p class="text-muted small mb-0">@Localizer["chooseDestinationDesc"]</p>
                 </div>
             </div>
             <div class="col-12 col-md-4">
@@ -127,8 +127,8 @@
                         <div class="step-number-badge">2</div>
                         <i class="bi bi-magic text-success fs-1"></i>
                     </div>
-                    <h3 class="h5 fw-bold mb-2">AI Creates Your Plan</h3>
-                    <p class="text-muted small mb-0">Our AI analyzes your preferences and creates a perfect itinerary</p>
+                    <h3 class="h5 fw-bold mb-2">@Localizer["aiCreatesYourPlan"]</h3>
+                    <p class="text-muted small mb-0">@Localizer["aiCreatesYourPlanDesc"]</p>
                 </div>
             </div>
             <div class="col-12 col-md-4">
@@ -137,8 +137,8 @@
                         <div class="step-number-badge">3</div>
                         <i class="bi bi-airplane-fill text-success fs-1"></i>
                     </div>
-                    <h3 class="h5 fw-bold mb-2">Enjoy Your Journey</h3>
-                    <p class="text-muted small mb-0">Download your plan and enjoy your perfectly planned trip</p>
+                    <h3 class="h5 fw-bold mb-2">@Localizer["enjoyYourJourney"]</h3>
+                    <p class="text-muted small mb-0">@Localizer["enjoyYourJourneyDesc"]</p>
                 </div>
             </div>
         </div>
@@ -155,19 +155,19 @@
                     <div class="feature-icon-badge mb-3">
                         <i class="bi bi-robot text-success fs-2"></i>
                     </div>
-                    <h3 class="h3 fw-bold mb-3">AI-Powered Planning</h3>
+                    <h3 class="h3 fw-bold mb-3">@Localizer["aiPoweredPlanning"]</h3>
                     <p class="text-muted mb-3">
-                        Our advanced AI analyzes your preferences to create personalized travel experiences
+                        @Localizer["aiPoweredPlanningDesc"]
                     </p>
                     <ul class="list-unstyled">
                         <li class="mb-2"><i
-                                class="bi bi-check-circle-fill text-success me-2"></i>Smart destination suggestions
+                                class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["smartDestinationSuggestions"]
                         </li>
                         <li class="mb-2"><i
-                                class="bi bi-check-circle-fill text-success me-2"></i>Optimized daily schedules
+                                class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["optimizedDailySchedules"]
                         </li>
                         <li class="mb-2"><i
-                                class="bi bi-check-circle-fill text-success me-2"></i>Budget-friendly options
+                                class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["budgetFriendlyOptions"]
                         </li>
                     </ul>
                 </div>
@@ -188,19 +188,19 @@
                     <div class="feature-icon-badge mb-3">
                         <i class="bi bi-map text-success fs-2"></i>
                     </div>
-                    <h3 class="h3 fw-bold mb-3">Interactive Maps & Routes</h3>
+                    <h3 class="h3 fw-bold mb-3">@Localizer["interactiveMapsRoutes"]</h3>
                     <p class="text-muted mb-3">
-                        Visualize your entire journey with interactive maps and smart route planning
+                        @Localizer["interactiveMapsRoutesDesc"]
                     </p>
                     <ul class="list-unstyled">
                         <li class="mb-2"><i
-                                class="bi bi-check-circle-fill text-success me-2"></i>Real-time navigation
+                                class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["realTimeNavigation"]
                         </li>
                         <li class="mb-2"><i
-                                class="bi bi-check-circle-fill text-success me-2"></i>Offline map access
+                                class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["offlineMapAccess"]
                         </li>
                         <li class="mb-2"><i
-                                class="bi bi-check-circle-fill text-success me-2"></i>Local attractions highlighted
+                                class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["localAttractionsHighlighted"]
                         </li>
                     </ul>
                 </div>
@@ -221,19 +221,19 @@
                     <div class="feature-icon-badge mb-3">
                         <i class="bi bi-stars text-success fs-2"></i>
                     </div>
-                    <h3 class="h3 fw-bold mb-3">Personalized Recommendations</h3>
+                    <h3 class="h3 fw-bold mb-3">@Localizer["personalizedRecommendations"]</h3>
                     <p class="text-muted mb-3">
-                        Discover hidden gems and curated experiences tailored to your interests
+                        @Localizer["personalizedRecommendationsDesc"]
                     </p>
                     <ul class="list-unstyled">
                         <li class="mb-2"><i
-                                class="bi bi-check-circle-fill text-success me-2"></i>Curated hotel selections
+                                class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["curatedHotelSelections"]
                         </li>
                         <li class="mb-2"><i
-                                class="bi bi-check-circle-fill text-success me-2"></i>Activity recommendations
+                                class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["activityRecommendations"]
                         </li>
                         <li class="mb-2"><i
-                                class="bi bi-check-circle-fill text-success me-2"></i>Local dining experiences
+                                class="bi bi-check-circle-fill text-success me-2"></i>@Localizer["localDiningExperiences"]
                         </li>
                     </ul>
                 </div>

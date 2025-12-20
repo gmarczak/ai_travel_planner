@@ -42,11 +42,11 @@ else
             <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-50 text-white p-2 p-md-3 rounded-bottom">
                 <h1 class="mb-0 fs-2 fs-md-1" style="text-transform: capitalize;">@plan?.Destination</h1>
                 <div class="d-flex gap-2 flex-wrap align-items-center mt-2">
-                    <span class="badge text-bg-primary">@days days</span>
-                    <span class="badge text-bg-secondary d-none d-sm-inline">@plan?.NumberOfTravelers traveler@((plan?.NumberOfTravelers ?? 0) == 1 ? "" : "s")</span>
+                    <span class="badge text-bg-primary">@days @Localizer["days"]</span>
+                    <span class="badge text-bg-secondary d-none d-sm-inline">@plan?.NumberOfTravelers @Localizer[(plan?.NumberOfTravelers ?? 0) == 1 ? "traveler" : "travelers"]</span>
                     <span class="badge text-bg-secondary d-inline d-sm-none">@(plan?.NumberOfTravelers ?? 0) 👥</span>
-                    <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">/person/day</span><span class="d-inline d-sm-none">/p/d</span></span>
-                    <button type="button" class="btn btn-link p-0 save-heart-btn" id="savePlanBtn" data-plan-id="@planId" data-is-saved="@Model.IsSaved.ToString().ToLower()" title="@(Model.IsSaved ? "Click to unsave" : "Save to favorites")">
+                    <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">@Localizer["perPersonDay"]</span><span class="d-inline d-sm-none">@Localizer["perPersonDayShort"]</span></span>
+                    <button type="button" class="btn btn-link p-0 save-heart-btn" id="savePlanBtn" data-plan-id="@planId" data-is-saved="@Model.IsSaved.ToString().ToLower()" title="@(Model.IsSaved ? Localizer["clickToUnsave"].Value : Localizer["saveToFavorites"].Value)">
                         <i class="bi bi-heart fs-4 text-white @(Model.IsSaved ? "d-none" : "")" id="heartOutline"></i>
                         <i class="bi bi-heart-fill fs-4 text-danger @(Model.IsSaved ? "" : "d-none")" id="heartFill"></i>
                         <span class="spinner-border spinner-border-sm ms-1" role="status" aria-hidden="true" style="display: none;" id="savePlanSpinner"></span>
@@ -60,11 +60,11 @@ else
     <header class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 @(!string.IsNullOrEmpty(plan?.DestinationImageUrl) ? "d-md-none" : "")">
         <h1 class="mb-0 fs-4 fs-md-2" style="text-transform: capitalize;">@plan?.Destination</h1>
         <div class="d-flex gap-2 flex-wrap align-items-center">
-            <span class="badge text-bg-primary">@days days</span>
-            <span class="badge text-bg-secondary d-none d-sm-inline">@plan?.NumberOfTravelers traveler@((plan?.NumberOfTravelers ?? 0) == 1 ? "" : "s")</span>
+            <span class="badge text-bg-primary">@days @Localizer["days"]</span>
+            <span class="badge text-bg-secondary d-none d-sm-inline">@plan?.NumberOfTravelers @Localizer[(plan?.NumberOfTravelers ?? 0) == 1 ? "traveler" : "travelers"]</span>
             <span class="badge text-bg-secondary d-inline d-sm-none">@(plan?.NumberOfTravelers ?? 0) 👥</span>
-            <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">/person/day</span><span class="d-inline d-sm-none">/p/d</span></span>
-            <button type="button" class="btn btn-link p-0 save-heart-btn" id="savePlanBtnMobile" data-plan-id="@planId" data-is-saved="@Model.IsSaved.ToString().ToLower()" title="@(Model.IsSaved ? "Click to unsave" : "Save to favorites")">
+            <span class="badge text-bg-success">$@perPersonPerDay.ToString("F0")<span class="d-none d-sm-inline">@Localizer["perPersonDay"]</span><span class="d-inline d-sm-none">@Localizer["perPersonDayShort"]</span></span>
+            <button type="button" class="btn btn-link p-0 save-heart-btn" id="savePlanBtnMobile" data-plan-id="@planId" data-is-saved="@Model.IsSaved.ToString().ToLower()" title="@(Model.IsSaved ? Localizer["clickToUnsave"].Value : Localizer["saveToFavorites"].Value)">
                 <i class="bi bi-heart fs-4 text-secondary @(Model.IsSaved ? "d-none" : "")"></i>
                 <i class="bi bi-heart-fill fs-4 text-danger @(Model.IsSaved ? "" : "d-none")"></i>
                 <span class="spinner-border spinner-border-sm ms-1" role="status" aria-hidden="true" style="display: none;"></span>
@@ -96,7 +96,7 @@ else
         <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
             <span class="fs-4 me-2">@transportIcon</span>
             <div>
-                <strong>Transport Mode:</strong> @plan.TransportMode@routeInfo → @plan.Destination!<br/>
+                <strong>Transport Mode:</strong> @(plan.TransportMode ?? "Not specified")@routeInfo → @(plan.Destination ?? "Unknown")<br/>
                 <small class="text-muted">@transportDescription</small>
             </div>
         </div>
@@ -107,9 +107,9 @@ else
     <!-- Desktop navigation tabs (mobile has bottom navbar) -->
     <nav class="mb-3 d-none d-md-flex gap-2 flex-wrap main-tabs" role="tablist" aria-label="Plan views">
         <button type="button" data-tab="plan" aria-selected="true" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">@Localizer["plan"]</button>
-        <button type="button" data-tab="map" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Map</button>
-        <button type="button" data-tab="details" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">Details</button>
-        <button type="button" data-tab="chat" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">AI Assistant</button>
+        <button type="button" data-tab="map" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">@Localizer["mapTab"]</button>
+        <button type="button" data-tab="details" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">@Localizer["detailsTab"]</button>
+        <button type="button" data-tab="chat" aria-selected="false" class="btn btn-outline-primary btn-sm flex-md-grow-0" style="min-height: 48px;">@Localizer["chatTab"]</button>
     </nav>
 
     <section id="tab-plan" data-tab-panel style="padding-top: 0;">
@@ -166,7 +166,7 @@ else
                             
                             @* Simplified day content display *@
                             <div class="day-content">
-                                @foreach (var line in d.Lines)
+                                @foreach (var line in d.Lines ?? Array.Empty<string>())
                                 {
                                     if (string.IsNullOrWhiteSpace(line))
                                     {
@@ -275,29 +275,29 @@ else
             <div class="col-12 col-lg-4 d-none d-lg-block">
                 <div class="sticky-summary-sidebar">
                     <div class="summary-card">
-                        <h5 class="summary-title">📋 Trip Summary</h5>
+                        <h5 class="summary-title">📋 @Localizer["tripSummary"]</h5>
                         
                         <div class="summary-section">
-                            <div class="summary-label">Duration</div>
-                            <div class="summary-value">@days days</div>
-                            <div class="summary-dates">@plan.StartDate!.ToString("MMM dd") - @plan.EndDate!.ToString("MMM dd, yyyy")</div>
+                            <div class="summary-label">@Localizer["duration"]</div>
+                            <div class="summary-value">@days @Localizer["days"]</div>
+                            <div class="summary-dates">@(plan.StartDate.ToString("MMM dd")) - @(plan.EndDate.ToString("MMM dd, yyyy"))</div>
                         </div>
                         
                         <div class="summary-section">
-                            <div class="summary-label">Budget</div>
-                            <div class="summary-value text-success">$@(plan?.Budget ?? 0)</div>
+                            <div class="summary-label">@Localizer["budget"]</div>
+                            <div class="summary-value text-success">$@(plan.Budget)</div>
                             <div class="summary-subtext">$@perPersonPerDay.ToString("F0")/person/day</div>
                         </div>
                         
                         <div class="summary-section">
-                            <div class="summary-label">Travelers</div>
-                            <div class="summary-value">@(plan?.NumberOfTravelers ?? 0) @((plan?.NumberOfTravelers ?? 0) == 1 ? "person" : "people")</div>
+                            <div class="summary-label">@Localizer["travelersLabel"]</div>
+                            <div class="summary-value">@(plan?.NumberOfTravelers ?? 0) @Localizer[(plan?.NumberOfTravelers ?? 0) == 1 ? "traveler" : "travelers"]</div>
                         </div>
                         
                         @if (!string.IsNullOrWhiteSpace(plan?.TransportMode))
                         {
                             <div class="summary-section">
-                                <div class="summary-label">Transport</div>
+                                <div class="summary-label">@Localizer["transport"]</div>
                                 <div class="summary-value">
                                     @{
                                         var icon = plan.TransportMode switch
@@ -319,19 +319,19 @@ else
                         }
                         
                         <div class="summary-section">
-                            <div class="summary-label">Activities</div>
+                            <div class="summary-label">@Localizer["activitiesLabel"]</div>
                             <div class="summary-stats">
                                 <div class="summary-stat-item">
                                     <span class="summary-stat-number">@((plan?.Accommodations?.Count ?? 0))</span>
-                                    <span class="summary-stat-label">Stays</span>
+                                    <span class="summary-stat-label">@Localizer["stays"]</span>
                                 </div>
                                 <div class="summary-stat-item">
                                     <span class="summary-stat-number">@((plan?.Activities?.Count ?? 0))</span>
-                                    <span class="summary-stat-label">Activities</span>
+                                    <span class="summary-stat-label">@Localizer["activitiesLabel"]</span>
                                 </div>
                                 <div class="summary-stat-item">
                                     <span class="summary-stat-number">@((plan?.Transportation?.Count ?? 0))</span>
-                                    <span class="summary-stat-label">Tips</span>
+                                    <span class="summary-stat-label">@Localizer["tips"]</span>
                                 </div>
                             </div>
                         </div>
@@ -339,33 +339,33 @@ else
                         @if (!string.IsNullOrWhiteSpace(plan?.TravelPreferences))
                         {
                             <div class="summary-section">
-                                <div class="summary-label">Preferences</div>
+                                <div class="summary-label">@Localizer["preferences"]</div>
                                 <div class="summary-preferences">@plan.TravelPreferences</div>
                             </div>
                         }
                         
                         <div class="summary-actions">
                             <button type="button" class="btn btn-sm btn-outline-primary w-100 mb-2" onclick="window.print()">
-                                <i class="bi bi-printer"></i> Print Plan
+                                <i class="bi bi-printer"></i> @Localizer["printPlan"]
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="window.TravelPlanner.copyToClipboard('@plan?.Destination @days-day trip')">
-                                <i class="bi bi-share"></i> Share
+                                <i class="bi bi-share"></i> @Localizer["share"]
                             </button>
                         </div>
                     </div>
                     
                     <!-- Quick Links -->
                     <div class="summary-card mt-3">
-                        <h6 class="summary-subtitle">🔗 Quick Links</h6>
+                        <h6 class="summary-subtitle">🔗 @Localizer["quickLinksTitle"]</h6>
                         <div class="quick-links">
                             <a href="#tab-map" class="quick-link-item" data-tab="map">
-                                <i class="bi bi-map"></i> View Map
+                                <i class="bi bi-map"></i> @Localizer["viewMap"]
                             </a>
                             <a href="#tab-details" class="quick-link-item" data-tab="details">
-                                <i class="bi bi-list-check"></i> Full Details
+                                <i class="bi bi-list-check"></i> @Localizer["fullDetails"]
                             </a>
                             <a href="#tab-chat" class="quick-link-item" data-tab="chat">
-                                <i class="bi bi-chat-dots"></i> AI Assistant
+                                <i class="bi bi-chat-dots"></i> @Localizer["aiAssistant"]
                             </a>
                         </div>
                     </div>
@@ -401,9 +401,9 @@ else
                     <!-- Map loading indicator -->
                     <div id="map-loading" class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 1;">
                         <div class="spinner-border text-primary mb-2" role="status">
-                            <span class="visually-hidden">Loading map...</span>
+                            <span class="visually-hidden">@Localizer["loadingMap"]</span>
                         </div>
-                        <div class="small text-muted">Loading map...</div>
+                        <div class="small text-muted">@Localizer["loadingMap"]</div>
                     </div>
                 </div>
             </div>
@@ -415,7 +415,7 @@ else
 
                     <!-- Day Filter Chips (desktop: grid, mobile: horizontal scroll) -->
                     <div class="mb-3">
-                        <h6 class="mb-2 text-muted small text-uppercase">Filter by day</h6>
+                        <h6 class="mb-2 text-muted small text-uppercase">@Localizer["filterByDay"]</h6>
                         <div class="day-chips-container">
                             <div id="map-controls" class="day-chips-grid"></div>
                         </div>
@@ -424,20 +424,20 @@ else
                     <!-- Search/Add Location Section -->
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            <h6 class="card-title mb-3">Add Location</h6>
+                            <h6 class="card-title mb-3">@Localizer["addLocation"]</h6>
                             <div class="input-group mb-2 search-input-mobile">
                                 <span class="input-group-text bg-white border-end-0">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                         <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
                                     </svg>
                                 </span>
-                                <input type="text" id="location-search" class="form-control border-start-0" placeholder="Search places..." />
+                                <input type="text" id="location-search" class="form-control border-start-0" placeholder="@Localizer["searchPlaces"]" />
                             </div>
                             <button type="button" class="btn btn-primary w-100 add-location-btn" id="add-location-btn">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1" viewBox="0 0 16 16">
                                     <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
                                 </svg>
-                                Add to Map
+                                @Localizer["addToMap"]
                             </button>
                         </div>
                     </div>
@@ -451,7 +451,7 @@ else
         <div class="card shadow-sm mb-4 details-hero-card">
             <div class="card-body p-4">
                 <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h2 class="h3 mb-0 fw-bold text-dark">📊 Trip Overview</h2>
+                    <h2 class="h3 mb-0 fw-bold text-dark">📊 @Localizer["tripOverview"]</h2>
                     <button type="button" class="btn badge bg-success fs-5 border-0" 
                             data-bs-toggle="collapse" 
                             data-bs-target="#budgetBreakdown" 
@@ -464,7 +464,7 @@ else
                 <!-- Budget Breakdown (Collapsible) -->
                 <div class="collapse" id="budgetBreakdown">
                     <div class="card card-body bg-light mb-3">
-                        <h6 class="fw-bold mb-3">💰 Budget Breakdown</h6>
+                        <h6 class="fw-bold mb-3">💰 @Localizer["budgetBreakdown"]</h6>
                         <div class="row g-2 small">
                             <div class="col-4">
                                 <div class="d-flex justify-content-between">
@@ -493,9 +493,9 @@ else
                         <div class="detail-stat-card">
                             <div class="stat-icon">📅</div>
                             <div class="stat-content">
-                                <div class="stat-label">Duration</div>
-                                <div class="stat-value">@days days</div>
-                                <div class="stat-subtext">@plan.StartDate!.ToString("MMM dd") - @plan.EndDate!.ToString("MMM dd, yyyy")</div>
+                                <div class="stat-label">@Localizer["duration"]</div>
+                                <div class="stat-value">@days @Localizer["days"]</div>
+                                <div class="stat-subtext">@plan.StartDate.ToString("MMM dd") - @plan.EndDate.ToString("MMM dd, yyyy")</div>
                             </div>
                         </div>
                     </div>
@@ -503,9 +503,9 @@ else
                         <div class="detail-stat-card">
                             <div class="stat-icon">👥</div>
                             <div class="stat-content">
-                                <div class="stat-label">Travelers</div>
-                                <div class="stat-value">@(plan?.NumberOfTravelers ?? 0) @((plan?.NumberOfTravelers ?? 0) == 1 ? "person" : "people")</div>
-                                <div class="stat-subtext">$@perPersonPerDay.ToString("F0")/person/day</div>
+                                <div class="stat-label">@Localizer["travelersLabel"]</div>
+                                <div class="stat-value">@(plan?.NumberOfTravelers ?? 0) @Localizer[(plan?.NumberOfTravelers ?? 0) == 1 ? "traveler" : "travelers"]</div>
+                                <div class="stat-subtext">$@perPersonPerDay.ToString("F0")@Localizer["perPersonDay"]</div>
                             </div>
                         </div>
                     </div>
@@ -513,9 +513,9 @@ else
                         <div class="detail-stat-card">
                             <div class="stat-icon">🏨</div>
                             <div class="stat-content">
-                                <div class="stat-label">Accommodations</div>
-                                <div class="stat-value">@((plan?.Accommodations?.Count ?? 0)) stays</div>
-                                <div class="stat-subtext">@((plan?.Activities?.Count ?? 0)) activities planned</div>
+                                <div class="stat-label">@Localizer["accommodationsTitle"]</div>
+                                <div class="stat-value">@((plan?.Accommodations?.Count ?? 0)) @Localizer["stays"]</div>
+                                <div class="stat-subtext">@((plan?.Activities?.Count ?? 0)) @Localizer["activitiesLabel"]</div>
                             </div>
                         </div>
                     </div>
@@ -528,11 +528,11 @@ else
         <div class="card-header bg-white border-0 pt-3 pb-2">
             <h3 class="h3 mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
                 <span class="detail-icon me-2">✅</span>
-                <span>Next Steps - Pre-Departure Checklist</span>
+                <span>@Localizer["nextSteps"]</span>
             </h3>
         </div>
         <div class="card-body">
-            <p class="text-muted mb-3 small">Stay organized with this checklist to ensure you're ready for your trip:</p>
+            <p class="text-muted mb-3 small">@Localizer["nextStepsIntro"]</p>
             
             <div class="next-steps-list">
                 <div class="next-step-item">
@@ -542,8 +542,8 @@ else
                             <div class="d-flex align-items-start">
                                 <span class="step-icon me-3">📋</span>
                                 <div>
-                                    <strong>Check Passport & Visas</strong>
-                                    <p class="text-muted small mb-0">Verify passport validity (6+ months) and visa requirements for @(plan?.Destination ?? "your destination")</p>
+                                    <strong>@Localizer["checkPassport"]</strong>
+                                    <p class="text-muted small mb-0">@Localizer["passportDesc"]</p>
                                 </div>
                             </div>
                         </label>
@@ -557,8 +557,8 @@ else
                             <div class="d-flex align-items-start">
                                 <span class="step-icon me-3">🛡️</span>
                                 <div>
-                                    <strong>Purchase Travel Insurance</strong>
-                                    <p class="text-muted small mb-0">Get coverage for trip cancellation, medical emergencies, and lost baggage</p>
+                                    <strong>@Localizer["insuranceTitle"]</strong>
+                                    <p class="text-muted small mb-0">@Localizer["insuranceDesc"]</p>
                                 </div>
                             </div>
                         </label>
@@ -572,8 +572,8 @@ else
                             <div class="d-flex align-items-start">
                                 <span class="step-icon me-3">🎫</span>
                                 <div>
-                                    <strong>Confirm All Reservations</strong>
-                                    <p class="text-muted small mb-0">Double-check flights, accommodations, and activity bookings</p>
+                                    <strong>@Localizer["reservationsTitle"]</strong>
+                                    <p class="text-muted small mb-0">@Localizer["reservationsDesc"]</p>
                                 </div>
                             </div>
                         </label>
@@ -587,8 +587,8 @@ else
                             <div class="d-flex align-items-start">
                                 <span class="step-icon me-3">💵</span>
                                 <div>
-                                    <strong>Arrange Currency & Payment Methods</strong>
-                                    <p class="text-muted small mb-0">Notify your bank, get local currency, and prepare backup payment options</p>
+                                    <strong>@Localizer["currencyTitle"]</strong>
+                                    <p class="text-muted small mb-0">@Localizer["currencyDesc"]</p>
                                 </div>
                             </div>
                         </label>
@@ -602,8 +602,8 @@ else
                             <div class="d-flex align-items-start">
                                 <span class="step-icon me-3">📱</span>
                                 <div>
-                                    <strong>Download Essential Mobile Apps</strong>
-                                    <p class="text-muted small mb-0">Maps, translation, ride-sharing, and offline guides for @(plan?.Destination ?? "your destination")</p>
+                                    <strong>@Localizer["appsTitle"]</strong>
+                                    <p class="text-muted small mb-0">@Localizer["appsDesc"]</p>
                                 </div>
                             </div>
                         </label>
@@ -615,10 +615,10 @@ else
                 <div class="d-flex justify-content-between align-items-center">
                     <small class="text-muted">
                         <i class="bi bi-info-circle me-1"></i>
-                        <span id="checklistProgress">0/5 completed</span>
+                        <span id="checklistProgress">@Localizer["checklistProgress", "0"]</span>
                     </small>
                     <button class="btn btn-sm btn-outline-secondary" onclick="resetChecklist()">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>@Localizer["reset"]
                     </button>
                 </div>
             </div>
@@ -628,7 +628,7 @@ else
     @if (!string.IsNullOrWhiteSpace(plan?.TravelPreferences))
         {
             <div class="alert alert-info mb-4">
-                <strong>✨ Your Preferences:</strong> @plan?.TravelPreferences
+                <strong>✨ @Localizer["yourPreferences"]</strong> @plan?.TravelPreferences
             </div>
         }
 
@@ -652,12 +652,12 @@ else
                             };
                         }
                         <span class="detail-icon me-2">@selectedModeIcon</span>
-                        <span>Transport & Logistics</span>
+                        <span>@Localizer["transportLogistics"]</span>
                         @if (!string.IsNullOrWhiteSpace(plan?.TransportMode))
                         {
-                            <span class="badge bg-success ms-2">@plan.TransportMode Mode</span>
+                            <span class="badge bg-success ms-2">@plan.TransportMode @Localizer["mode"]</span>
                         }
-                        <span class="badge bg-primary ms-2">@transportationList.Count tips</span>
+                        <span class="badge bg-primary ms-2">@Localizer["tipsCount", transportationList.Count]</span>
                     </h3>
                 </div>
                 <div class="card-body">
@@ -668,20 +668,20 @@ else
                                 <div class="d-flex align-items-center">
                                     <span class="fs-3 me-3">@selectedModeIcon</span>
                                     <div>
-                                        <strong>Route:</strong> @plan.DepartureLocation → @plan.Destination<br/>
-                                        <small class="text-muted">Traveling by @(plan.TransportMode ?? "various modes")</small>
+                                        <strong>@Localizer["routeLabel"]</strong> @plan.DepartureLocation → @plan.Destination<br/>
+                                        <small class="text-muted">@Localizer["travelingByModes", plan.TransportMode ?? "various modes"]</small>
                                     </div>
                                 </div>
                                 <div class="d-flex gap-2 flex-wrap">
                                     <a href="https://www.google.com/travel/flights?q=@Uri.EscapeDataString($"Flights from {plan.DepartureLocation} to {plan.Destination} on {plan.StartDate!.ToString("yyyy-MM-dd")}")"
                                        target="_blank"
                                        class="btn btn-sm btn-primary">
-                                        <i class="bi bi-google"></i> Google Flights
+                                        <i class="bi bi-google"></i> @Localizer["googleFlights"]
                                     </a>
                                     <a href="https://www.booking.com/flights/?type=roundtrip&adults=@(plan.NumberOfTravelers)&from=@Uri.EscapeDataString(plan.DepartureLocation)&to=@Uri.EscapeDataString(plan.Destination!)&depart=@plan.StartDate!.ToString("yyyy-MM-dd")"
                                        target="_blank"
                                        class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-search"></i> Booking.com Flights
+                                        <i class="bi bi-search"></i> @Localizer["bookingFlights"]
                                     </a>
                                 </div>
                             </div>
@@ -727,7 +727,7 @@ else
                                 {
                                     <div class="mt-2 pt-2 border-top">
                                         <small class="text-muted d-block mb-2">
-                                            <i class="bi bi-clock me-1"></i> Best to book 2-3 months in advance for better prices
+                                            <i class="bi bi-clock me-1"></i> @Localizer["bookEarly"]
                                         </small>
                                         <div class="d-flex gap-2 flex-wrap">
                                             @if (!string.IsNullOrWhiteSpace(plan?.DepartureLocation))
@@ -735,7 +735,7 @@ else
                                                 <a href="https://www.google.com/travel/flights?q=@Uri.EscapeDataString($"Flights from {plan.DepartureLocation} to {plan.Destination} on {plan.StartDate!.ToString("yyyy-MM-dd")}")"
                                                    target="_blank"
                                                    class="btn btn-sm btn-outline-primary">
-                                                    <i class="bi bi-google"></i> Google Flights
+                                                    <i class="bi bi-google"></i> @Localizer["googleFlights"]
                                                 </a>
                                             }
                                         </div>
@@ -746,7 +746,7 @@ else
                                 {
                                     <div class="mt-2 pt-2 border-top">
                                         <small class="text-muted d-block mb-2">
-                                            <i class="bi bi-ticket-perforated me-1"></i> Consider rail passes for multiple journeys
+                                            <i class="bi bi-ticket-perforated me-1"></i> @Localizer["railPasses"]
                                         </small>
                                         <div class="d-flex gap-2 flex-wrap">
                                             @if (!string.IsNullOrWhiteSpace(plan?.DepartureLocation))
@@ -775,10 +775,10 @@ else
                                 {
                                     <div class="mt-2 pt-2 border-top">
                                         <small class="text-muted d-block">
-                                            <i class="bi bi-calendar-check me-1"></i> FlixBus often has early bird discounts
+                                            <i class="bi bi-calendar-check me-1"></i> @Localizer["busTip"]
                                         </small>
                                         <small class="text-muted d-block">
-                                            <i class="bi bi-search me-1"></i> Check: FlixBus, Eurolines, BlaBlaBus
+                                            <i class="bi bi-search me-1"></i> @Localizer["busCheck"]
                                         </small>
                                     </div>
                                 }
@@ -787,10 +787,10 @@ else
                                 {
                                     <div class="mt-2 pt-2 border-top">
                                         <small class="text-muted d-block">
-                                            <i class="bi bi-shield-check me-1"></i> Book early for better rates and availability
+                                            <i class="bi bi-shield-check me-1"></i> @Localizer["carTip"]
                                         </small>
                                         <small class="text-muted d-block">
-                                            <i class="bi bi-search me-1"></i> Compare: Rentalcars.com, Kayak, local providers
+                                            <i class="bi bi-search me-1"></i> @Localizer["carCompare"]
                                         </small>
                                     </div>
                                 }
@@ -808,7 +808,7 @@ else
                 <div class="card-header bg-white border-0 pt-3 pb-2">
                     <h3 class="h3 mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
                         <span class="detail-icon me-2">🏨</span>
-                        <span>Accommodations</span>
+                        <span>@Localizer["accommodationsTitle"]</span>
                         <span class="badge bg-secondary ms-2">@plan.Accommodations.Count</span>
                     </h3>
                 </div>
@@ -822,8 +822,8 @@ else
                         <div class="text-center py-4">
                             <div class="mb-4">
                                 <i class="bi bi-building display-4 text-primary"></i>
-                                <h5 class="mt-3 mb-2 fw-bold text-dark">Find Your Perfect Stay in @destination</h5>
-                                <p class="text-secondary mb-0">Browse hotels on the map and compare prices</p>
+                                <h5 class="mt-3 mb-2 fw-bold text-dark">@Localizer["findStay", destination]</h5>
+                                <p class="text-secondary mb-0">@Localizer["browseHotels"]</p>
                             </div>
                             
                             <div class="row g-3 mb-4 text-start">
@@ -831,7 +831,7 @@ else
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-calendar-check fs-4 text-primary me-3"></i>
                                         <div>
-                                            <small class="text-secondary d-block fw-semibold">Check-in</small>
+                                            <small class="text-secondary d-block fw-semibold">@Localizer["checkIn"]</small>
                                             <strong class="text-dark">@startDate.ToString("MMM dd, yyyy")</strong>
                                         </div>
                                     </div>
@@ -840,7 +840,7 @@ else
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-calendar-x fs-4 text-primary me-3"></i>
                                         <div>
-                                            <small class="text-secondary d-block fw-semibold">Check-out</small>
+                                            <small class="text-secondary d-block fw-semibold">@Localizer["checkOut"]</small>
                                             <strong class="text-dark">@endDate.ToString("MMM dd, yyyy")</strong>
                                         </div>
                                     </div>
@@ -849,7 +849,7 @@ else
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-people fs-4 text-primary me-3"></i>
                                         <div>
-                                            <small class="text-secondary d-block fw-semibold">Guests</small>
+                                            <small class="text-secondary d-block fw-semibold">@Localizer["guests"]</small>
                                             <strong class="text-dark">@(plan?.NumberOfTravelers ?? 1) guest@((plan?.NumberOfTravelers ?? 1) == 1 ? "" : "s")</strong>
                                         </div>
                                     </div>
@@ -860,14 +860,14 @@ else
                                 <a href="https://www.booking.com/searchresults.html?ss=@Uri.EscapeDataString(destination)&checkin=@startDate.ToString("yyyy-MM-dd")&checkout=@endDate.ToString("yyyy-MM-dd")&group_adults=@(plan?.NumberOfTravelers ?? 1)&no_rooms=1&map=1"
                                    target="_blank"
                                    class="btn btn-primary btn-lg">
-                                    <i class="bi bi-search me-2"></i> Search Hotels on Booking.com
+                                    <i class="bi bi-search me-2"></i> @Localizer["searchHotels"]
                                 </a>
                             </div>
                             
                             <div class="mt-3">
                                 <small class="text-secondary">
                                     <i class="bi bi-info-circle me-1"></i>
-                                    Opens with map view to browse all available accommodations
+                                    @Localizer["opensWithMap"]
                                 </small>
                             </div>
                         </div>
@@ -889,7 +889,7 @@ else
                 <div class="card-header bg-white border-0 pt-3 pb-2">
                     <h3 class="h3 mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
                         <span class="detail-icon me-2">🎯</span>
-                        <span>Activities & Experiences</span>
+                        <span>@Localizer["activitiesExperiences"]</span>
                         <span class="badge bg-secondary ms-2">@activitiesList.Count</span>
                     </h3>
                 </div>
@@ -897,7 +897,7 @@ else
                     <!-- Scheduled Events -->
                     <div class="mb-4">
                         <h6 class="fw-bold mb-3 text-primary">
-                            <i class="bi bi-calendar-check me-2"></i>Scheduled Events
+                            <i class="bi bi-calendar-check me-2"></i>@Localizer["scheduledEvents"]
                             <span class="badge bg-primary ms-2">@scheduledActivities.Count</span>
                         </h6>
                         <div class="accordion activity-accordion" id="scheduledAccordion">
@@ -968,7 +968,7 @@ else
                     <!-- Points of Interest -->
                     <div>
                         <h6 class="fw-bold mb-3 text-secondary">
-                            <i class="bi bi-bookmark-star me-2"></i>Saved Points of Interest
+                            <i class="bi bi-bookmark-star me-2"></i>@Localizer["savedPoi"]
                             <span class="badge bg-secondary ms-2">@pointsOfInterest.Count</span>
                         </h6>
                         <div class="row g-2">
@@ -983,7 +983,7 @@ else
                                                     <h6 class="mb-1">@poi</h6>
                                                     <small class="text-muted">@destination</small>
                                                 </div>
-                                                <button class="btn btn-sm btn-link p-0 text-decoration-none" title="View on map" onclick="window.open('https://www.google.com/maps/search/?api=1&query=@Uri.EscapeDataString(poi + ", " + destination)', '_blank')">
+                                                <button class="btn btn-sm btn-link p-0 text-decoration-none" title="@Localizer["viewOnMap"]" onclick="window.open('https://www.google.com/maps/search/?api=1&query=@Uri.EscapeDataString(poi + ", " + destination)', '_blank')">
                                                     <i class="bi bi-geo-alt"></i>
                                                 </button>
                                             </div>
@@ -997,23 +997,23 @@ else
             </div>
         }
         <details class="mt-3">
-            <summary class="fw-semibold">Edit details</summary>
+            <summary class="fw-semibold">@Localizer["editDetails"]</summary>
             <form id="detailsForm" method="post" asp-page-handler="UpdateDetails" asp-route-id="@planId" class="mt-3">
                 <div class="row g-3">
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label">Start</label>
-                        <input type="date" name="startDate" value="@plan.StartDate!.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                        <label class="form-label">@Localizer["startLabel"]</label>
+                        <input type="date" name="startDate" value="@plan.StartDate.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label">End</label>
-                        <input type="date" name="endDate" value="@plan.EndDate!.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
+                        <label class="form-label">@Localizer["endLabel"]</label>
+                        <input type="date" name="endDate" value="@plan.EndDate.ToString("yyyy-MM-dd")" class="form-control" @(Model.IsProcessing?"disabled":"") />
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label">Travelers</label>
+                        <label class="form-label">@Localizer["travelersLabel"]</label>
                         <input type="number" name="numberOfTravelers" min="1" max="20" value="@(plan?.NumberOfTravelers ?? 0)" class="form-control" @(Model.IsProcessing?"disabled":"") />
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label">Budget (USD)</label>
+                        <label class="form-label">@Localizer["budgetUsd"]</label>
                         <input type="number" name="budget" min="0" step="1" value="@(plan?.Budget ?? 0)" class="form-control" @(Model.IsProcessing?"disabled":"") />
                     </div>
                 </div>
@@ -1021,39 +1021,39 @@ else
                 <hr />
 
                 <div class="mb-3">
-                    <label class="form-label">Additional preferences</label>
+                    <label class="form-label">@Localizer["additionalPreferences"]</label>
                     <textarea name="travelPreferences" class="form-control" rows="2" @(Model.IsProcessing?"disabled":"")>@(plan?.TravelPreferences)</textarea>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Accommodations (one per line)</label>
+                    <label class="form-label">@Localizer["accommodationsLines"]</label>
                     <textarea name="accommodations" class="form-control" rows="3" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan?.Accommodations ?? new List<string>())</textarea>
                     <div class="input-group mt-2">
                         <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
-                        <input type="text" id="accommodation-search" class="form-control" placeholder="Search accommodation..." @(Model.IsProcessing?"disabled":"") />
-                        <button type="button" id="add-accommodation-btn" class="btn btn-outline-primary" @(Model.IsProcessing?"disabled":"")>Add</button>
+                        <input type="text" id="accommodation-search" class="form-control" placeholder="@Localizer["searchAccommodation"]" @(Model.IsProcessing?"disabled":"") />
+                        <button type="button" id="add-accommodation-btn" class="btn btn-outline-primary" @(Model.IsProcessing?"disabled":"")>@Localizer["add"]</button>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Activities (one per line)</label>
+                    <label class="form-label">@Localizer["activitiesLines"]</label>
                     <textarea name="activities" class="form-control" rows="3" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan?.Activities ?? new List<string>())</textarea>
                     <div class="input-group mt-2">
                         <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
-                        <input type="text" id="activity-search" class="form-control" placeholder="Search activity place..." @(Model.IsProcessing?"disabled":"") />
-                        <button type="button" id="add-activity-btn" class="btn btn-outline-primary" @(Model.IsProcessing?"disabled":"")>Add</button>
+                        <input type="text" id="activity-search" class="form-control" placeholder="@Localizer["searchActivity"]" @(Model.IsProcessing?"disabled":"") />
+                        <button type="button" id="add-activity-btn" class="btn btn-outline-primary" @(Model.IsProcessing?"disabled":"")>@Localizer["add"]</button>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Transportation (one per line)</label>
+                    <label class="form-label">@Localizer["transportationLines"]</label>
                     <textarea name="transportation" class="form-control" rows="2" @(Model.IsProcessing?"disabled":"")>@string.Join("\n", plan?.Transportation ?? new List<string>())</textarea>
                     <div class="input-group mt-2">
                         <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
-                        <input type="text" id="transport-search" class="form-control" placeholder="Search transport place..." @(Model.IsProcessing?"disabled":"") />
-                        <button type="button" id="add-transport-btn" class="btn btn-outline-primary" @(Model.IsProcessing?"disabled":"")>Add</button>
+                        <input type="text" id="transport-search" class="form-control" placeholder="@Localizer["searchTransport"]" @(Model.IsProcessing?"disabled":"") />
+                        <button type="button" id="add-transport-btn" class="btn btn-outline-primary" @(Model.IsProcessing?"disabled":"")>@Localizer["add"]</button>
                     </div>
                 </div>
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary" @(Model.IsProcessing?"disabled":"")>@Localizer["saveDetails"]</button>
-                    <a asp-page="Result" asp-route-id="@planId" class="btn btn-outline-secondary">Cancel</a>
+                    <a asp-page="Result" asp-route-id="@planId" class="btn btn-outline-secondary">@Localizer["cancel"]</a>
                 </div>
             </form>
         </details>
@@ -1066,16 +1066,16 @@ else
                 <div>
                     <h3 class="h3 mb-0 fw-bold d-flex align-items-center gap-2">
                         <span>🤖</span>
-                        <span>AI Travel Assistant</span>
+                        <span>@Localizer["aiAssistantTitle"]</span>
                     </h3>
-                    <small class="text-white-50">Ask questions or request changes to your itinerary</small>
+                    <small class="text-white-50">@Localizer["aiAssistantSubtitle"]</small>
                 </div>
                 <div class="btn-group" role="group">
                     <button type="button" class="btn btn-sm btn-light" id="undoBtn" title="Undo last change" disabled>
-                        ↶ Undo
+                        ↶ @Localizer["undo"]
                     </button>
                     <button type="button" class="btn btn-sm btn-light" id="redoBtn" title="Redo change" disabled>
-                        ↷ Redo
+                        ↷ @Localizer["redo"]
                     </button>
                 </div>
             </div>
@@ -1083,11 +1083,11 @@ else
                 <!-- Chat messages container -->
                 <div id="chatMessages" class="p-3" style="height: 400px; overflow-y: auto; background-color: #f8f9fa;">
                     <div class="alert alert-info mb-2">
-                        <strong>👋 Welcome!</strong> I can help you modify your travel plan. Try asking:
+                        <strong>👋 @Localizer["welcomeTitle"]</strong> I can help you modify your travel plan. Try asking:
                         <ul class="mb-0 mt-2">
-                            <li>"Add a museum visit on day 2"</li>
-                            <li>"Change day 3 lunch to a local restaurant"</li>
-                            <li>"What are the best activities for families?"</li>
+                            <li>"@Localizer["welcomeTip1"]"</li>
+                            <li>"@Localizer["welcomeTip2"]"</li>
+                            <li>"@Localizer["welcomeTip3"]"</li>
                         </ul>
                     </div>
                 </div>
@@ -1095,7 +1095,7 @@ else
                 <!-- Diff Preview Panel (hidden by default) -->
                 <div id="diffPreviewPanel" class="border-top p-3 bg-light" style="display: none;">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="mb-0">📋 Proposed Changes</h6>
+                        <h6 class="mb-0">📋 @Localizer["proposedChanges"]</h6>
                         <button type="button" class="btn-close" onclick="closeDiffPreview()"></button>
                     </div>
                     <div id="diffContent" class="mb-3" style="max-height: 200px; overflow-y: auto;">
@@ -1103,10 +1103,10 @@ else
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-success btn-sm" id="applyChangesBtn">
-                            ✅ Apply Changes
+                            ✅ @Localizer["applyChanges"]
                         </button>
                         <button class="btn btn-outline-secondary btn-sm" id="rejectChangesBtn">
-                            ❌ Reject
+                            ❌ @Localizer["reject"]
                         </button>
                     </div>
                 </div>
@@ -1116,11 +1116,11 @@ else
                     <div class="input-group">
                         <input type="text" id="chatInput" class="form-control" placeholder="Type your message..." />
                         <button class="btn btn-primary" id="sendChatBtn" type="button">
-                            <span id="sendBtnText">Send</span>
+                            <span id="sendBtnText">@Localizer["send"]</span>
                             <span id="sendBtnSpinner" class="spinner-border spinner-border-sm d-none"></span>
                         </button>
                     </div>
-                    <small class="text-muted mt-1 d-block">Powered by OpenAI GPT-4o-mini</small>
+                    <small class="text-muted mt-1 d-block">@Localizer["poweredBy"]</small>
                 </div>
             </div>
         </div>
@@ -1539,26 +1539,26 @@ else
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1zM4.5 9a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1h-7zM4 10.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 1 0-1h4a.5.5 0 0 1 0 1h-4z"/>
                 </svg>
-                <small>Plan</small>
+                <small>@Localizer["plan"]</small>
             </button>
             <button type="button" data-tab="map" aria-selected="false" class="btn btn-link flex-fill d-flex flex-column align-items-center" style="text-decoration: none;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M15.817.113A.5.5 0 0 1 16 .5v14a.5.5 0 0 1-.402.49l-5 1a.502.502 0 0 1-.196 0L5.5 15.01l-4.902.98A.5.5 0 0 1 0 15.5v-14a.5.5 0 0 1 .402-.49l5-1a.5.5 0 0 1 .196 0L10.5.99l4.902-.98a.5.5 0 0 1 .415.103zM10 1.91l-4-.8v12.98l4 .8V1.91zm1 12.98 4-.8V1.11l-4 .8v12.98zm-6-.8V1.11l-4 .8v12.98l4-.8z"/>
                 </svg>
-                <small>Map</small>
+                <small>@Localizer["map"]</small>
             </button>
             <button type="button" data-tab="details" aria-selected="false" class="btn btn-link flex-fill d-flex flex-column align-items-center" style="text-decoration: none;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
                 </svg>
-                <small>Details</small>
+                <small>@Localizer["details"]</small>
             </button>
             <button type="button" data-tab="chat" aria-selected="false" class="btn btn-link flex-fill d-flex flex-column align-items-center" style="text-decoration: none;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
                     <path d="m2.165 15.803.02-.004c1.83-.363 2.948-.842 3.468-1.105A9.06 9.06 0 0 0 8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6a10.437 10.437 0 0 1-.524 2.318l-.003.011a10.722 10.722 0 0 1-.244.637c-.079.186.074.394.273.362a21.673 21.673 0 0 0 .693-.125zm.8-3.108a1 1 0 0 0-.287-.801C1.618 10.83 1 9.468 1 8c0-3.192 3.004-6 7-6s7 2.808 7 6c0 3.193-3.004 6-7 6a8.06 8.06 0 0 1-2.088-.272 1 1 0 0 0-.711.074c-.387.196-1.24.57-2.634.893a10.97 10.97 0 0 0 .398-2z"/>
                 </svg>
-                <small>AI</small>
+                <small>@Localizer["ai"]</small>
             </button>
         </div>
     </nav>
@@ -1568,7 +1568,7 @@ else
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content bg-dark">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title text-white" id="imageModalLabel">Image</h5>
+                    <h5 class="modal-title text-white" id="imageModalLabel">@Localizer["image"]</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center p-0">

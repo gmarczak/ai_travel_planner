@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="loginTitle" xml:space="preserve">
+    <value>Zaloguj się</value>
+  </data>
+  <data name="loginDescription" xml:space="preserve">
+    <value>Zaloguj się do swojego konta</value>
+  </data>
+  <data name="email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="password" xml:space="preserve">
+    <value>Hasło</value>
+  </data>
+  <data name="rememberMe" xml:space="preserve">
+    <value>Zapamiętaj mnie</value>
+  </data>
+  <data name="loginButton" xml:space="preserve">
+    <value>Zaloguj się</value>
+  </data>
+  <data name="noAccount" xml:space="preserve">
+    <value>Nie masz konta?</value>
+  </data>
+  <data name="registerHere" xml:space="preserve">
+    <value>Zarejestruj się tutaj</value>
+  </data>
+  <data name="registerTitle" xml:space="preserve">
+    <value>Utwórz nowe konto</value>
+  </data>
+  <data name="registerDescription" xml:space="preserve">
+    <value>Zarejestruj się aby rozpocząć planowanie podróży</value>
+  </data>
+  <data name="confirmPassword" xml:space="preserve">
+    <value>Potwierdź hasło</value>
+  </data>
+  <data name="registerButton" xml:space="preserve">
+    <value>Zarejestruj się</value>
+  </data>
+  <data name="alreadyHaveAccount" xml:space="preserve">
+    <value>Już masz konto?</value>
+  </data>
+  <data name="loginHere" xml:space="preserve">
+    <value>Zaloguj się tutaj</value>
+  </data>
+  <data name="welcomeBack" xml:space="preserve">
+    <value>Witaj ponownie</value>
+  </data>
+  <data name="signInDescription" xml:space="preserve">
+    <value>Zaloguj się, aby uzyskać dostęp do swoich planów podróży</value>
+  </data>
+  <data name="signInButton" xml:space="preserve">
+    <value>Zaloguj się</value>
+  </data>
+  <data name="createAccountTitle" xml:space="preserve">
+    <value>Utwórz konto</value>
+  </data>
+  <data name="joinDescription" xml:space="preserve">
+    <value>Dołącz do AI Travel Planner i zapisuj swoje podróże</value>
+  </data>
+  <data name="fullName" xml:space="preserve">
+    <value>Pełne imię i nazwisko</value>
+  </data>
+  <data name="minimum6Chars" xml:space="preserve">
+    <value>Minimum 6 znaków</value>
+  </data>
+  <data name="fullNamePlaceholder" xml:space="preserve">
+    <value>Jan Kowalski</value>
+  </data>
+</root>

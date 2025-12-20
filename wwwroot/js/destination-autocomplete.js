@@ -1,5 +1,8 @@
 // Initializes Google Places Autocomplete on destination inputs when Maps API is ready.
 // Targets home page search bar and travel planner destination input.
+// NOTE: google.maps.places.Autocomplete is deprecated as of March 2025.
+// TODO: Migrate to google.maps.places.PlaceAutocompleteElement (Web Component)
+// See: https://developers.google.com/maps/documentation/javascript/places-migration-overview
 (function () {
     function init() {
         if (!window.google || !google.maps || !google.maps.places) { return; }

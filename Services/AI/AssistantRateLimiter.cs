@@ -19,7 +19,7 @@ namespace project.Services.AI
             _maxRequestsPerHour = maxPerHour;
         }
 
-        public async Task<RateLimitResult> CheckRateLimitAsync(string userId)
+        public Task<RateLimitResult> CheckRateLimitAsync(string userId)
         {
             var limit = _userLimits.GetOrAdd(userId, _ => new UserRateLimit());
 
@@ -37,19 +37,19 @@ namespace project.Services.AI
                 {
                     var oldestInMinute = lastMinute.Min();
                     var waitTime = TimeSpan.FromMinutes(1) - (now - oldestInMinute);
-                    return new RateLimitResult(false, $"Rate limit exceeded. Try again in {waitTime.TotalSeconds:F0} seconds.", waitTime);
+                    return Task.FromResult(new RateLimitResult(false, $"Rate limit exceeded. Try again in {waitTime.TotalSeconds:F0} seconds.", waitTime));
                 }
 
                 if (lastHour.Count >= _maxRequestsPerHour)
                 {
                     var oldestInHour = lastHour.Min();
                     var waitTime = TimeSpan.FromHours(1) - (now - oldestInHour);
-                    return new RateLimitResult(false, $"Hourly rate limit exceeded. Try again in {waitTime.TotalMinutes:F0} minutes.", waitTime);
+                    return Task.FromResult(new RateLimitResult(false, $"Hourly rate limit exceeded. Try again in {waitTime.TotalMinutes:F0} minutes.", waitTime));
                 }
 
                 // Record this request
                 limit.RequestTimestamps.Add(now);
-                return new RateLimitResult(true, "OK", TimeSpan.Zero);
+                return Task.FromResult(new RateLimitResult(true, "OK", TimeSpan.Zero));
             }
         }
 

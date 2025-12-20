@@ -32,11 +32,11 @@ if (builder.Environment.IsProduction())
 {
     // PRODUCTION: Use Azure App Service Configuration (Environment Variables)
     Console.WriteLine("[INFO] Production environment: Using Azure App Service Configuration");
-    
+
     // Optional: Try Azure Key Vault if configured
     var keyVaultName = builder.Configuration["KeyVault:Name"];
-    if (!string.IsNullOrEmpty(keyVaultName) && 
-        keyVaultName != "your-keyvault-name-here" && 
+    if (!string.IsNullOrEmpty(keyVaultName) &&
+        keyVaultName != "your-keyvault-name-here" &&
         !keyVaultName.StartsWith("your-keyvault-name"))
     {
         try
@@ -229,10 +229,10 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;
 
-    // Only use cookie and query string providers for manual selection
+    // Only use cookie provider - SetLanguage reads query string directly from Request.Query
+    // so we don't need QueryStringRequestCultureProvider which would consume it
     options.RequestCultureProviders = new Microsoft.AspNetCore.Localization.IRequestCultureProvider[] {
-        new CookieRequestCultureProvider(),
-        new QueryStringRequestCultureProvider()
+        new CookieRequestCultureProvider()
     };
 });
 
@@ -305,7 +305,7 @@ if (enableFallback && (useOpenAI || useClaude))
     // Register primary service
     if (useClaude)
     {
-        builder.Services.AddScoped<ITravelService, ClaudeTravelService>();
+        builder.Services.AddScoped<ITravelService, OpenAITravelService>();
     }
     else if (useOpenAI)
     {
@@ -329,7 +329,7 @@ if (enableFallback && (useOpenAI || useClaude))
 else if (useClaude)
 {
     Console.WriteLine("[INFO] Using Claude (Anthropic) Travel Service");
-    builder.Services.AddScoped<ITravelService, ClaudeTravelService>();
+    builder.Services.AddScoped<ITravelService, OpenAITravelService>();
 }
 else if (useOpenAI)
 {

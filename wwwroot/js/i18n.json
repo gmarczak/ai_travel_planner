@@ -124,7 +124,10 @@
         "noPlanFound": "No travel plan data was found. Please create a new plan.",
         "backToPlanner": "Back to planner",
         "saveChanges": "Save changes",
-        "saveDetails": "Save details"
+        "saveDetails": "Save details",
+        "failedToGeneratePlan": "Failed to generate plan. Please try again.",
+        "failedToSaveOrder": "Failed to save order",
+        "planOrderSaved": "Plan order saved"
     },
     "pl": {
         "home": "Strona główna",
@@ -251,6 +254,9 @@
         "noPlanFound": "Nie znaleziono danych planu podróży. Proszę utwórz nowy plan.",
         "backToPlanner": "Powrót do planera",
         "saveChanges": "Zapisz zmiany",
-        "saveDetails": "Zapisz szczegóły"
+        "saveDetails": "Zapisz szczegóły",
+        "failedToGeneratePlan": "Nie udało się wygenerować planu. Spróbuj ponownie.",
+        "failedToSaveOrder": "Nie udało się zapisać planu",
+        "planOrderSaved": "Plan został zapisany"
     }
 }

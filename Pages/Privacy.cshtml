@@ -1,38 +1,35 @@
 ﻿@page
 @model project.Pages.PrivacyModel
 @{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = Localizer["privacyTitle"];
 }
 
-<h1>Privacy Policy</h1>
-<p>Your trust matters. This page explains how we handle data.</p>
+<h1>@Localizer["privacyTitle"]</h1>
+<p>@Localizer["privacyIntro"]</p>
 
-<h2>Information We Collect</h2>
+<h2>@Localizer["informationWeCollect"]</h2>
 <ul>
-    <li>Travel destinations and preferences you provide</li>
-    <li>Budget and travel date information</li>
-    <li>Trip planning inputs used to generate itineraries</li>
-    <li>Anonymous usage data to improve features</li>
+    <li>@Localizer["collectItem1"]</li>
+    <li>@Localizer["collectItem2"]</li>
+    <li>@Localizer["collectItem3"]</li>
+    <li>@Localizer["collectItem4"]</li>
 </ul>
 
-<h2>How We Use Your Information</h2>
+<h2>@Localizer["howWeUseYourInfo"]</h2>
 <ul>
-    <li>Generate personalized AI travel itineraries</li>
-    <li>Improve recommendation quality</li>
-    <li>Enhance application performance and UX</li>
-    <li>Maintain platform reliability</li>
+    <li>@Localizer["useItem1"]</li>
+    <li>@Localizer["useItem2"]</li>
+    <li>@Localizer["useItem3"]</li>
+    <li>@Localizer["useItem4"]</li>
 </ul>
 
-<h2>Data Protection</h2>
-<p>We use security best practices. We do not sell your personal data. Data is processed only to generate travel plans
-    and improve system quality.</p>
+<h2>@Localizer["dataProtection"]</h2>
+<p>@Localizer["dataProtectionText"]</p>
 
-<h2>Cookies</h2>
-<p>We use only essential cookies and local storage (for example, to save your travel plans). No third-party tracking
-    pixels are embedded.</p>
+<h2>@Localizer["cookies"]</h2>
+<p>@Localizer["cookiesText"]</p>
 
-<h2>Contact</h2>
-<p>If you have questions about this policy, please reach out via the support channel provided in the application
-    repository.</p>
+<h2>@Localizer["contact"]</h2>
+<p>@Localizer["contactText"]</p>
 
-<p><a asp-page="/Index">Back to Home</a></p>
+<p><a asp-page="/Index">@Localizer["backToHome"]</a></p>

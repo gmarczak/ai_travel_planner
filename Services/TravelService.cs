@@ -11,13 +11,13 @@ namespace project.Services
             _logger = logger;
         }
 
-        public async Task<TravelPlan> GenerateTravelPlanAsync(TravelPlanRequest request)
+        public Task<TravelPlan> GenerateTravelPlanAsync(TravelPlanRequest request)
         {
             // Usunięto sztuczne opóźnienie
 
             var days = (request.EndDate - request.StartDate).Days + 1;
 
-            return new TravelPlan
+            var plan = new TravelPlan
             {
                 Id = new Random().Next(1, 1000),
                 Destination = request.Destination,
@@ -32,6 +32,8 @@ namespace project.Services
                 Activities = GetActivities(request.Destination, null),
                 Transportation = GetTransportation()
             };
+
+            return Task.FromResult(plan);
         }
 
         public async Task<List<TravelSuggestion>> GetDestinationSuggestionsAsync(string query)

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="privacyTitle" xml:space="preserve">
+    <value>Polityka prywatności</value>
+  </data>
+  <data name="privacyIntro" xml:space="preserve">
+    <value>Twoje zaufanie jest dla nas ważne. Ta strona wyjaśnia, jak przetwarzamy Twoje dane.</value>
+  </data>
+  <data name="informationWeCollect" xml:space="preserve">
+    <value>Informacje, które zbieramy</value>
+  </data>
+  <data name="collectItem1" xml:space="preserve">
+    <value>Cele podróży i preferencje, które podajesz</value>
+  </data>
+  <data name="collectItem2" xml:space="preserve">
+    <value>Informacje o budżecie i datach podróży</value>
+  </data>
+  <data name="collectItem3" xml:space="preserve">
+    <value>Dane wejściowe planowania podróży używane do generowania itinerariuszy</value>
+  </data>
+  <data name="collectItem4" xml:space="preserve">
+    <value>Anonimowe dane użytkowania w celu ulepszenia funkcji</value>
+  </data>
+  <data name="howWeUseYourInfo" xml:space="preserve">
+    <value>Jak wykorzystujemy Twoje informacje</value>
+  </data>
+  <data name="useItem1" xml:space="preserve">
+    <value>Generowanie spersonalizowanych itinerariuszy podróży za pomocą AI</value>
+  </data>
+  <data name="useItem2" xml:space="preserve">
+    <value>Polepszanie jakości rekomendacji</value>
+  </data>
+  <data name="useItem3" xml:space="preserve">
+    <value>Poprawa wydajności aplikacji i doświadczenia użytkownika</value>
+  </data>
+  <data name="useItem4" xml:space="preserve">
+    <value>Zapewnienie niezawodności platformy</value>
+  </data>
+  <data name="dataProtection" xml:space="preserve">
+    <value>Ochrona danych</value>
+  </data>
+  <data name="dataProtectionText" xml:space="preserve">
+    <value>Stosujemy najlepsze praktyki bezpieczeństwa. Nie sprzedajemy Twoich danych osobowych. Dane są przetwarzane wyłącznie w celu generowania planów podróży i poprawy jakości systemu.</value>
+  </data>
+  <data name="cookies" xml:space="preserve">
+    <value>Pliki cookie</value>
+  </data>
+  <data name="cookiesText" xml:space="preserve">
+    <value>Używamy wyłącznie niezbędnych plików cookie i magazynu lokalnego (na przykład do zapisywania planów podróży). Brak wbudowanych pikseli śledzenia stron trzecich.</value>
+  </data>
+  <data name="contact" xml:space="preserve">
+    <value>Kontakt</value>
+  </data>
+  <data name="contactText" xml:space="preserve">
+    <value>Jeśli masz pytania dotyczące tej polityki, skontaktuj się za pośrednictwem kanału pomocy dostępnego w repozytorium aplikacji.</value>
+  </data>
+  <data name="backToHome" xml:space="preserve">
+    <value>Wróć do strony głównej</value>
+  </data>
+</root>

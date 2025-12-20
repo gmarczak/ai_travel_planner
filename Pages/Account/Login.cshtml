@@ -1,27 +1,27 @@
 @page
 @model project.Pages.Account.LoginModel
 @{
-    ViewData["Title"] = "Log in";
+    ViewData["Title"] = Localizer["loginTitle"];
 }
 
 <div class="row justify-content-center mt-5">
     <div class="col-md-6 col-lg-5">
         <div class="card shadow-sm">
             <div class="card-body p-4">
-                <h2 class="card-title text-center mb-4">Welcome Back</h2>
-                <p class="text-muted text-center mb-4">Sign in to access your travel plans</p>
+                <h2 class="card-title text-center mb-4">@Localizer["welcomeBack"]</h2>
+                <p class="text-muted text-center mb-4">@Localizer["signInDescription"]</p>
 
                 <form method="post">
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
                     <div class="mb-3">
-                        <label asp-for="Input.Email" class="form-label">Email</label>
+                        <label asp-for="Input.Email" class="form-label">@Localizer["email"]</label>
                         <input asp-for="Input.Email" class="form-control" placeholder="your@email.com" autofocus />
                         <span asp-validation-for="Input.Email" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Input.Password" class="form-label">Password</label>
+                        <label asp-for="Input.Password" class="form-label">@Localizer["password"]</label>
                         <input asp-for="Input.Password" class="form-control" placeholder="••••••••" />
                         <span asp-validation-for="Input.Password" class="text-danger small"></span>
                     </div>
@@ -29,19 +29,18 @@
                     <div class="mb-4 form-check">
                         <input asp-for="Input.RememberMe" class="form-check-input" />
                         <label asp-for="Input.RememberMe" class="form-check-label">
-                            Remember me
+                            @Localizer["rememberMe"]
                         </label>
                     </div>
 
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
+                        <button type="submit" class="btn btn-primary btn-lg">@Localizer["signInButton"]</button>
                     </div>
 
                     <hr class="my-4">
 
                     <p class="text-center mb-0">
-                        Don't have an account? <a asp-page="Register" asp-route-returnUrl="@Model.ReturnUrl">Create
-                            one</a>
+                        @Localizer["noAccount"] <a asp-page="Register" asp-route-returnUrl="@Model.ReturnUrl">@Localizer["registerHere"]</a>
                     </p>
                 </form>
             </div>

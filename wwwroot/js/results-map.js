@@ -407,6 +407,7 @@
             try {
                 const inputEl = document.getElementById('location-search');
                 if (!inputEl || !window.google || !google.maps || !google.maps.places) return;
+                // NOTE: Deprecated API - TODO: Migrate to PlaceAutocompleteElement
                 autocomplete = new google.maps.places.Autocomplete(inputEl, { types: ['establishment', 'geocode'] });
                 autocomplete.setFields(['place_id', 'name', 'geometry', 'photos', 'rating', 'formatted_address', 'types']);
                 autocomplete.addListener('place_changed', () => {

@@ -6,16 +6,33 @@ namespace project.Pages
 {
     public class SetLanguageModel : PageModel
     {
-        public IActionResult OnGet(string culture, string returnUrl = "/")
-        {
-            var supportedCultures = new[] { "en", "pl" };
+        private readonly ILogger<SetLanguageModel> _logger;
 
-            if (string.IsNullOrWhiteSpace(culture) || !supportedCultures.Contains(culture))
+        public SetLanguageModel(ILogger<SetLanguageModel> logger)
+        {
+            _logger = logger;
+        }
+
+        public IActionResult OnGet(string returnUrl = "/")
+        {
+            var culture = Request.Query["culture"].ToString();
+            var supportedCultures = new[] { "en-US", "pl-PL" };
+
+            culture = culture?.Trim()?.ToLowerInvariant();
+            culture = culture switch
             {
-                culture = "en";
+                "pl" or "pl-pl" => "pl-PL",
+                "en" or "en-us" => "en-US",
+                _ => culture
+            };
+
+            if (string.IsNullOrWhiteSpace(culture) || !supportedCultures.Contains(culture, StringComparer.OrdinalIgnoreCase))
+            {
+                culture = "en-US";
             }
 
             var cookieValue = CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture));
+            
             Response.Cookies.Append(
                 CookieRequestCultureProvider.DefaultCookieName,
                 cookieValue,
@@ -35,16 +52,30 @@ namespace project.Pages
             return LocalRedirect(returnUrl);
         }
 
-        public IActionResult OnPost(string culture, string? returnUrl = null)
+        public IActionResult OnPost(string? returnUrl = null)
         {
-            var supportedCultures = new[] { "en", "pl" };
+            // Read culture from form or query
+            var culture = Request.Form["culture"].ToString() ?? Request.Query["culture"].ToString();
+            _logger.LogInformation($"[SetLanguage.OnPost] Called, culture='{culture}', returnUrl='{returnUrl}'");
 
-            if (string.IsNullOrWhiteSpace(culture) || !supportedCultures.Contains(culture))
+            var supportedCultures = new[] { "en-US", "pl-PL" };
+
+            culture = culture?.Trim()?.ToLowerInvariant();
+            culture = culture switch
             {
-                culture = "en";
+                "pl" or "pl-pl" => "pl-PL",
+                "en" or "en-us" => "en-US",
+                _ => culture
+            };
+
+            if (string.IsNullOrWhiteSpace(culture) || !supportedCultures.Contains(culture, StringComparer.OrdinalIgnoreCase))
+            {
+                culture = "en-US";
             }
 
             var cookieValue = CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture));
+            _logger.LogInformation($"[SetLanguage.OnPost] Setting cookie with culture='{culture}'");
+
             Response.Cookies.Append(
                 CookieRequestCultureProvider.DefaultCookieName,
                 cookieValue,

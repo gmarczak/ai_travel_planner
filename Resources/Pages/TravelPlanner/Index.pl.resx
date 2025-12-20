@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="createTravelPlan" xml:space="preserve">
+    <value>Stwórz plan podróży z AI</value>
+  </data>
+  <data name="fillInDetails" xml:space="preserve">
+    <value>Wypełnij szczegóły poniżej, a nasza sztuczna inteligencja stworzy spersonalizowany plan podróży!</value>
+  </data>
+  <data name="tripDetails" xml:space="preserve">
+    <value>Szczegóły podróży</value>
+  </data>
+  <data name="optionalAiSuggest" xml:space="preserve">
+    <value>(opcjonalne - AI zasugeruje)</value>
+  </data>
+  <data name="flight" xml:space="preserve">
+    <value>✈️ Lot</value>
+  </data>
+  <data name="car" xml:space="preserve">
+    <value>🚗 Samochód</value>
+  </data>
+  <data name="train" xml:space="preserve">
+    <value>🚆 Pociąg</value>
+  </data>
+  <data name="bus" xml:space="preserve">
+    <value>🚌 Autobus</value>
+  </data>
+  <data name="helpsAiSuggest" xml:space="preserve">
+    <value>Pomaga AI zasugerować loty, trasy drogowe itp.</value>
+  </data>
+  <data name="additionalPreferences" xml:space="preserve">
+    <value>Dodatkowe preferencje</value>
+  </data>
+  <data name="examplesPreferences" xml:space="preserve">
+    <value>np. Preferuję hotele butikowe, uwielbiam lokalną kuchnię, chcę zwiedzić muzea...</value>
+  </data>
+  <data name="beSpecific" xml:space="preserve">
+    <value>Bądź konkretny - im więcej szczegółów, tym lepszy plan!</value>
+  </data>
+  <data name="generatePlan" xml:space="preserve">
+    <value>Generuj plan podróży</value>
+  </data>
+  <data name="preparing" xml:space="preserve">
+    <value>Przygotowywanie...</value>
+  </data>
+  <data name="requiredFields" xml:space="preserve">
+    <value>Pola wymagane</value>
+  </data>
+  <data name="processingTime" xml:space="preserve">
+    <value>Przetwarzanie może zająć 15-30 sekund</value>
+  </data>
+  <data name="destinationAndDates" xml:space="preserve">
+    <value>Destynacja i Daty</value>
+  </data>
+  <data name="peopleAndBudget" xml:space="preserve">
+    <value>Osoby i Budżet</value>
+  </data>
+  <data name="transport" xml:space="preserve">
+    <value>Transport</value>
+  </data>
+  <data name="whereToGo" xml:space="preserve">
+    <value>Dokąd chcesz pojechać?</value>
+  </data>
+  <data name="startDate" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="endDate" xml:space="preserve">
+    <value>Koniec</value>
+  </data>
+  <data name="numberOfTravelers" xml:space="preserve">
+    <value>Liczba podróżników</value>
+  </data>
+  <data name="budget" xml:space="preserve">
+    <value>Budżet</value>
+  </data>
+  <data name="tripType" xml:space="preserve">
+    <value>Typ wycieczki</value>
+  </data>
+  <data name="travelingFrom" xml:space="preserve">
+    <value>Podróżujesz z</value>
+  </data>
+  <data name="howTraveling" xml:space="preserve">
+    <value>Jak podróżujesz?</value>
+  </data>
+  <data name="optional" xml:space="preserve">
+    <value>Opcjonalne</value>
+  </data>
+  <data name="adventure" xml:space="preserve">
+    <value>Przygoda</value>
+  </data>
+  <data name="relaxation" xml:space="preserve">
+    <value>Relaks</value>
+  </data>
+  <data name="cultural" xml:space="preserve">
+    <value>Kulturalna</value>
+  </data>
+  <data name="business" xml:space="preserve">
+    <value>Biznesowa</value>
+  </data>
+  <data name="family" xml:space="preserve">
+    <value>Rodzinna</value>
+  </data>
+  <data name="destinationPlaceholder" xml:space="preserve">
+    <value>np. Paryż, Tokio, Nowy Jork</value>
+  </data>
+  <data name="departurePlaceholder" xml:space="preserve">
+    <value>np. Warszawa, Londyn, Los Angeles</value>
+  </data>
+  <data name="budgetPlaceholder" xml:space="preserve">
+    <value>2500</value>
+  </data>
+  <data name="helpsFlights" xml:space="preserve">
+    <value>Pomaga nam znaleźć najlepsze loty i trasy dla Ciebie</value>
+  </data>
+  <data name="optionalField" xml:space="preserve">
+    <value>(Opcjonalne)</value>
+  </data>
+  <data name="fixIssues" xml:space="preserve">
+    <value>Napraw poniższe błędy:</value>
+  </data>
+</root>

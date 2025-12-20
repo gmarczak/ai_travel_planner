@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="planYourPerfectJourney" xml:space="preserve">
+    <value>Zaplanuj idealną podróż</value>
+  </data>
+  <data name="aiPoweredPlanningSimple" xml:space="preserve">
+    <value>Planowanie podróży wspierane przez AI</value>
+  </data>
+  <data name="whereDoYouWantToGo" xml:space="preserve">
+    <value>Gdzie chcesz jechać?</value>
+  </data>
+  <data name="popularDestinations" xml:space="preserve">
+    <value>Popularne kierunki</value>
+  </data>
+  <data name="discoverMostLovedDestinations" xml:space="preserve">
+    <value>Odkryj najpopularniejsze kierunki podróży</value>
+  </data>
+  <data name="trendingDestination" xml:space="preserve">
+    <value>Popularny kierunek</value>
+  </data>
+  <data name="planTrip" xml:space="preserve">
+    <value>Planuj podróż</value>
+  </data>
+  <data name="howItWorks" xml:space="preserve">
+    <value>Jak to działa</value>
+  </data>
+  <data name="threeSimpleSteps" xml:space="preserve">
+    <value>Trzy proste kroki do idealnej podróży</value>
+  </data>
+  <data name="chooseDestination" xml:space="preserve">
+    <value>Wybierz kierunek</value>
+  </data>
+  <data name="chooseDestinationDesc" xml:space="preserve">
+    <value>Powiedz nam, gdzie chcesz jechać i jakie są Twoje preferencje</value>
+  </data>
+  <data name="aiCreatesYourPlan" xml:space="preserve">
+    <value>AI tworzy Twój plan</value>
+  </data>
+  <data name="aiCreatesYourPlanDesc" xml:space="preserve">
+    <value>Nasza sztuczna inteligencja analizuje Twoje preferencje i tworzy idealny plan podróży</value>
+  </data>
+  <data name="enjoyYourJourney" xml:space="preserve">
+    <value>Ciesz się podróżą</value>
+  </data>
+  <data name="enjoyYourJourneyDesc" xml:space="preserve">
+    <value>Pobierz swój plan i ciesz się idealnie zaplanowaną podróżą</value>
+  </data>
+  <data name="aiPoweredPlanning" xml:space="preserve">
+    <value>Planowanie wspierane AI</value>
+  </data>
+  <data name="aiPoweredPlanningDesc" xml:space="preserve">
+    <value>Nasza zaawansowana sztuczna inteligencja analizuje Twoje preferencje, aby tworzyć spersonalizowane doświadczenia podróżnicze</value>
+  </data>
+  <data name="smartDestinationSuggestions" xml:space="preserve">
+    <value>Inteligentne sugestie kierunków</value>
+  </data>
+  <data name="optimizedDailySchedules" xml:space="preserve">
+    <value>Zoptymalizowane harmonogramy dzienne</value>
+  </data>
+  <data name="budgetFriendlyOptions" xml:space="preserve">
+    <value>Opcje przyjazne budżetowi</value>
+  </data>
+  <data name="interactiveMapsRoutes" xml:space="preserve">
+    <value>Interaktywne mapy i trasy</value>
+  </data>
+  <data name="interactiveMapsRoutesDesc" xml:space="preserve">
+    <value>Wizualizuj całą swoją podróż za pomocą interaktywnych map i inteligentnego planowania tras</value>
+  </data>
+  <data name="realTimeNavigation" xml:space="preserve">
+    <value>Nawigacja w czasie rzeczywistym</value>
+  </data>
+  <data name="offlineMapAccess" xml:space="preserve">
+    <value>Dostęp do map offline</value>
+  </data>
+  <data name="localAttractionsHighlighted" xml:space="preserve">
+    <value>Wyróżnione miejsca warte odwiedzenia</value>
+  </data>
+  <data name="personalizedRecommendations" xml:space="preserve">
+    <value>Spersonalizowane rekomendacje</value>
+  </data>
+  <data name="personalizedRecommendationsDesc" xml:space="preserve">
+    <value>Odkryj ukryte skarby i starannie wybrane doświadczenia dostosowane do Twoich zainteresowań</value>
+  </data>
+  <data name="curatedHotelSelections" xml:space="preserve">
+    <value>Starannie wybrane hotele</value>
+  </data>
+  <data name="activityRecommendations" xml:space="preserve">
+    <value>Rekomendacje aktywności</value>
+  </data>
+  <data name="localDiningExperiences" xml:space="preserve">
+    <value>Lokalne doświadczenia kulinarne</value>
+  </data>
+  <data name="paris" xml:space="preserve">
+    <value>Paryż</value>
+  </data>
+  <data name="france" xml:space="preserve">
+    <value>Francja</value>
+  </data>
+  <data name="tokyo" xml:space="preserve">
+    <value>Tokio</value>
+  </data>
+  <data name="japan" xml:space="preserve">
+    <value>Japonia</value>
+  </data>
+  <data name="newYork" xml:space="preserve">
+    <value>Nowy Jork</value>
+  </data>
+  <data name="usa" xml:space="preserve">
+    <value>USA</value>
+  </data>
+  <data name="barcelona" xml:space="preserve">
+    <value>Barcelona</value>
+  </data>
+  <data name="spain" xml:space="preserve">
+    <value>Hiszpania</value>
+  </data>
+  <data name="rome" xml:space="preserve">
+    <value>Rzym</value>
+  </data>
+  <data name="italy" xml:space="preserve">
+    <value>Włochy</value>
+  </data>
+  <data name="london" xml:space="preserve">
+    <value>Londyn</value>
+  </data>
+  <data name="uk" xml:space="preserve">
+    <value>UK</value>
+  </data>
+</root>

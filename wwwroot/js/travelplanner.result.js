@@ -53,6 +53,7 @@
 
     ensureMapsReady().then(() => {
       try {
+        // NOTE: Deprecated API - TODO: Migrate to PlaceAutocompleteElement
         autocomplete = new google.maps.places.Autocomplete(inputEl, { types: ['establishment', 'geocode'] });
         autocomplete.setFields(['place_id', 'name', 'geometry', 'photos', 'rating', 'formatted_address', 'types']);
         autocomplete.addListener('place_changed', () => {

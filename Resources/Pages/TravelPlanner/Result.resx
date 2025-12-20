@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="noPlanFound" xml:space="preserve">
+    <value>No travel plan found.</value>
+  </data>
+  <data name="backToPlanner" xml:space="preserve">
+    <value>Back to planner</value>
+  </data>
+  <data name="plan" xml:space="preserve">
+    <value>Plan</value>
+  </data>
+  <data name="expandAll" xml:space="preserve">
+    <value>Expand All</value>
+  </data>
+  <data name="collapseAll" xml:space="preserve">
+    <value>Collapse All</value>
+  </data>
+  <data name="saveChanges" xml:space="preserve">
+    <value>Save Changes</value>
+  </data>
+  <data name="saveDetails" xml:space="preserve">
+    <value>Save Details</value>
+  </data>
+  <data name="days" xml:space="preserve">
+    <value>days</value>
+  </data>
+  <data name="traveler" xml:space="preserve">
+    <value>traveler</value>
+  </data>
+  <data name="travelers" xml:space="preserve">
+    <value>travelers</value>
+  </data>
+  <data name="perPersonDay" xml:space="preserve">
+    <value>/person/day</value>
+  </data>
+  <data name="perPersonDayShort" xml:space="preserve">
+    <value>/p/d</value>
+  </data>
+  <data name="saveToFavorites" xml:space="preserve">
+    <value>Save to favorites</value>
+  </data>
+  <data name="clickToUnsave" xml:space="preserve">
+    <value>Click to unsave</value>
+  </data>
+  <data name="mapTab" xml:space="preserve">
+    <value>Map</value>
+  </data>
+  <data name="detailsTab" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="chatTab" xml:space="preserve">
+    <value>AI Assistant</value>
+  </data>
+  <data name="tripSummary" xml:space="preserve">
+    <value>Trip Summary</value>
+  </data>
+  <data name="duration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="budget" xml:space="preserve">
+    <value>Budget</value>
+  </data>
+  <data name="travelersLabel" xml:space="preserve">
+    <value>Travelers</value>
+  </data>
+  <data name="transport" xml:space="preserve">
+    <value>Transport</value>
+  </data>
+  <data name="activitiesLabel" xml:space="preserve">
+    <value>Activities</value>
+  </data>
+  <data name="stays" xml:space="preserve">
+    <value>Stays</value>
+  </data>
+  <data name="tips" xml:space="preserve">
+    <value>Tips</value>
+  </data>
+  <data name="preferences" xml:space="preserve">
+    <value>Preferences</value>
+  </data>
+  <data name="printPlan" xml:space="preserve">
+    <value>Print Plan</value>
+  </data>
+  <data name="share" xml:space="preserve">
+    <value>Share</value>
+  </data>
+  <data name="quickLinksTitle" xml:space="preserve">
+    <value>Quick Links</value>
+  </data>
+  <data name="viewMap" xml:space="preserve">
+    <value>View Map</value>
+  </data>
+  <data name="fullDetails" xml:space="preserve">
+    <value>Full Details</value>
+  </data>
+  <data name="aiAssistant" xml:space="preserve">
+    <value>AI Assistant</value>
+  </data>
+  <data name="loadingMap" xml:space="preserve">
+    <value>Loading map...</value>
+  </data>
+  <data name="filterByDay" xml:space="preserve">
+    <value>Filter by day</value>
+  </data>
+  <data name="addLocation" xml:space="preserve">
+    <value>Add Location</value>
+  </data>
+  <data name="searchPlaces" xml:space="preserve">
+    <value>Search places...</value>
+  </data>
+  <data name="addToMap" xml:space="preserve">
+    <value>Add to Map</value>
+  </data>
+  <data name="tripOverview" xml:space="preserve">
+    <value>Trip Overview</value>
+  </data>
+  <data name="budgetBreakdown" xml:space="preserve">
+    <value>Budget Breakdown</value>
+  </data>
+  <data name="accommodationsTitle" xml:space="preserve">
+    <value>Accommodations</value>
+  </data>
+  <data name="activitiesExperiences" xml:space="preserve">
+    <value>Activities &amp; Experiences</value>
+  </data>
+  <data name="scheduledEvents" xml:space="preserve">
+    <value>Scheduled Events</value>
+  </data>
+  <data name="savedPoi" xml:space="preserve">
+    <value>Saved Points of Interest</value>
+  </data>
+  <data name="editDetails" xml:space="preserve">
+    <value>Edit details</value>
+  </data>
+  <data name="startLabel" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="endLabel" xml:space="preserve">
+    <value>End</value>
+  </data>
+  <data name="budgetUsd" xml:space="preserve">
+    <value>Budget (USD)</value>
+  </data>
+  <data name="additionalPreferences" xml:space="preserve">
+    <value>Additional preferences</value>
+  </data>
+  <data name="accommodationsLines" xml:space="preserve">
+    <value>Accommodations (one per line)</value>
+  </data>
+  <data name="activitiesLines" xml:space="preserve">
+    <value>Activities (one per line)</value>
+  </data>
+  <data name="transportationLines" xml:space="preserve">
+    <value>Transportation (one per line)</value>
+  </data>
+  <data name="searchAccommodation" xml:space="preserve">
+    <value>Search accommodation...</value>
+  </data>
+  <data name="searchActivity" xml:space="preserve">
+    <value>Search activity...</value>
+  </data>
+  <data name="searchTransport" xml:space="preserve">
+    <value>Search transport...</value>
+  </data>
+  <data name="add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="aiAssistantTitle" xml:space="preserve">
+    <value>AI Travel Assistant</value>
+  </data>
+  <data name="aiAssistantSubtitle" xml:space="preserve">
+    <value>Ask questions or request changes to your itinerary</value>
+  </data>
+  <data name="undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="welcomeTitle" xml:space="preserve">
+    <value>Welcome!</value>
+  </data>
+  <data name="welcomeTip1" xml:space="preserve">
+    <value>Add a museum visit on day 2</value>
+  </data>
+  <data name="welcomeTip2" xml:space="preserve">
+    <value>Change day 3 lunch to a local restaurant</value>
+  </data>
+  <data name="welcomeTip3" xml:space="preserve">
+    <value>What are the best activities for families?</value>
+  </data>
+  <data name="proposedChanges" xml:space="preserve">
+    <value>Proposed Changes</value>
+  </data>
+  <data name="applyChanges" xml:space="preserve">
+    <value>Apply Changes</value>
+  </data>
+  <data name="reject" xml:space="preserve">
+    <value>Reject</value>
+  </data>
+  <data name="send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="poweredBy" xml:space="preserve">
+    <value>Powered by OpenAI GPT-4o-mini</value>
+  </data>
+  <data name="image" xml:space="preserve">
+    <value>Image</value>
+  </data>
+  <data name="map" xml:space="preserve">
+    <value>Map</value>
+  </data>
+  <data name="details" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="ai" xml:space="preserve">
+    <value>AI</value>
+  </data>
+  <data name="route" xml:space="preserve">
+    <value>Route</value>
+  </data>
+  <data name="travelingBy" xml:space="preserve">
+    <value>Traveling by</value>
+  </data>
+  <data name="googleFlights" xml:space="preserve">
+    <value>Google Flights</value>
+  </data>
+  <data name="bookingFlights" xml:space="preserve">
+    <value>Booking.com Flights</value>
+  </data>
+  <data name="bookEarly" xml:space="preserve">
+    <value>Best to book 2-3 months in advance for better prices</value>
+  </data>
+  <data name="railPasses" xml:space="preserve">
+    <value>Consider rail passes for multiple journeys</value>
+  </data>
+  <data name="busTip" xml:space="preserve">
+    <value>FlixBus often has early bird discounts</value>
+  </data>
+  <data name="busCheck" xml:space="preserve">
+    <value>Check: FlixBus, Eurolines, BlaBlaBus</value>
+  </data>
+  <data name="carTip" xml:space="preserve">
+    <value>Book early for better rates and availability</value>
+  </data>
+  <data name="carCompare" xml:space="preserve">
+    <value>Compare: Rentalcars.com, Kayak, local providers</value>
+  </data>
+  <data name="findStay" xml:space="preserve">
+    <value>Find Your Perfect Stay in {0}</value>
+  </data>
+  <data name="browseHotels" xml:space="preserve">
+    <value>Browse hotels on the map and compare prices</value>
+  </data>
+  <data name="checkIn" xml:space="preserve">
+    <value>Check-in</value>
+  </data>
+  <data name="checkOut" xml:space="preserve">
+    <value>Check-out</value>
+  </data>
+  <data name="guests" xml:space="preserve">
+    <value>Guests</value>
+  </data>
+  <data name="searchHotels" xml:space="preserve">
+    <value>Search Hotels on Booking.com</value>
+  </data>
+  <data name="opensWithMap" xml:space="preserve">
+    <value>Opens with map view to browse all available accommodations</value>
+  </data>
+  <data name="viewOnMap" xml:space="preserve">
+    <value>View on map</value>
+  </data>
+  <data name="mobileMenu" xml:space="preserve">
+    <value>Menu</value>
+  </data>
+  <data name="language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="nextSteps" xml:space="preserve">
+    <value>Next Steps - Pre-Departure Checklist</value>
+  </data>
+  <data name="nextStepsIntro" xml:space="preserve">
+    <value>Stay organized with this checklist to ensure you're ready for your trip:</value>
+  </data>
+  <data name="checkPassport" xml:space="preserve">
+    <value>Check Passport &amp; Visas</value>
+  </data>
+  <data name="passportDesc" xml:space="preserve">
+    <value>Verify passport validity (6+ months) and visa requirements for your destination</value>
+  </data>
+  <data name="insuranceTitle" xml:space="preserve">
+    <value>Purchase Travel Insurance</value>
+  </data>
+  <data name="insuranceDesc" xml:space="preserve">
+    <value>Get coverage for trip cancellation, medical emergencies, and lost baggage</value>
+  </data>
+  <data name="reservationsTitle" xml:space="preserve">
+    <value>Confirm All Reservations</value>
+  </data>
+  <data name="reservationsDesc" xml:space="preserve">
+    <value>Double-check flights, accommodations, and activity bookings</value>
+  </data>
+  <data name="currencyTitle" xml:space="preserve">
+    <value>Arrange Currency &amp; Payment Methods</value>
+  </data>
+  <data name="currencyDesc" xml:space="preserve">
+    <value>Notify your bank, get local currency, and prepare backup payment options</value>
+  </data>
+  <data name="appsTitle" xml:space="preserve">
+    <value>Download Essential Mobile Apps</value>
+  </data>
+  <data name="appsDesc" xml:space="preserve">
+    <value>Maps, translation, ride-sharing, and offline guides for your destination</value>
+  </data>
+  <data name="checklistProgress" xml:space="preserve">
+    <value>{0}/5 completed</value>
+  </data>
+  <data name="reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="yourPreferences" xml:space="preserve">
+    <value>Your Preferences:</value>
+  </data>
+  <data name="transportLogistics" xml:space="preserve">
+    <value>Transport &amp; Logistics</value>
+  </data>
+  <data name="mode" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="tipsCount" xml:space="preserve">
+    <value>{0} tips</value>
+  </data>
+  <data name="routeLabel" xml:space="preserve">
+    <value>Route:</value>
+  </data>
+  <data name="travelingByModes" xml:space="preserve">
+    <value>Traveling by {0}</value>
+  </data>
+</root>

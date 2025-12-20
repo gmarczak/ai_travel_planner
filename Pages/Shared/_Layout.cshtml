@@ -1,13 +1,18 @@
 ﻿@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @inject Microsoft.AspNetCore.Identity.SignInManager<project.Models.ApplicationUser> SignInManager
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostEnvironment
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @using System.Globalization
 @{
     var currentPath = Context?.Request?.Path.Value ?? string.Empty;
     var returnUrl = (Context?.Request?.Path.Value ?? "/") + (Context?.Request?.QueryString.Value ?? string.Empty);
-    var htmlLang = "en";
+}
+@{
+    var uiCulture = System.Threading.Thread.CurrentThread.CurrentUICulture?.Name ?? "en-US";
+    var htmlLang = uiCulture.Split('-')[0]; // Extract just language code (en, pl)
 }
 <!DOCTYPE html>
-<html lang="en">
+<html lang="@htmlLang">
 
 <head>
     <meta charset="utf-8" />
@@ -85,7 +90,6 @@
         var currentPath = Context?.Request?.Path.Value ?? string.Empty;
         var returnUrl = (Context?.Request?.Path.Value ?? "/") + (Context?.Request?.QueryString.Value ?? string.Empty);
         var uiCulture = System.Threading.Thread.CurrentThread.CurrentUICulture?.Name ?? "en-US";
-        var htmlLang = "en";
     }
     <header class="border-bottom bg-primary fixed-top shadow-sm">
         <nav class="container d-flex align-items-center justify-content-between py-2 px-3">
@@ -99,15 +103,13 @@
             </a>
 
             <!-- Desktop nav -->
-            <ul class="nav gap-2 align-items-center d-none d-md-flex" style="margin-bottom:0;">
+                <ul class="nav gap-2 align-items-center d-none d-md-flex" style="margin-bottom:0;">
                 <li class="nav-item"><a href="/"
-                        class="nav-link text-white @(currentPath == "/" ? "fw-bold" : null)">Home</a></li>
+                    class="nav-link text-white @(currentPath == "/" ? "fw-bold" : null)">@Localizer["home"]</a></li>
                 <li class="nav-item"><a href="/TravelPlanner"
-                        class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner") && !currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">Plan
-                        Trip</a></li>
+                    class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner") && !currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">@Localizer["planTrip"]</a></li>
                 <li class="nav-item"><a href="/TravelPlanner/SavedPlans"
-                        class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">Saved
-                        Trips</a></li>
+                    class="nav-link text-white @(currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold" : null)">@Localizer["savedTrips"]</a></li>
                 @if (SignInManager.IsSignedIn(User))
                 {
                     var email = User?.Identity?.Name ?? "Account";
@@ -123,14 +125,14 @@
                             <span class="align-middle">@email</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="/TravelPlanner/SavedPlans">My Plans</a></li>
+                            <li><a class="dropdown-item" href="/TravelPlanner/SavedPlans">@Localizer["myPlans"]</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
                             <li>
                                 <form method="post" asp-page="/Account/Logout" class="m-0">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="dropdown-item">Logout</button>
+                                    <button type="submit" class="dropdown-item">@Localizer["logout"]</button>
                                 </form>
                             </li>
                         </ul>
@@ -138,10 +140,23 @@
                 }
                 else
                 {
-                    <li class="nav-item"><a href="/Account/Login" class="btn btn-outline-light btn-sm px-3 me-2">Login</a>
+                    <li class="nav-item"><a href="/Account/Login" class="btn btn-outline-light btn-sm px-3 me-2">@Localizer["login"]</a>
                     </li>
-                    <li class="nav-item"><a href="/Account/Register" class="btn btn-light btn-sm px-3">Sign Up</a></li>
+                    <li class="nav-item"><a href="/Account/Register" class="btn btn-light btn-sm px-3">@Localizer["register"]</a></li>
                 }
+                
+                <!-- Language Switcher -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white d-flex align-items-center" href="#" id="langDropdown"
+                        role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span>🌐</span>
+                        <span class="ms-1">@(uiCulture.StartsWith("pl", StringComparison.OrdinalIgnoreCase) ? "PL" : "EN")</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
+                        <li><a class="dropdown-item @(uiCulture.StartsWith("en", StringComparison.OrdinalIgnoreCase) ? "active" : "")" href="/SetLanguage?culture=en-US&returnUrl=@Uri.EscapeDataString(returnUrl)">🇬🇧 English</a></li>
+                        <li><a class="dropdown-item @(uiCulture.StartsWith("pl", StringComparison.OrdinalIgnoreCase) ? "active" : "")" href="/SetLanguage?culture=pl-PL&returnUrl=@Uri.EscapeDataString(returnUrl)">🇵🇱 Polski</a></li>
+                    </ul>
+                </li>
             </ul>
 
             <!-- Mobile hamburger menu -->
@@ -157,23 +172,21 @@
 
         <!-- Mobile offcanvas menu -->
         <div class="offcanvas offcanvas-end" tabindex="-1" id="mobileMenu" aria-labelledby="mobileMenuLabel">
-            <div class="offcanvas-header bg-primary text-white">
-                <h5 class="offcanvas-title" id="mobileMenuLabel">Menu</h5>
+                <div class="offcanvas-header bg-primary text-white">
+                <h5 class="offcanvas-title" id="mobileMenuLabel">@Localizer["menu"]</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
                     aria-label="Close"></button>
             </div>
             <div class="offcanvas-body">
                 <ul class="nav flex-column gap-2">
                     <li class="nav-item"><a href="/"
-                            class="nav-link @(currentPath == "/" ? "fw-bold text-primary" : "text-dark")">Home</a></li>
+                        class="nav-link @(currentPath == "/" ? "fw-bold text-primary" : "text-dark")">@Localizer["home"]</a></li>
                     <li class="nav-item"><a href="/TravelPlanner"
-                            class="nav-link @(currentPath.StartsWith("/TravelPlanner") && !currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold text-primary" : "text-dark")">Plan
-                            Trip</a></li>
+                        class="nav-link @(currentPath.StartsWith("/TravelPlanner") && !currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold text-primary" : "text-dark")">@Localizer["planTrip"]</a></li>
                     <li class="nav-item"><a href="/TravelPlanner/SavedPlans"
-                            class="nav-link @(currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold text-primary" : "text-dark")">Saved
-                            Trips</a></li>
+                        class="nav-link @(currentPath.StartsWith("/TravelPlanner/SavedPlans") ? "fw-bold text-primary" : "text-dark")">@Localizer["savedTrips"]</a></li>
                     <li class="nav-item mt-3 pt-3 border-top">
-                        @if (SignInManager.IsSignedIn(User))
+                        @if (User != null && SignInManager.IsSignedIn(User))
                         {
                             var email = User?.Identity?.Name ?? "Account";
                             <div class="d-flex align-items-center mb-3">
@@ -185,17 +198,28 @@
                                 </svg>
                                 <span class="fw-bold">@email</span>
                             </div>
-                            <a href="/TravelPlanner/SavedPlans" class="btn btn-outline-primary w-100 mb-2">My Plans</a>
+                            <a href="/TravelPlanner/SavedPlans" class="btn btn-outline-primary w-100 mb-2">@Localizer["myPlans"]</a>
                             <form method="post" asp-page="/Account/Logout" class="m-0">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-outline-danger w-100">Logout</button>
+                                <button type="submit" class="btn btn-outline-danger w-100">@Localizer["logout"]</button>
                             </form>
                         }
                         else
                         {
-                            <a href="/Account/Login?returnUrl=@returnUrl" class="btn btn-primary w-100 mb-2">Login</a>
-                            <a href="/Account/Register" class="btn btn-outline-primary w-100">Sign Up</a>
+                            <a href="/Account/Login?returnUrl=@returnUrl" class="btn btn-primary w-100 mb-2">@Localizer["login"]</a>
+                            <a href="/Account/Register" class="btn btn-outline-primary w-100">@Localizer["register"]</a>
                         }
+                    </li>
+                    
+                    <!-- Mobile Language Switcher -->
+                    <li class="nav-item mt-3 pt-3 border-top">
+                        <div class="d-flex flex-column gap-2">
+                            <span class="text-muted small">🌐 @Localizer["language"]</span>
+                            <a href="/SetLanguage?culture=en-US&returnUrl=@Uri.EscapeDataString(returnUrl)" 
+                               class="btn btn-sm @(uiCulture.StartsWith("en", StringComparison.OrdinalIgnoreCase) ? "btn-primary" : "btn-outline-primary")">🇬🇧 English</a>
+                            <a href="/SetLanguage?culture=pl-PL&returnUrl=@Uri.EscapeDataString(returnUrl)" 
+                               class="btn btn-sm @(uiCulture.StartsWith("pl", StringComparison.OrdinalIgnoreCase) ? "btn-primary" : "btn-outline-primary")">🇵🇱 Polski</a>
+                        </div>
                     </li>
                 </ul>
             </div>
@@ -261,28 +285,27 @@
             <div class="row">
                 <div class="col-md-6 mb-3 mb-md-0">
                     <h6 class="text-primary fw-bold mb-2">AI Travel Planner</h6>
-                    <p class="small text-muted mb-0">Plan your perfect trip with AI-powered recommendations</p>
+                    <p class="small text-muted mb-0">@Localizer["planYourPerfectTrip"]</p>
                 </div>
                 <div class="col-md-3 mb-3 mb-md-0">
-                    <h6 class="text-primary fw-bold mb-2 small">Quick Links</h6>
+                    <h6 class="text-primary fw-bold mb-2 small">@Localizer["quickLinks"]</h6>
                     <ul class="list-unstyled small">
-                        <li><a href="/" class="text-decoration-none text-muted">Home</a></li>
-                        <li><a href="/TravelPlanner" class="text-decoration-none text-muted">Plan Trip</a></li>
-                        <li><a href="/TravelPlanner/SavedPlans" class="text-decoration-none text-muted">Saved
-                                Trips</a></li>
+                        <li><a href="/" class="text-decoration-none text-muted">@Localizer["home"]</a></li>
+                        <li><a href="/TravelPlanner" class="text-decoration-none text-muted">@Localizer["planTrip"]</a></li>
+                        <li><a href="/TravelPlanner/SavedPlans" class="text-decoration-none text-muted">@Localizer["savedTrips"]</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3">
-                    <h6 class="text-primary fw-bold mb-2 small">Legal</h6>
+                    <h6 class="text-primary fw-bold mb-2 small">@Localizer["legal"]</h6>
                     <ul class="list-unstyled small">
-                        <li><a href="/Privacy" class="text-decoration-none text-muted">Privacy Policy</a></li>
+                        <li><a href="/Privacy" class="text-decoration-none text-muted">@Localizer["privacyPolicy"]</a></li>
                     </ul>
                 </div>
             </div>
             <hr class="my-3">
             <div class="d-flex justify-content-between align-items-center small">
-                <span>&copy; 2025 AI Travel Planner. All rights reserved.</span>
-                <span>Powered by AI</span>
+                <span>&copy; 2025 AI Travel Planner. @Localizer["allRightsReserved"]</span>
+                <span>@Localizer["poweredByAi"]</span>
             </div>
         </div>
     </footer>
@@ -298,6 +321,20 @@
     <script src="~/js/maps.js" asp-append-version="true"></script>
     <script src="~/js/results-map.js" asp-append-version="true"></script>
     <script src="~/js/tabs.js" asp-append-version="true"></script>
+    <script>
+        // Initialize i18n translations and wait for it to complete
+        if (typeof i18n !== 'undefined' && typeof i18n.init === 'function') {
+            console.log('[Layout] Starting i18n initialization...');
+            i18n.init().then(() => {
+                console.log('[Layout] i18n initialized successfully, ready to use');
+                document.dispatchEvent(new CustomEvent('i18n-ready'));
+            }).catch((err) => {
+                console.error('[Layout] i18n initialization failed:', err);
+            });
+        } else {
+            console.warn('[Layout] i18n object or init method not found');
+        }
+    </script>
 
     @{
         var mapsKey = Configuration["GoogleMaps:ApiKey"];
