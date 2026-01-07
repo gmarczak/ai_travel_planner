@@ -177,8 +177,7 @@
                             <div class="row g-2 g-md-3">
                                 <div class="col-12 col-md-6">
                                     <label asp-for="TravelRequest.Destination"
-                                        class="form-label">@Localizer["whereToGo"] <span
-                                            class="text-danger">*</span></label>
+                                        class="form-label">@Localizer["whereToGo"] *</label>
                                     <input asp-for="TravelRequest.Destination" id="destinationInput"
                                         class="form-control" placeholder="@Localizer["destinationPlaceholder"]"
                                         autocomplete="off" autocapitalize="words" required />
@@ -193,7 +192,8 @@
                                     <span asp-validation-for="TravelRequest.StartDate" class="text-danger small"></span>
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <label asp-for="TravelRequest.EndDate" class="form-label small">@Localizer["endDate"]
+                                    <label asp-for="TravelRequest.EndDate"
+                                        class="form-label small">@Localizer["endDate"]
                                         *</label>
                                     <input asp-for="TravelRequest.EndDate" type="date"
                                         class="form-control form-control-sm form-control-md-normal" required />
@@ -234,8 +234,8 @@
                                         *</label>
                                     <input asp-for="TravelRequest.Budget" type="number" min="100" step="50"
                                         inputmode="decimal" enterkeyhint="done" autocomplete="off"
-                                        class="form-control form-control-sm form-control-md-normal" placeholder="@Localizer["budgetPlaceholder"]"
-                                        required />
+                                        class="form-control form-control-sm form-control-md-normal"
+                                        placeholder="@Localizer["budgetPlaceholder"]" required />
                                     <span asp-validation-for="TravelRequest.Budget" class="text-danger small"></span>
                                 </div>
                                 <div class="col-12 col-md-4">
@@ -243,7 +243,6 @@
                                         class="form-label small">@Localizer["tripType"]</label>
                                     <select asp-for="TravelRequest.TripType"
                                         class="form-select form-select-sm form-select-md-normal">
-                                        <option value="">@Localizer["optional"]</option>
                                         <option value="Adventure">@Localizer["adventure"]</option>
                                         <option value="Relaxation">@Localizer["relaxation"]</option>
                                         <option value="Cultural">@Localizer["cultural"]</option>
@@ -261,8 +260,7 @@
                             <div class="row g-2 g-md-3">
                                 <div class="col-12 col-md-6">
                                     <label asp-for="TravelRequest.DepartureLocation"
-                                        class="form-label">@Localizer["travelingFrom"] <span
-                                            class="text-muted fw-normal">@Localizer["optionalField"]</span></label>
+                                        class="form-label">@Localizer["travelingFrom"]</label>
                                     <input asp-for="TravelRequest.DepartureLocation" id="departureInput"
                                         class="form-control" placeholder="@Localizer["departurePlaceholder"]"
                                         autocomplete="off" autocapitalize="words" />
@@ -273,7 +271,6 @@
                                         class="form-label small">@Localizer["howTraveling"]</label>
                                     <select asp-for="TravelRequest.TransportMode"
                                         class="form-select form-select-sm form-select-md-normal">
-                                        <option value="">@Localizer["optionalAiSuggest"]</option>
                                         <option value="Flight">@Localizer["flight"]</option>
                                         <option value="Car">@Localizer["car"]</option>
                                         <option value="Train">@Localizer["train"]</option>

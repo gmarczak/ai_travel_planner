@@ -32,7 +32,7 @@ namespace project.Pages
             }
 
             var cookieValue = CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture));
-            
+
             Response.Cookies.Append(
                 CookieRequestCultureProvider.DefaultCookieName,
                 cookieValue,

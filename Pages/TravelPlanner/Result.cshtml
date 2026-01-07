@@ -9,6 +9,34 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/details.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/timeline.css" asp-append-version="true" />
+    <style>
+        /* Hide Google Maps error tiles and broken images */
+        img[src*="google.com/maps"],
+        img[src*="maps.googleapis.com"],
+        img[src*="maps/api/staticmap"],
+        img[src*="maps.gstatic.com"],
+        img[src*="The specified location"],
+        img[title*="The specified location"],
+        img[alt*="The specified location"],
+        [data-image-container][style*="display: none"],
+        .hero-image[style*="display: none"] {
+            display: none !important;
+        }
+        
+        /* Hide any img with Google error message in alt/title */
+        img[alt*="could not be found"],
+        img[title*="could not be found"] {
+            display: none !important;
+        }
+        
+        /* Hide entire container if it contains Google Maps image */
+        [data-image-container]:has(img[src*="google.com/maps"]),
+        [data-image-container]:has(img[src*="maps.googleapis.com"]),
+        [data-image-container]:has(img[src*="maps/api/staticmap"]),
+        [data-image-container]:has(img[src*="maps.gstatic.com"]) {
+            display: none !important;
+        }
+    </style>
 }
 
 
@@ -28,17 +56,19 @@ else
     @if (!string.IsNullOrEmpty(plan?.DestinationImageUrl))
     {
         <!-- Mobile: Simple image with header below -->
-        <div class="mb-3 d-md-none hero-image">
+        <div class="mb-3 d-md-none hero-image" id="heroImageMobile">
             <img src="@plan.DestinationImageUrl" alt="@plan.Destination" 
                  class="img-fluid rounded w-100" 
-                 style="max-height: 200px; object-fit: cover;" />
+                 style="max-height: 200px; object-fit: cover;"
+                 onerror="this.onerror=null; document.getElementById('heroImageMobile').style.display='none';" />
         </div>
         
         <!-- Desktop: Image with overlay -->
-        <div class="mb-3 mb-md-4 position-relative d-none d-md-block hero-image">
+        <div class="mb-3 mb-md-4 position-relative d-none d-md-block hero-image" id="heroImageDesktop">
             <img src="@plan.DestinationImageUrl" alt="@plan.Destination" 
                  class="img-fluid rounded w-100" 
-                 style="max-height: 300px; object-fit: cover;" />
+                 style="max-height: 300px; object-fit: cover;"
+                 onerror="this.onerror=null; document.getElementById('heroImageDesktop').style.display='none';" />
             <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-50 text-white p-2 p-md-3 rounded-bottom">
                 <h1 class="mb-0 fs-2 fs-md-1" style="text-transform: capitalize;">@plan?.Destination</h1>
                 <div class="d-flex gap-2 flex-wrap align-items-center mt-2">
@@ -131,11 +161,11 @@ else
                 @for (var i = 0; i < Model.ParsedDays.Count; i++)
                 {
                     var d = Model.ParsedDays[i];
-                    var lineCount = d.Lines?.Count() ?? 0;
+                    var activityCount = d.Lines?.Count(l => !string.IsNullOrWhiteSpace(l) && l.TrimStart().StartsWith("📍")) ?? 0;
                     <details class="mb-3 border rounded day-timeline-card" open>
                         <summary class="fw-semibold p-2 p-md-3 bg-light" style="cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: space-between;">
                             <span>Day @d.Day @if(!string.IsNullOrWhiteSpace(d.Date)){<text>- @d.Date</text>}</span>
-                            <span class="badge bg-primary ms-2">@lineCount activities</span>
+                            <span class="badge bg-primary ms-2">@activityCount activities</span>
                         </summary>
                         <div class="p-2 p-md-3">
                             @* Day Images - 2-3 images per day *@
@@ -145,7 +175,7 @@ else
                                     @foreach (var img in d.Images.Take(3))
                                     {
                                         var colSize = d.Images.Count == 1 ? "12" : (img.IsPrimary ? "12" : "6");
-                                        <div class="col-@colSize">
+                                        <div class="col-@colSize" data-image-container>
                                             <img src="@img.Url" 
                                                  alt="@img.Description" 
                                                  class="img-fluid rounded w-100 day-image-clickable" 
@@ -154,7 +184,8 @@ else
                                                  data-bs-toggle="modal"
                                                  data-bs-target="#imageModal"
                                                  data-image-url="@img.Url"
-                                                 data-image-description="@img.Description" />
+                                                 data-image-description="@img.Description"
+                                                 onerror="this.onerror=null; this.closest('[data-image-container]').style.display='none';" />
                                             @if (!string.IsNullOrEmpty(img.Description))
                                             {
                                                 <div class="text-muted small mt-1">@img.Description</div>
@@ -1572,7 +1603,8 @@ else
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center p-0">
-                    <img id="modalImage" src="" alt="" class="img-fluid" style="max-height: 80vh; width: auto;" />
+                    <img id="modalImage" src="" alt="" class="img-fluid" style="max-height: 80vh; width: auto;" 
+                        onerror="this.onerror=null; const m=bootstrap.Modal.getInstance(document.getElementById('imageModal')); if(m) m.hide();" />
                 </div>
                 <div class="modal-footer border-0 justify-content-center" id="modalImageDescription">
                     <p class="text-white mb-0"></p>
@@ -1584,6 +1616,33 @@ else
     <script>
         // Handle image modal
         document.addEventListener('DOMContentLoaded', function() {
+            const hideImageContainer = (img) => {
+                const container = img.closest('[data-image-container]')
+                    ?? img.closest('.hero-image')
+                    ?? img.closest('.modal-body')
+                    ?? img.parentElement;
+                if (container) container.style.display = 'none';
+            };
+
+            const shouldHideByDomain = (img) => {
+                const src = (img.currentSrc || img.src || '').toLowerCase();
+                if (!src) return false;
+                return src.includes('google.com/maps')
+                    || src.includes('maps/api/staticmap')
+                    || src.includes('maps.gstatic.com');
+            };
+
+            const watchImages = () => {
+                const imgs = document.querySelectorAll('#heroImageMobile img, #heroImageDesktop img, [data-image-container] img, #modalImage');
+                imgs.forEach(img => {
+                    img.addEventListener('error', () => hideImageContainer(img));
+                    img.addEventListener('load', () => {
+                        if (shouldHideByDomain(img)) hideImageContainer(img);
+                    });
+                    if (shouldHideByDomain(img)) hideImageContainer(img);
+                });
+            };
+
             const imageModal = document.getElementById('imageModal');
             if (imageModal) {
                 imageModal.addEventListener('show.bs.modal', function(event) {
@@ -1598,6 +1657,13 @@ else
                     const modalDescription = document.querySelector('#modalImageDescription p');
                     
                     if (modalImage && imageUrl) {
+                        // Reset onerror handler before setting new src
+                        modalImage.onerror = function() {
+                            this.onerror = null;
+                            // Close modal if image fails to load
+                            const modal = bootstrap.Modal.getInstance(imageModal);
+                            if (modal) modal.hide();
+                        };
                         modalImage.src = imageUrl;
                         modalImage.alt = imageDescription || 'Day image';
                     }
@@ -1625,6 +1691,8 @@ else
                     });
                 }
             }
+
+            watchImages();
         });
     </script>
 
@@ -2231,4 +2299,3 @@ else
             loadChecklistState();
         })();
     </script>
-}

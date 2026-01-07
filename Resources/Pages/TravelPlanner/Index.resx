@@ -139,9 +139,7 @@
   <data name="howTraveling" xml:space="preserve">
     <value>How are you traveling?</value>
   </data>
-  <data name="optional" xml:space="preserve">
-    <value>Optional</value>
-  </data>
+  
   <data name="adventure" xml:space="preserve">
     <value>Adventure</value>
   </data>
@@ -169,9 +167,7 @@
   <data name="helpsFlights" xml:space="preserve">
     <value>Helps us find the best flights and routes for you</value>
   </data>
-  <data name="optionalField" xml:space="preserve">
-    <value>(Optional)</value>
-  </data>
+  
   <data name="fixIssues" xml:space="preserve">
     <value>Fix the issues below:</value>
   </data>
