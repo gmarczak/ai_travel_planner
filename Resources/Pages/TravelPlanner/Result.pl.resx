@@ -397,4 +397,190 @@
   <data name="travelingByModes" xml:space="preserve">
     <value>Podróżujesz: {0}</value>
   </data>
+  <!-- Details Tab - Nowe sekcje -->
+  <data name="detailsIntro" xml:space="preserve">
+    <value>Dopracuj plan — dodaj preferencje, ograniczenia i logistykę, aby dostosować trasę.</value>
+  </data>
+  <data name="preferencesSection" xml:space="preserve">
+    <value>Preferencje podróży</value>
+  </data>
+  <data name="preferencesDesc" xml:space="preserve">
+    <value>Tempo, zainteresowania (kultura/natura/jedzenie), godziny posiłków, potrzeby mobilności</value>
+  </data>
+  <data name="constraintsSection" xml:space="preserve">
+    <value>Ograniczenia i dostępność</value>
+  </data>
+  <data name="constraintsDesc" xml:space="preserve">
+    <value>Dni odpoczynku, czas przyjazdu/wyjazdu, tłumy, mobilność, dieta</value>
+  </data>
+  <data name="mustSeeSection" xml:space="preserve">
+    <value>Must-see (Top 3)</value>
+  </data>
+  <data name="mustSeeDesc" xml:space="preserve">
+    <value>Najważniejsze miejsca lub przeżycia, których nie chcesz przegapić</value>
+  </data>
+  <data name="avoidSection" xml:space="preserve">
+    <value>Czego unikać</value>
+  </data>
+  <data name="avoidDesc" xml:space="preserve">
+    <value>Miejsca, aktywności lub doświadczenia, które wolisz pominąć</value>
+  </data>
+  <data name="logisticsSection" xml:space="preserve">
+    <value>Logistyka i rezerwacje</value>
+  </data>
+  <data name="logisticsDesc" xml:space="preserve">
+    <value>Numery potwierdzeń lotów/hoteli, check-in/out, transfery, karty miejskie</value>
+  </data>
+  <data name="documentsSection" xml:space="preserve">
+    <value>Dokumenty i bezpieczeństwo</value>
+  </data>
+  <data name="documentsDesc" xml:space="preserve">
+    <value>Paszport/wiza, ubezpieczenie podróżne, numery alarmowe, ICE</value>
+  </data>
+  <data name="linksSection" xml:space="preserve">
+    <value>Linki i pliki</value>
+  </data>
+  <data name="linksDesc" xml:space="preserve">
+    <value>Potwierdzenia rezerwacji, bilety, mapy, przewodniki miejskie, lokalne aplikacje</value>
+  </data>
+  <data name="notesForAiSection" xml:space="preserve">
+    <value>Notatki dla asystenta AI</value>
+  </data>
+  <data name="notesForAiDesc" xml:space="preserve">
+    <value>Dodatkowy kontekst lub prośby, aby AI dostosował plan podróży</value>
+  </data>
+  <!-- Eksport i szybkie akcje -->
+  <data name="exportSection" xml:space="preserve">
+    <value>Eksport i udostępnianie</value>
+  </data>
+  <data name="exportPdf" xml:space="preserve">
+    <value>Eksportuj jako PDF</value>
+  </data>
+  <data name="exportCalendar" xml:space="preserve">
+    <value>Dodaj do kalendarza (.ics)</value>
+  </data>
+  <data name="shareLink" xml:space="preserve">
+    <value>Udostępnij link</value>
+  </data>
+  <data name="copyLink" xml:space="preserve">
+    <value>Kopiuj link</value>
+  </data>
+  <data name="linkCopied" xml:space="preserve">
+    <value>Link skopiowany do schowka!</value>
+  </data>
+  <!-- Lista pakowania -->
+  <data name="packingChecklistTitle" xml:space="preserve">
+    <value>Lista pakowania</value>
+  </data>
+  <data name="packingChecklistDesc" xml:space="preserve">
+    <value>Niezbędne rzeczy dopasowane do celu podróży i sezonu</value>
+  </data>
+  <data name="packingDocuments" xml:space="preserve">
+    <value>Dokumenty</value>
+  </data>
+  <data name="packingEssentials" xml:space="preserve">
+    <value>Podstawy</value>
+  </data>
+  <data name="packingClothing" xml:space="preserve">
+    <value>Ubrania</value>
+  </data>
+  <data name="packingElectronics" xml:space="preserve">
+    <value>Elektronika</value>
+  </data>
+  <data name="packingHealth" xml:space="preserve">
+    <value>Zdrowie i bezpieczeństwo</value>
+  </data>
+  <data name="packingMisc" xml:space="preserve">
+    <value>Różne</value>
+  </data>
+  <!-- Budżet i analityka -->
+  <data name="budgetPerPerson" xml:space="preserve">
+    <value>Budżet na osobę</value>
+  </data>
+  <data name="budgetPerDay" xml:space="preserve">
+    <value>Budżet dziennie</value>
+  </data>
+  <data name="categoryBreakdown" xml:space="preserve">
+    <value>Podział na kategorie</value>
+  </data>
+  <data name="activityMix" xml:space="preserve">
+    <value>Mix aktywności</value>
+  </data>
+  <data name="culturePercentage" xml:space="preserve">
+    <value>Kultura</value>
+  </data>
+  <data name="foodPercentage" xml:space="preserve">
+    <value>Jedzenie</value>
+  </data>
+  <data name="naturePercentage" xml:space="preserve">
+    <value>Natura</value>
+  </data>
+  <data name="shoppingPercentage" xml:space="preserve">
+    <value>Zakupy</value>
+  </data>
+  <data name="busiestDay" xml:space="preserve">
+    <value>Najbardziej zapakowany dzień</value>
+  </data>
+  <data name="activitiesCount" xml:space="preserve">
+    <value>{0} aktywności</value>
+  </data>
+  <!-- Walidacja i podpowiedzi -->
+  <data name="validationDeparture" xml:space="preserve">
+    <value>Dodaj miejsce wylotu, aby zobaczyć opcje transportu</value>
+  </data>
+  <data name="validationBudget" xml:space="preserve">
+    <value>Oszacowanie budżetu pomaga w rekomendacjach</value>
+  </data>
+  <data name="validationMobility" xml:space="preserve">
+    <value>Wspomniej o potrzebach mobilności dla dostępnych sugestii</value>
+  </data>
+  <data name="validationDiet" xml:space="preserve">
+    <value>Preferencje dietetyczne zapewnią lepsze wybory restauracji</value>
+  </data>
+  <data name="hintSeason" xml:space="preserve">
+    <value>Sezon wpływa na pakowanie i opcje aktywności</value>
+  </data>
+  <data name="hintArrival" xml:space="preserve">
+    <value>Czas przyjazdu/wyjazdu optymalizuje plany pierwszego/ostatniego dnia</value>
+  </data>
+  <!-- Opcje lotów -->
+  <data name="flightTitle" xml:space="preserve">
+    <value>Dostępne loty</value>
+  </data>
+  <data name="flightPrice" xml:space="preserve">
+    <value>Cena</value>
+  </data>
+  <data name="airline" xml:space="preserve">
+    <value>Linia lotnicza</value>
+  </data>
+  <data name="departure" xml:space="preserve">
+    <value>Wylot</value>
+  </data>
+  <data name="arrival" xml:space="preserve">
+    <value>Przylot</value>
+  </data>
+  <data name="stops" xml:space="preserve">
+    <value>Postoje</value>
+  </data>
+  <data name="direct" xml:space="preserve">
+    <value>Bezpośredni</value>
+  </data>
+  <data name="bookingLinks" xml:space="preserve">
+    <value>Zarezerwuj przez</value>
+  </data>
+  <data name="scannerLinks" xml:space="preserve">
+    <value>Skanery lotów</value>
+  </data>
+  <data name="skyscanner" xml:space="preserve">
+    <value>Skyscanner</value>
+  </data>
+  <data name="kayak" xml:space="preserve">
+    <value>Kayak</value>
+  </data>
+  <data name="selectFlight" xml:space="preserve">
+    <value>Wybierz lot</value>
+  </data>
+  <data name="noFlightsFound" xml:space="preserve">
+    <value>Brak dostępnych lotów. Dodaj miasto wylotu.</value>
+  </data>
 </root>

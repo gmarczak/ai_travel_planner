@@ -337,7 +337,9 @@
     </script>
 
     @{
-        var mapsKey = Configuration["GoogleMaps:ApiKey"];
+        var mapsKey = Configuration["GoogleMaps:ApiKey"] 
+               ?? Configuration["GoogleMaps_ApiKey"]
+               ?? Configuration["GOOGLE_MAPS_API_KEY"];
     }
     @if (!string.IsNullOrWhiteSpace(mapsKey))
     {

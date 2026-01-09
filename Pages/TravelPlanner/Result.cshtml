@@ -663,174 +663,136 @@ else
             </div>
         }
 
-    @* NEW: Transport & Logistics Section *@
-    @if ((plan?.Transportation) != null && plan.Transportation.Count > 0 && plan?.StartDate != null)
-        {
-            var transportationList = plan.Transportation;
-            var startDate = plan.StartDate;
-            
-            <div class="card shadow-sm mb-4 detail-section-card transport-card">
-                <div class="card-header bg-white border-0 pt-3 pb-2">
-                    <h3 class="h3 mb-0 fw-bold d-flex align-items-center flex-wrap gap-2 text-dark">
-                        @{
-                            var selectedModeIcon = plan?.TransportMode switch
+
+
+    @* NEW: Flight Options Section *@
+    @if (Model.FlightOptions != null && Model.FlightOptions.Count > 0)
+    {
+        <div class="card shadow-sm mb-4 detail-section-card flight-options-card">
+            <div class="card-header bg-white border-0 pt-3 pb-2">
+                <h3 class="h3 mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
+                    <span class="detail-icon me-2">✈️</span>
+                    <span>@Localizer["flightTitle"]</span>
+                    <span class="badge bg-info ms-2">@Model.FlightOptions.Count</span>
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>@Localizer["airline"]</th>
+                                <th>@Localizer["departure"]</th>
+                                <th>@Localizer["arrival"]</th>
+                                <th>@Localizer["duration"]</th>
+                                <th>@Localizer["stops"]</th>
+                                <th class="text-end">@Localizer["flightPrice"]</th>
+                                <th>@Localizer["bookingLinks"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var flight in Model.FlightOptions)
                             {
-                                "Flight" => "✈️",
-                                "Car" => "🚗",
-                                "Train" => "🚆",
-                                "Bus" => "🚌",
-                                _ => "✈️"
-                            };
-                        }
-                        <span class="detail-icon me-2">@selectedModeIcon</span>
-                        <span>@Localizer["transportLogistics"]</span>
-                        @if (!string.IsNullOrWhiteSpace(plan?.TransportMode))
-                        {
-                            <span class="badge bg-success ms-2">@plan.TransportMode @Localizer["mode"]</span>
-                        }
-                        <span class="badge bg-primary ms-2">@Localizer["tipsCount", transportationList.Count]</span>
-                    </h3>
-                </div>
-                <div class="card-body">
-                    @if (!string.IsNullOrWhiteSpace(plan?.DepartureLocation))
-                    {
-                        <div class="alert alert-light border mb-3 route-banner">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                <div class="d-flex align-items-center">
-                                    <span class="fs-3 me-3">@selectedModeIcon</span>
-                                    <div>
-                                        <strong>@Localizer["routeLabel"]</strong> @plan.DepartureLocation → @plan.Destination<br/>
-                                        <small class="text-muted">@Localizer["travelingByModes", plan.TransportMode ?? "various modes"]</small>
-                                    </div>
-                                </div>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <a href="https://www.google.com/travel/flights?q=@Uri.EscapeDataString($"Flights from {plan.DepartureLocation} to {plan.Destination} on {plan.StartDate!.ToString("yyyy-MM-dd")}")"
-                                       target="_blank"
-                                       class="btn btn-sm btn-primary">
-                                        <i class="bi bi-google"></i> @Localizer["googleFlights"]
-                                    </a>
-                                    <a href="https://www.booking.com/flights/?type=roundtrip&adults=@(plan.NumberOfTravelers)&from=@Uri.EscapeDataString(plan.DepartureLocation)&to=@Uri.EscapeDataString(plan.Destination!)&depart=@plan.StartDate!.ToString("yyyy-MM-dd")"
-                                       target="_blank"
-                                       class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-search"></i> @Localizer["bookingFlights"]
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                    
-                    <div class="list-group">
-                        @for (int j = 0; j < transportationList.Count; j++)
-                        {
-                            var transport = transportationList[j];
-                            var transportIcon = transport.Contains("Flight") || transport.Contains("flight") || transport.Contains("Airport") || transport.Contains("airport") ? "✈️" 
-                                : transport.Contains("Train") || transport.Contains("train") || transport.Contains("Station") || transport.Contains("station") ? "🚆"
-                                : transport.Contains("Car") || transport.Contains("car") || transport.Contains("Rental") || transport.Contains("rental") || transport.Contains("Ferry") || transport.Contains("ferry") ? "🚗"
-                                : transport.Contains("Bus") || transport.Contains("bus") ? "🚌"
-                                : "ℹ️";
-                            
-                            <div class="list-group-item @(j == 0 ? "border-primary" : "")">
-                                <div class="d-flex w-100 justify-content-between align-items-start mb-2">
-                                    <h6 class="mb-1">
-                                        <span class="me-2">@transportIcon</span>
-                                        @if (transport.Contains("→") || transport.Contains("to"))
+                                <tr>
+                                    <td>
+                                        <strong>@flight.Airline</strong>
+                                        <br/>
+                                        <small class="text-muted">@flight.AirlineCode</small>
+                                    </td>
+                                    <td>
+                                        <strong>@flight.DepartureTime.ToString("HH:mm")</strong>
+                                        <br/>
+                                        <small class="text-muted">@flight.DepartureAirport</small>
+                                    </td>
+                                    <td>
+                                        <strong>@flight.ArrivalTime.ToString("HH:mm")</strong>
+                                        <br/>
+                                        <small class="text-muted">@flight.ArrivalAirport</small>
+                                    </td>
+                                    <td>
+                                        @flight.FormattedDuration
+                                    </td>
+                                    <td>
+                                        @if (flight.IsDirect)
                                         {
-                                            var routePart = transport.Split(new[] { '.', '!' }, 2)[0];
-                                            <strong>@routePart</strong>
-                                        }
-                                        else if (transport.Length > 60)
-                                        {
-                                            <strong>@transport.Substring(0, 60)...</strong>
+                                            <span class="badge bg-success">@Localizer["direct"]</span>
                                         }
                                         else
                                         {
-                                            <strong>@transport</strong>
+                                            <span class="badge bg-warning">@flight.Stops @Localizer["stops"]</span>
                                         }
-                                    </h6>
-                                    @if (j == 0 && !string.IsNullOrWhiteSpace(plan?.TransportMode))
-                                    {
-                                        <span class="badge bg-primary">@plan.TransportMode</span>
-                                    }
-                                </div>
-                                <p class="mb-2 text-muted small">@transport</p>
-                                
-                                @if (transport.Contains("Airport") || transport.Contains("airport") || transport.Contains("Flight") || transport.Contains("flight"))
-                                {
-                                    <div class="mt-2 pt-2 border-top">
-                                        <small class="text-muted d-block mb-2">
-                                            <i class="bi bi-clock me-1"></i> @Localizer["bookEarly"]
-                                        </small>
-                                        <div class="d-flex gap-2 flex-wrap">
-                                            @if (!string.IsNullOrWhiteSpace(plan?.DepartureLocation))
+                                    </td>
+                                    <td class="text-end fw-bold">
+                                        @flight.FormattedPrice
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            @{
+                                                // Generate booking URLs - fix the Take(3) bug
+                                                string? googleFlightsUrl = null;
+                                                string? skyscannerUrl = null;
+                                                string? kayakUrl = null;
+
+                                                if (plan?.DepartureLocation != null && plan?.Destination != null)
+                                                {
+                                                    var depCode = new string(plan.DepartureLocation.ToUpper().Take(3).ToArray());
+                                                    var destCode = new string(plan.Destination.ToUpper().Take(3).ToArray());
+                                                    
+                                                    googleFlightsUrl = $"https://www.google.com/travel/flights?q=Flights from {Uri.EscapeDataString(plan.DepartureLocation)} to {Uri.EscapeDataString(plan.Destination)} on {flight.DepartureTime:yyyy-MM-dd}";
+                                                    skyscannerUrl = $"https://www.skyscanner.com/transport/flights/{depCode}/{destCode}/{flight.DepartureTime:yyyy-MM-dd}/";
+                                                    kayakUrl = $"https://www.kayak.com/flights/{depCode}-{destCode}/{flight.DepartureTime:yyyy-MM-dd}/";
+                                                }
+                                            }
+                                            @if (!string.IsNullOrEmpty(googleFlightsUrl))
                                             {
-                                                <a href="https://www.google.com/travel/flights?q=@Uri.EscapeDataString($"Flights from {plan.DepartureLocation} to {plan.Destination} on {plan.StartDate!.ToString("yyyy-MM-dd")}")"
-                                                   target="_blank"
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="bi bi-google"></i> @Localizer["googleFlights"]
+                                                <a href="@googleFlightsUrl" target="_blank" class="btn btn-primary btn-sm" title="Google Flights">
+                                                    <i class="bi bi-google"></i> GF
+                                                </a>
+                                            }
+                                            @if (!string.IsNullOrEmpty(skyscannerUrl))
+                                            {
+                                                <a href="@skyscannerUrl" target="_blank" class="btn btn-outline-primary btn-sm" title="Skyscanner">
+                                                    <i class="bi bi-search"></i> SS
+                                                </a>
+                                            }
+                                            @if (!string.IsNullOrEmpty(kayakUrl))
+                                            {
+                                                <a href="@kayakUrl" target="_blank" class="btn btn-outline-info btn-sm" title="Kayak">
+                                                    <i class="bi bi-search"></i> KY
                                                 </a>
                                             }
                                         </div>
-                                    </div>
-                                }
-                                
-                                @if (transport.Contains("Train") || transport.Contains("train") || transport.Contains("Station") || transport.Contains("station") || transport.Contains("Rail") || transport.Contains("rail"))
-                                {
-                                    <div class="mt-2 pt-2 border-top">
-                                        <small class="text-muted d-block mb-2">
-                                            <i class="bi bi-ticket-perforated me-1"></i> @Localizer["railPasses"]
-                                        </small>
-                                        <div class="d-flex gap-2 flex-wrap">
-                                            @if (!string.IsNullOrWhiteSpace(plan?.DepartureLocation))
-                                            {
-                                                <a href="https://www.thetrainline.com/book/results?origin=@Uri.EscapeDataString(plan.DepartureLocation)&destination=@Uri.EscapeDataString(plan.Destination!)&outwardDate=@plan.StartDate!.ToString("yyyy-MM-dd")&outwardDateType=departAfter" 
-                                                   target="_blank" 
-                                                   class="btn btn-sm btn-outline-success">
-                                                    <i class="bi bi-train-front"></i> Trainline
-                                                </a>
-                                                <a href="https://www.omio.com/search?departureDate=@plan.StartDate!.ToString("yyyy-MM-dd")&from=@Uri.EscapeDataString(plan.DepartureLocation)&to=@Uri.EscapeDataString(plan.Destination!)&transportTypes=train" 
-                                                   target="_blank" 
-                                                   class="btn btn-sm btn-outline-info">
-                                                    <i class="bi bi-search"></i> Omio
-                                                </a>
-                                                <a href="https://www.raileurope.com/us" 
-                                                   target="_blank" 
-                                                   class="btn btn-sm btn-outline-secondary">
-                                                    <i class="bi bi-train-front"></i> Rail Europe
-                                                </a>
-                                            }
-                                        </div>
-                                    </div>
-                                }
-                                
-                                @if (transport.Contains("Bus") || transport.Contains("bus"))
-                                {
-                                    <div class="mt-2 pt-2 border-top">
-                                        <small class="text-muted d-block">
-                                            <i class="bi bi-calendar-check me-1"></i> @Localizer["busTip"]
-                                        </small>
-                                        <small class="text-muted d-block">
-                                            <i class="bi bi-search me-1"></i> @Localizer["busCheck"]
-                                        </small>
-                                    </div>
-                                }
-                                
-                                @if (transport.Contains("Car") || transport.Contains("car") || transport.Contains("Rental") || transport.Contains("rental") || transport.Contains("Ferry") || transport.Contains("ferry"))
-                                {
-                                    <div class="mt-2 pt-2 border-top">
-                                        <small class="text-muted d-block">
-                                            <i class="bi bi-shield-check me-1"></i> @Localizer["carTip"]
-                                        </small>
-                                        <small class="text-muted d-block">
-                                            <i class="bi bi-search me-1"></i> @Localizer["carCompare"]
-                                        </small>
-                                    </div>
-                                }
-                            </div>
-                        }
-                    </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="alert alert-info mt-3 small">
+                    <i class="bi bi-info-circle me-2"></i>
+                    @Localizer["noFlightsFound"] <br/>
+                    <small class="text-muted mt-2 d-block">Prices shown are for demonstration purposes.</small>
                 </div>
             </div>
-        }
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(plan?.DepartureLocation))
+    {
+        <!-- Show flights section even if no flights loaded on second visit -->
+        <div class="card shadow-sm mb-4 detail-section-card flight-options-card">
+            <div class="card-header bg-white border-0 pt-3 pb-2">
+                <h3 class="h3 mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
+                    <span class="detail-icon me-2">✈️</span>
+                    <span>@Localizer["flightTitle"]</span>
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <strong>ℹ️ Loading flights...</strong> If this persists, try refreshing the page.
+                </div>
+            </div>
+        </div>
+    }
 
     @* IMPROVED: Accommodations with Booking Details *@
     @if ((plan?.Accommodations) != null && plan.Accommodations.Count > 0)

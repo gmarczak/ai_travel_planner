@@ -107,8 +107,7 @@ namespace project.Pages.TravelPlanner
                 TravelRequest.TripType = null;
             if (string.IsNullOrWhiteSpace(TravelRequest.TransportMode))
                 TravelRequest.TransportMode = null;
-            if (string.IsNullOrWhiteSpace(TravelRequest.DepartureLocation))
-                TravelRequest.DepartureLocation = null;
+            // NOTE: Do NOT null DepartureLocation here - it's required and needs validation first
 
             // INTERESTS REMOVED FROM FORM
 
@@ -141,6 +140,10 @@ namespace project.Pages.TravelPlanner
                 _logger.LogWarning("Form validation failed");
                 return Page();
             }
+
+            // After validation passes, now safe to null optional fields
+            if (string.IsNullOrWhiteSpace(TravelRequest.DepartureLocation))
+                TravelRequest.DepartureLocation = null;
 
             // Async generation: enqueue job and redirect to result page
             var planId = Guid.NewGuid().ToString();

@@ -93,7 +93,7 @@ builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
 
 // NORMALIZE GOOGLE MAPS API KEY
 var mapsApiKey = builder.Configuration["GoogleMaps:ApiKey"]
-                 ?? builder.Configuration["GoogleMaps__ApiKey"]
+                 ?? builder.Configuration["GoogleMaps_ApiKey"]
                  ?? builder.Configuration["GOOGLE_MAPS_API_KEY"]
                  ?? builder.Configuration["GOOGLEMAPS_API_KEY"]
                  ?? builder.Configuration["GOOGLE_MAPS_KEY"];
@@ -265,6 +265,9 @@ builder.Services.AddScoped<IImageCaptionService, ImageCaptionService>();
 
 // Google Directions Service (road-based routes for map display)
 builder.Services.AddHttpClient<IDirectionsService, GoogleDirectionsService>();
+
+// Flight Service (search and display flight options)
+builder.Services.AddHttpClient<IFlightService, FlightService>();
 
 // PROMPT TEMPLATE SERVICE (external prompt files for easy modification)
 builder.Services.AddScoped<PromptTemplateService>();
@@ -500,7 +503,11 @@ app.MapRazorPages();
 // This returns only non-sensitive configuration values intended for client use.
 app.MapGet("/__config/maps", (IConfiguration config) =>
 {
-    var key = config["GoogleMaps:ApiKey"] ?? string.Empty;
+    var key = config["GoogleMaps:ApiKey"]
+           ?? config["GoogleMaps_ApiKey"]
+           ?? config["GOOGLE_MAPS_API_KEY"]
+           ?? string.Empty;
+    Console.WriteLine($"[DEBUG] Maps config endpoint called - Key loaded: {(string.IsNullOrEmpty(key) ? "EMPTY" : "***" + key.Substring(Math.Max(0, key.Length - 4)))}");
     return Results.Json(new { googleMapsApiKey = key });
 });
 
@@ -539,8 +546,6 @@ else
 }
 Console.WriteLine("------------------------------------------------------------");
 Console.WriteLine("URL:         http://localhost:5000");
-Console.WriteLine("Login:       http://localhost:5000/Account/Login");
-Console.WriteLine("Register:    http://localhost:5000/Account/Register");
 Console.WriteLine("============================================================");
 Console.WriteLine();
 

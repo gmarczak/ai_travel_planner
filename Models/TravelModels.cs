@@ -79,8 +79,9 @@ namespace project.Models
         [Display(Name = "Transport Mode")]
         public string? TransportMode { get; set; }
 
+        [Required(ErrorMessage = "Please enter your departure location")]
         [Display(Name = "Traveling From")]
-        public string? DepartureLocation { get; set; }
+        public string DepartureLocation { get; set; } = string.Empty;
     }
 
     public class TravelSuggestion

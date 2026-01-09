@@ -68,13 +68,13 @@ namespace project.Services
             var normalizedDestination = NormalizeDestination(destination);
             _logger.LogDebug("Normalized destination: {Normalized}", normalizedDestination);
 
-            // 1. Check cache first (expires after 90 days) - serialize to avoid concurrency
+            // 1. Check cache first (expires after 7 days for fresh results) - serialize to avoid concurrency
             await _cacheSemaphore.WaitAsync();
             try
             {
                 var cachedImage = await _db.DestinationImages
                     .Where(di => di.Destination == normalizedDestination)
-                    .Where(di => di.CachedAt > DateTime.UtcNow.AddDays(-90))
+                    .Where(di => di.CachedAt > DateTime.UtcNow.AddDays(-7))
                     .FirstOrDefaultAsync();
 
                 if (cachedImage != null)

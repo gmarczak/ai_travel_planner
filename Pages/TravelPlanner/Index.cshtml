@@ -260,10 +260,11 @@
                             <div class="row g-2 g-md-3">
                                 <div class="col-12 col-md-6">
                                     <label asp-for="TravelRequest.DepartureLocation"
-                                        class="form-label">@Localizer["travelingFrom"]</label>
+                                        class="form-label">@Localizer["travelingFrom"] *</label>
                                     <input asp-for="TravelRequest.DepartureLocation" id="departureInput"
                                         class="form-control" placeholder="@Localizer["departurePlaceholder"]"
-                                        autocomplete="off" autocapitalize="words" />
+                                        autocomplete="off" autocapitalize="words" required />
+                                    <span asp-validation-for="TravelRequest.DepartureLocation" class="text-danger small d-block mt-1"></span>
                                     <small class="form-text mt-1 d-block">💡 @Localizer["helpsFlights"]</small>
                                 </div>
                                 <div class="col-12 col-md-6">

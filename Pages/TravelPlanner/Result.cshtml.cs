@@ -27,10 +27,11 @@ namespace project.Pages.TravelPlanner
         private readonly IImageCaptionService _captionService;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IDirectionsService _directionsService;
+        private readonly IFlightService _flightService;
         private const string SavedPlansKeyPrefix = "savedplans:";
         private const string AnonymousCookieName = "anon_saved_plans_id";
 
-        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env, project.Data.ApplicationDbContext db, IImageService imageService, IImageCaptionService captionService, IServiceScopeFactory scopeFactory, IDirectionsService directionsService)
+        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env, project.Data.ApplicationDbContext db, IImageService imageService, IImageCaptionService captionService, IServiceScopeFactory scopeFactory, IDirectionsService directionsService, IFlightService flightService)
         {
             _logger = logger;
             _cache = cache;
@@ -42,6 +43,7 @@ namespace project.Pages.TravelPlanner
             _captionService = captionService;
             _scopeFactory = scopeFactory;
             _directionsService = directionsService;
+            _flightService = flightService;
         }
 
         public string? PlanId { get; private set; }
@@ -53,6 +55,7 @@ namespace project.Pages.TravelPlanner
         public string? RawItinerary { get; private set; }
         public string VisibleItinerary { get; private set; } = string.Empty;
         public (string? PhotographerName, string? PhotographerUrl, string? Source)? DestinationImageAttribution { get; private set; }
+        public List<FlightOption> FlightOptions { get; set; } = new();
 
         private static string OriginalKey(string id) => $"plan:orig:{id}";
 
@@ -191,6 +194,17 @@ namespace project.Pages.TravelPlanner
 
                 // Load route polylines for map display (road-based paths)
                 await LoadDayRoutesAsync(plan.Destination);
+
+                // Load flight options if DepartureLocation is provided (always show flights if user specified departure)
+                if (!string.IsNullOrEmpty(plan.DepartureLocation))
+                {
+                    FlightOptions = await _flightService.SearchFlightsAsync(plan.DepartureLocation, plan.Destination, plan.StartDate, plan.NumberOfTravelers);
+                    _logger.LogInformation("Loaded {Count} flight options for {From} -> {To}", FlightOptions.Count, plan.DepartureLocation, plan.Destination);
+                }
+                else
+                {
+                    _logger.LogWarning("DepartureLocation is empty - no flights loaded");
+                }
 
                 return Page();
             }
@@ -549,38 +563,36 @@ namespace project.Pages.TravelPlanner
         {
             var results = new List<(string Query, string Description)>();
 
-            // Keywords that indicate important places
-            var attractionKeywords = new[] { "visit", "explore", "see", "tour", "museum", "palace", "tower", "church", "temple", "park", "garden", "square", "bridge", "castle" };
-            var foodKeywords = new[] { "lunch", "dinner", "breakfast", "restaurant", "café", "cafe", "bistro", "cuisine", "food", "eat", "dine" };
+            // Keywords that indicate place names (more specific than before)
+            var placeKeywords = new[] { "museum", "palace", "tower", "church", "temple", "park", "garden", "square", "bridge", "castle", "cathedral", "gallery", "theater", "theatre", "market", "bistro", "restaurant", "cafe", "café", "hall" };
 
-            foreach (var line in dayLines.Take(10)) // Check first 10 lines
+            foreach (var line in dayLines.Take(15)) // Check first 15 lines
             {
                 var lower = line.ToLowerInvariant();
 
-                // Skip meta lines (times, titles)
-                if (line.StartsWith("**") || line.StartsWith("##") || line.Length < 15)
+                // Skip meta lines (times, titles, tips)
+                if (line.StartsWith("**") || line.StartsWith("##") || line.StartsWith("ℹ") || line.StartsWith("📍") || line.Length < 20)
                     continue;
 
-                // Check if this line mentions an attraction
-                bool isAttraction = attractionKeywords.Any(k => lower.Contains(k));
-                bool isFood = foodKeywords.Any(k => lower.Contains(k));
-
-                if (isAttraction || isFood)
+                // Check if line mentions a place
+                bool hasPlaceKeyword = placeKeywords.Any(k => lower.Contains(k));
+                
+                if (hasPlaceKeyword)
                 {
-                    // Extract the main subject (usually first mentioned place name or after "visit"/"explore")
-                    var cleaned = System.Text.RegularExpressions.Regex.Replace(line, @"[*#\-•]", "").Trim();
+                    // Extract place name (usually first 30-50 chars before description)
+                    var cleaned = System.Text.RegularExpressions.Regex.Replace(line, @"[*#\-•ℹ📍]", "").Trim();
                     cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"^\d+[\.\)]\s*", "").Trim();
-
-                    // Remove curly braces and brackets
                     cleaned = cleaned.Replace("{", "").Replace("}", "").Replace("[", "").Replace("]", "");
 
-                    // Take first significant phrase (up to 50 chars)
-                    var phrase = cleaned.Length > 50 ? cleaned.Substring(0, 50).Trim() : cleaned;
+                    // Take only place name part (before description markers)
+                    var parts = cleaned.Split(new[] { " - ", ": ", " is " }, StringSplitOptions.None);
+                    var placeName = parts[0].Trim();
 
-                    if (phrase.Length > 10)
+                    if (placeName.Length > 10 && placeName.Length < 60)
                     {
-                        var query = $"{phrase} {destination}";
-                        var description = phrase;
+                        // Use only city name + place name for Unsplash (no descriptions!)
+                        var query = $"{placeName} {destination}";
+                        var description = placeName;
                         results.Add((query, description));
 
                         if (results.Count >= 3) break; // Max 3 per day
@@ -588,19 +600,12 @@ namespace project.Pages.TravelPlanner
                 }
             }
 
-            // Fallback: if no specific attractions found, use first 2-3 lines as generic queries
+            // Fallback: if no specific places found, search for generic city attractions
             if (!results.Any())
             {
-                foreach (var line in dayLines.Take(3))
-                {
-                    if (line.Length > 15 && !line.StartsWith("**") && !line.StartsWith("##"))
-                    {
-                        var cleaned = System.Text.RegularExpressions.Regex.Replace(line, @"[*#\-•]", "").Trim();
-                        cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"^\d+[\.\)]\s*", "").Trim();
-                        var phrase = cleaned.Length > 40 ? cleaned.Substring(0, 40).Trim() : cleaned;
-                        results.Add(($"{phrase} {destination}", phrase));
-                    }
-                }
+                results.Add(($"{destination} attractions", "Popular attractions"));
+                results.Add(($"{destination} landmark", "Famous landmark"));
+                results.Add(($"{destination} scenic view", "City view"));
             }
 
             return results.Take(3).ToList();
