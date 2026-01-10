@@ -2,11 +2,6 @@
 (function () {
     'use strict';
 
-    // Debug/version marker to verify the script is loaded (useful when chasing cache issues).
-    const __RESULTS_MAP_VERSION = 'leaflet-2026-01-10-1';
-    window.__resultsMapVersion = __RESULTS_MAP_VERSION;
-    console.log(`🧭 results-map.js loaded (${__RESULTS_MAP_VERSION})`);
-
     let gmap = null;
     let layerManager = null;
     let planMarkers = [];
@@ -78,8 +73,9 @@
             const query = `${placeName}, ${destination}`;
             const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
             
-            // Browsers cannot set User-Agent (forbidden header), so keep this minimal.
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                headers: { 'User-Agent': 'TravelPlannerApp/1.0' }
+            });
 
             if (response.ok) {
                 const data = await response.json();
@@ -136,10 +132,6 @@
             return;
         }
 
-        // Hide spinner as soon as we start initializing (we'll show an error if something fails)
-        const loadingEl = document.getElementById('map-loading');
-        if (loadingEl) loadingEl.style.display = 'none';
-
         const plan = parsePlan();
         if (!plan) {
             console.error('No plan data');
@@ -177,10 +169,6 @@
         window.__travelPlannerMap = gmap;
         mapEl.__leafletMapInstance = gmap;
         console.log('✅ Map created and stored in window.__travelPlannerMap');
-
-        // Ensure loading overlay is gone once map exists
-        const loadingEl2 = document.getElementById('map-loading');
-        if (loadingEl2) loadingEl2.remove();
 
         // Parse and render plan data
         const parsed = plan.parsedDays || [];
@@ -222,141 +210,81 @@
 
             layerManager.addLayer(dayName);
 
-            // Preferred: use server-precomputed places (instant, no client geocoding).
-            const places = Array.isArray(day.places) ? day.places : [];
-            if (places.length > 0) {
-                console.log(`Day ${dayNum}: Using ${places.length} precomputed places`);
+            // Extract locations from day lines
+            const locations = extractLocations(day.lines);
+            console.log(`Day ${dayNum}: Found ${locations.length} locations:`, locations);
 
-                for (let idx = 0; idx < places.length; idx++) {
-                    const p = places[idx];
-                    if (!p || typeof p.lat !== 'number' || typeof p.lng !== 'number') continue;
+            if (locations.length === 0) {
+                console.log(`Day ${dayNum}: No locations found, skipping`);
+                continue;
+            }
 
-                    const placeName = p.name || `Stop ${p.index || (idx + 1)}`;
-                    const itemIndex = p.index || (idx + 1);
-
-                    const infoHtml = `
-                        <div style='min-width: 200px; max-width: 300px;'>
-                            <div style='display: flex; align-items: center; margin-bottom: 8px;'>
-                                <span style='background: ${dayColor}; color: white; padding: 4px 8px; border-radius: 4px; margin-right: 8px; font-weight: bold;'>${itemIndex}</span>
-                                <strong>${placeName}</strong>
-                            </div>
-                            <div style='font-size: 12px; color: #666;'>Day ${dayNum} - Stop #${itemIndex}</div>
-                            <div style='font-size: 11px; color: #999; margin-top: 4px;'>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</div>
-                        </div>
-                    `;
-
-                    const marker = LeafletMapExt.addInteractiveMarker(gmap, {
-                        lat: p.lat,
-                        lng: p.lng,
-                        title: placeName,
-                        label: {
-                            text: String(itemIndex),
-                            color: '#ffffff',
-                            fontSize: '12px',
-                            fontWeight: 'bold'
-                        },
-                        icon: {
-                            path: 'CIRCLE',
-                            scale: 14,
-                            fillColor: dayColor,
-                            fillOpacity: 1,
-                            strokeColor: '#ffffff',
-                            strokeWeight: 2
-                        },
-                        infoHtml: infoHtml
-                    }, {});
-
-                    dayLayers[dayName].items.push({
-                        text: placeName,
-                        marker: marker,
-                        lat: p.lat,
-                        lng: p.lng,
-                        index: itemIndex
-                    });
-
-                    dayLayers[dayName].path.push({ lat: p.lat, lng: p.lng });
-
-                    layerManager.addMarkerTo(dayName, marker);
-                    planMarkers.push(marker);
-                    totalMarkers++;
+            // Geocode each location with rate limiting
+            for (let idx = 0; idx < locations.length; idx++) {
+                const placeName = locations[idx];
+                
+                // Rate limiting: 1 request per second for Nominatim
+                if (totalMarkers > 0) {
+                    await delay(1100);
                 }
-            } else {
-                // Legacy fallback: extract from text lines and geocode in browser.
-                const locations = extractLocations(day.lines);
-                console.log(`Day ${dayNum}: Found ${locations.length} locations:`, locations);
 
-                if (locations.length === 0) {
-                    console.log(`Day ${dayNum}: No locations found, skipping`);
+                const coords = await geocodeLocation(placeName, destination, dayNum, idx);
+                
+                if (!coords) {
+                    console.warn(`Skipping ${placeName} - no coordinates found`);
                     continue;
                 }
 
-                // Geocode each location with rate limiting
-                for (let idx = 0; idx < locations.length; idx++) {
-                    const placeName = locations[idx];
+                const itemIndex = idx + 1;
 
-                    // Rate limiting: 1 request per second for Nominatim
-                    if (totalMarkers > 0) {
-                        await delay(1100);
-                    }
-
-                    const coords = await geocodeLocation(placeName, destination, dayNum, idx);
-
-                    if (!coords) {
-                        console.warn(`Skipping ${placeName} - no coordinates found`);
-                        continue;
-                    }
-
-                    const itemIndex = idx + 1;
-
-                    const infoHtml = `
-                        <div style='min-width: 200px; max-width: 300px;'>
-                            <div style='display: flex; align-items: center; margin-bottom: 8px;'>
-                                <span style='background: ${dayColor}; color: white; padding: 4px 8px; border-radius: 4px; margin-right: 8px; font-weight: bold;'>${itemIndex}</span>
-                                <strong>${placeName}</strong>
-                            </div>
-                            <div style='font-size: 12px; color: #666;'>Day ${dayNum} - Stop #${itemIndex}</div>
-                            <div style='font-size: 11px; color: #999; margin-top: 4px;'>${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}</div>
+                const infoHtml = `
+                    <div style='min-width: 200px; max-width: 300px;'>
+                        <div style='display: flex; align-items: center; margin-bottom: 8px;'>
+                            <span style='background: ${dayColor}; color: white; padding: 4px 8px; border-radius: 4px; margin-right: 8px; font-weight: bold;'>${itemIndex}</span>
+                            <strong>${placeName}</strong>
                         </div>
-                    `;
+                        <div style='font-size: 12px; color: #666;'>Day ${dayNum} - Stop #${itemIndex}</div>
+                        <div style='font-size: 11px; color: #999; margin-top: 4px;'>${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}</div>
+                    </div>
+                `;
 
-                    const marker = LeafletMapExt.addInteractiveMarker(gmap, {
-                        lat: coords.lat,
-                        lng: coords.lng,
-                        title: placeName,
-                        label: {
-                            text: String(itemIndex),
-                            color: '#ffffff',
-                            fontSize: '12px',
-                            fontWeight: 'bold'
-                        },
-                        icon: {
-                            path: 'CIRCLE',
-                            scale: 14,
-                            fillColor: dayColor,
-                            fillOpacity: 1,
-                            strokeColor: '#ffffff',
-                            strokeWeight: 2
-                        },
-                        infoHtml: infoHtml
-                    }, {});
+                const marker = LeafletMapExt.addInteractiveMarker(gmap, {
+                    lat: coords.lat,
+                    lng: coords.lng,
+                    title: placeName,
+                    label: {
+                        text: String(itemIndex),
+                        color: '#ffffff',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                    },
+                    icon: {
+                        path: 'CIRCLE',
+                        scale: 14,
+                        fillColor: dayColor,
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2
+                    },
+                    infoHtml: infoHtml
+                }, {});
 
-                    dayLayers[dayName].items.push({
-                        text: placeName,
-                        marker: marker,
-                        lat: coords.lat,
-                        lng: coords.lng,
-                        index: itemIndex
-                    });
+                dayLayers[dayName].items.push({
+                    text: placeName,
+                    marker: marker,
+                    lat: coords.lat,
+                    lng: coords.lng,
+                    index: itemIndex
+                });
 
-                    dayLayers[dayName].path.push({ lat: coords.lat, lng: coords.lng });
+                dayLayers[dayName].path.push({ lat: coords.lat, lng: coords.lng });
+                
+                // Add marker to layer
+                layerManager.addMarkerTo(dayName, marker);
+                planMarkers.push(marker);
+                totalMarkers++;
 
-                    // Add marker to layer
-                    layerManager.addMarkerTo(dayName, marker);
-                    planMarkers.push(marker);
-                    totalMarkers++;
-
-                    console.log(`✅ Marker ${totalMarkers} added: ${placeName} (Day ${dayNum}, Stop ${itemIndex})`);
-                }
+                console.log(`✅ Marker ${totalMarkers} added: ${placeName} (Day ${dayNum}, Stop ${itemIndex})`);
             }
 
             // Draw polyline connecting places in the day
@@ -472,49 +400,26 @@
     function setupInit() {
         console.log('🗺️ setupInit called');
         
-        // Don't initialize on page load (map panel is hidden by default).
-        // We'll initialize when the map tab becomes visible.
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                // If map tab is the default visible panel, init immediately.
-                const mapPanel = document.getElementById('tab-map');
-                if (mapPanel && !mapPanel.hasAttribute('hidden')) {
-                    init();
-                }
-            });
+            document.addEventListener('DOMContentLoaded', init);
         } else {
-            const mapPanel = document.getElementById('tab-map');
-            if (mapPanel && !mapPanel.hasAttribute('hidden')) {
-                setTimeout(init, 50);
-            }
+            setTimeout(init, 100);
         }
     }
 
     // Listen for tab visibility changes
     document.addEventListener('tab-visible', (e) => {
-        if (e.detail && String(e.detail.tab).toLowerCase() === 'map') {
+        if (e.detail && e.detail.tab === 'map') {
             console.log('🗺️ Map tab became visible');
             if (!__initDone && !__initStarted) {
                 init();
             } else if (__initDone && gmap) {
-                // Force map refresh - invalidate size to redraw
+                // Force map refresh
                 setTimeout(() => {
-                    console.log('🗺️ Invalidating map size...');
-                    LeafletMap.invalidateSize(gmap);
+                    if (gmap && gmap.invalidateSize) {
+                        gmap.invalidateSize();
+                    }
                 }, 100);
-            }
-        }
-    });
-
-    // Current tabs.js emits "tab-selected" with { detail: { name } }
-    document.addEventListener('tab-selected', (e) => {
-        const name = e && e.detail ? String(e.detail.name || '') : '';
-        if (name.toLowerCase() === 'map') {
-            console.log('🗺️ Map tab selected');
-            if (!__initDone && !__initStarted) {
-                init();
-            } else if (__initDone && gmap) {
-                setTimeout(() => LeafletMap.invalidateSize(gmap), 100);
             }
         }
     });

@@ -38,6 +38,19 @@
 }
 
 /* ========== MAP TAB STYLES ========== */
+/* Ensure map always has proper height */
+#tab-map {
+    height: auto;
+}
+
+#plan-map {
+    height: 600px;
+    width: 100%;
+    background: white;
+    overflow: hidden;
+    position: relative;
+}
+
 /* Desktop: 2-column professional layout */
 @media (min-width: 992px) {
     #tab-map .row {
@@ -52,7 +65,7 @@
     }
 
     .result-map {
-        height: 600px;
+        height: 700px;
         border-radius: 12px;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     }
@@ -119,7 +132,7 @@
     }
 
     .map-container-mobile {
-        height: 350px;
+        height: 600px;
         border-radius: 16px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
         margin-bottom: 16px;

@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.Data.SqlClient;
-using project.Services.AI;
 using Polly;
 using Polly.CircuitBreaker;
 using System.Globalization;
@@ -269,31 +268,18 @@ builder.Services.AddHttpClient<IDirectionsService, GoogleDirectionsService>();
 // Flight Service (search and display flight options)
 builder.Services.AddHttpClient<IFlightService, FlightService>();
 
+// OpenStreetMap Nominatim geocoding (for precomputing map points)
+builder.Services.AddHttpClient<IGeocodingService, NominatimGeocodingService>();
+
 // PROMPT TEMPLATE SERVICE (external prompt files for easy modification)
 builder.Services.AddScoped<PromptTemplateService>();
-
-// AI ASSISTANT SERVICES (chat-based plan editing)
-builder.Services.AddScoped<GptMiniAssistantService>();
-builder.Services.AddScoped<Gpt41MiniAssistantService>();
-builder.Services.AddScoped<IAiAssistantService, FallbackAssistantService>();
-builder.Services.AddSingleton<AssistantTelemetryService>();
-builder.Services.AddSingleton<AssistantRateLimiter>();
-builder.Services.AddScoped<PlanDeltaApplier>();
 
 // REGISTER AI SERVICES (with fallback support)
 var enableFallback = builder.Configuration.GetValue<bool>("AI:EnableFallback", true);
 
-// Register individual AI providers as IAiService
+// Register AI services...
 builder.Services.AddScoped<OpenAITravelService>();
 builder.Services.AddScoped<IAiService>(sp => sp.GetRequiredService<OpenAITravelService>());
-
-// Register AI Assistant (chat edit) services (stubs with fallback dispatcher)
-builder.Services.AddScoped<GptMiniAssistantService>();
-builder.Services.AddScoped<Gpt41MiniAssistantService>();
-builder.Services.AddScoped<IAiAssistantService, FallbackAssistantService>();
-builder.Services.AddScoped<PlanDeltaApplier>();
-builder.Services.AddSingleton<AssistantTelemetryService>();
-builder.Services.AddSingleton<AssistantRateLimiter>();
 
 // Register OpenRouter as additional fallback
 builder.Services.AddScoped<OpenRouterAiService>();
@@ -495,7 +481,6 @@ app.UseAuthorization();
 
 // MAP SIGNALR HUBS
 app.MapHub<project.Hubs.PlanGenerationHub>("/hubs/planGeneration");
-app.MapHub<project.Hubs.AssistantChatHub>("/hubs/assistantChat");
 
 app.MapRazorPages();
 

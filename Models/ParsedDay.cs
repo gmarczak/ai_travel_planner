@@ -11,6 +11,19 @@ namespace project.Models
         /// Route polylines for this day (encoded Google Maps polylines)
         /// </summary>
         public List<string> RoutePolylines { get; init; } = new();
+
+        /// <summary>
+        /// Precomputed places (name + coordinates) for fast map rendering.
+        /// </summary>
+        public List<GeocodedPlace> Places { get; init; } = new();
+    }
+
+    public sealed class GeocodedPlace
+    {
+        public int Index { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
     }
 
     public class DayImage

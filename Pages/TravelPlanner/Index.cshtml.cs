@@ -38,7 +38,8 @@ namespace project.Pages.TravelPlanner
         {
             // SET DEFAULT VALUES
             TravelRequest.StartDate = DateTime.Today.AddDays(14);
-            TravelRequest.EndDate = DateTime.Today.AddDays(21);
+            // Default trip length: 3 days (inclusive)
+            TravelRequest.EndDate = TravelRequest.StartDate.AddDays(2);
             TravelRequest.NumberOfTravelers = 2;
 
             // SET DESTINATION FROM QUERY STRING IF PROVIDED

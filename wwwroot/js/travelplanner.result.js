@@ -1,23 +1,9 @@
 (function () {
-  // Shared Google Places Autocomplete helper used by forms in Details tab
+  // Shared autocomplete helper - currently disabled for OpenStreetMap
   function ensureMapsReady() {
     return new Promise((resolve, reject) => {
-      if (window.google && google.maps && google.maps.places) return resolve();
-      // Fallback to global callback fired by _Layout when Maps loads
-      if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        const check = setInterval(() => {
-          if (window.google && google.maps && google.maps.places) {
-            clearInterval(check);
-            resolve();
-          }
-        }, 200);
-        // timeout after 10s
-        setTimeout(() => { clearInterval(check); reject(new Error('Google Maps not ready')); }, 10000);
-      } else {
-        window.addEventListener('load', () => {
-          if (window.google && google.maps && google.maps.places) resolve(); else reject(new Error('Google Maps not ready'));
-        });
-      }
+      // OpenStreetMap/Leaflet doesn't have Places API
+      reject(new Error('Places API not available with OpenStreetMap'));
     });
   }
 
@@ -36,57 +22,17 @@
     const addBtn = document.getElementById(addBtnId);
     if (!inputEl || !target) return;
 
-    let autocomplete = null;
-    let lastPlace = null;
-
-    function applyPlace(p) {
-      if (!p) return;
-      const line = lineForPlace(p);
-      if (!line) return;
-      const current = target.value || '';
-      const sep = current && !current.endsWith('\n') ? '\n' : '';
-      target.value = current + sep + line;
-      inputEl.value = '';
-      // Trigger input event so any listeners update
-      target.dispatchEvent(new Event('input', { bubbles: true }));
+    // Disable autocomplete - not available with OpenStreetMap
+    if (inputEl) {
+      inputEl.disabled = true;
+      inputEl.placeholder = 'Place search coming soon with OpenStreetMap';
     }
-
-    ensureMapsReady().then(() => {
-      try {
-        // NOTE: Deprecated API - TODO: Migrate to PlaceAutocompleteElement
-        autocomplete = new google.maps.places.Autocomplete(inputEl, { types: ['establishment', 'geocode'] });
-        autocomplete.setFields(['place_id', 'name', 'geometry', 'photos', 'rating', 'formatted_address', 'types']);
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          lastPlace = place || null;
-        });
-      } catch (e) { console.warn('Autocomplete init failed', e); }
-    }).catch(err => console.warn(err));
-
     if (addBtn) {
-      addBtn.addEventListener('click', () => {
-        if (lastPlace && lastPlace.place_id) {
-          // Prefer details to enrich fields
-          try {
-            const svc = new google.maps.places.PlacesService(document.createElement('div'));
-            svc.getDetails({ placeId: lastPlace.place_id, fields: ['place_id', 'name', 'geometry', 'photos', 'rating', 'formatted_address', 'types', 'formatted_phone_number', 'opening_hours'] }, (details, status) => {
-              if (status === google.maps.places.PlacesServiceStatus.OK && details) applyPlace(details);
-              else applyPlace(lastPlace);
-            });
-          } catch { applyPlace(lastPlace); }
-        } else {
-          // If user typed free text, just append it
-          const txt = (inputEl.value || '').trim();
-          if (txt) {
-            const current = target.value || '';
-            const sep = current && !current.endsWith('\n') ? '\n' : '';
-            target.value = current + sep + txt;
-            inputEl.value = '';
-            target.dispatchEvent(new Event('input', { bubbles: true }));
-          }
-        }
-      });
+      addBtn.disabled = true;
+      addBtn.title = 'Place search not available yet';
     }
+
+    console.log('ℹ️ Places autocomplete disabled (OpenStreetMap migration)');
   }
 
   function init() {

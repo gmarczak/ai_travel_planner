@@ -11,6 +11,7 @@ using project.Services;
 using project.Services.Background;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Antiforgery;
+using System.Text.RegularExpressions;
 
 namespace project.Pages.TravelPlanner
 {
@@ -28,10 +29,11 @@ namespace project.Pages.TravelPlanner
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IDirectionsService _directionsService;
         private readonly IFlightService _flightService;
+        private readonly IGeocodingService _geocodingService;
         private const string SavedPlansKeyPrefix = "savedplans:";
         private const string AnonymousCookieName = "anon_saved_plans_id";
 
-        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env, project.Data.ApplicationDbContext db, IImageService imageService, IImageCaptionService captionService, IServiceScopeFactory scopeFactory, IDirectionsService directionsService, IFlightService flightService)
+        public ResultModel(ILogger<ResultModel> logger, IMemoryCache cache, ITravelService travelService, IPlanJobQueue queue, IWebHostEnvironment env, project.Data.ApplicationDbContext db, IImageService imageService, IImageCaptionService captionService, IServiceScopeFactory scopeFactory, IDirectionsService directionsService, IFlightService flightService, IGeocodingService geocodingService)
         {
             _logger = logger;
             _cache = cache;
@@ -44,6 +46,7 @@ namespace project.Pages.TravelPlanner
             _scopeFactory = scopeFactory;
             _directionsService = directionsService;
             _flightService = flightService;
+            _geocodingService = geocodingService;
         }
 
         public string? PlanId { get; private set; }
@@ -189,6 +192,9 @@ namespace project.Pages.TravelPlanner
 
                 ParseItinerary(plan.GeneratedItinerary);
 
+                // Precompute map points (server-side) so Map tab renders instantly.
+                await PopulateDayPlacesAsync(plan.Destination, HttpContext.RequestAborted);
+
                 // Load 2-3 images per day (async, optimized with cache)
                 await LoadDayImagesAsync(plan.Destination);
 
@@ -257,6 +263,9 @@ namespace project.Pages.TravelPlanner
                         IsSaved = (savedIds ?? new List<string>()).Contains(id);
 
                         ParseItinerary(TravelPlan.GeneratedItinerary);
+
+                        // Precompute map points (server-side) so Map tab renders instantly.
+                        await PopulateDayPlacesAsync(TravelPlan.Destination, HttpContext.RequestAborted);
                         // Load attribution also for disk/anon path
                         if (!string.IsNullOrEmpty(TravelPlan.DestinationImageUrl))
                         {
@@ -463,6 +472,100 @@ namespace project.Pages.TravelPlanner
             }
         }
 
+        private static List<string> ExtractPlaceNamesFromLines(IEnumerable<string> lines)
+        {
+            var results = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Patterns:
+            // - "📍 Place name"
+            // - "1. Place name" / "1) Place name"
+            // - "• Place name" / "- Place name"
+            var numbered = new Regex(@"^\s*\d+[\.|\)]\s*(?<name>.+)$", RegexOptions.CultureInvariant);
+            var bulleted = new Regex(@"^\s*[\-•\*]+\s*(?<name>.+)$", RegexOptions.CultureInvariant);
+
+            foreach (var raw in lines)
+            {
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+                var t = raw.Trim();
+
+                string? name = null;
+                if (t.Contains("📍"))
+                {
+                    name = t.Replace("📍", string.Empty).Trim();
+                }
+                else
+                {
+                    var m1 = numbered.Match(t);
+                    if (m1.Success)
+                    {
+                        name = m1.Groups["name"].Value.Trim();
+                    }
+                    else
+                    {
+                        var m2 = bulleted.Match(t);
+                        if (m2.Success)
+                        {
+                            name = m2.Groups["name"].Value.Trim();
+                        }
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(name)) continue;
+
+                // Trim common suffixes and separators.
+                name = Regex.Replace(name, @"^[\d\.|\)\-\*#•\s]+", string.Empty).Trim();
+                name = Regex.Replace(name, @"[,:;\.!\?]+$", string.Empty).Trim();
+
+                if (name.Contains(" - ")) name = name.Split(" - ", 2)[0].Trim();
+                if (name.Contains(": ")) name = name.Split(": ", 2)[0].Trim();
+
+                if (name.Length < 3 || name.Length > 120) continue;
+
+                if (seen.Add(name))
+                {
+                    results.Add(name);
+                    if (results.Count >= 10) break;
+                }
+            }
+
+            return results;
+        }
+
+        private async Task PopulateDayPlacesAsync(string destination, CancellationToken cancellationToken)
+        {
+            if (ParsedDays == null || ParsedDays.Count == 0) return;
+            if (string.IsNullOrWhiteSpace(destination)) return;
+
+            foreach (var day in ParsedDays)
+            {
+                if (day.Places.Count > 0) continue;
+
+                var names = ExtractPlaceNamesFromLines(day.Lines ?? Array.Empty<string>());
+                if (names.Count == 0) continue;
+
+                var index = 1;
+                foreach (var name in names)
+                {
+                    var query = $"{name}, {destination}";
+                    var coords = await _geocodingService.GeocodeAsync(query, cancellationToken);
+                    if (coords == null) continue;
+
+                    day.Places.Add(new GeocodedPlace
+                    {
+                        Index = index,
+                        Name = name,
+                        Latitude = coords.Value.Latitude,
+                        Longitude = coords.Value.Longitude
+                    });
+                    index++;
+
+                    // Hard cap per day for performance
+                    if (index > 10) break;
+                }
+            }
+        }
+
         /// <summary>
         /// Load 2-3 images per day (main attraction + food/activity + optional third)
         /// </summary>
@@ -576,7 +679,7 @@ namespace project.Pages.TravelPlanner
 
                 // Check if line mentions a place
                 bool hasPlaceKeyword = placeKeywords.Any(k => lower.Contains(k));
-                
+
                 if (hasPlaceKeyword)
                 {
                     // Extract place name (usually first 30-50 chars before description)
@@ -1004,131 +1107,6 @@ namespace project.Pages.TravelPlanner
             return new JsonResult(new { ok = true, message = "Day order saved successfully." });
         }
 
-        public class ApplyDeltaRequest
-        {
-            public string PlanId { get; set; } = "";
-            public project.Services.AI.PlanDelta Delta { get; set; } = null!;
-        }
-
-        public async Task<IActionResult> OnPostApplyDeltaAsync([FromBody] ApplyDeltaRequest request)
-        {
-            _logger.LogInformation("OnPostApplyDeltaAsync called. PlanId: {PlanId}, Delta null: {DeltaNull}",
-                request?.PlanId ?? "NULL", request?.Delta == null);
-
-            if (string.IsNullOrWhiteSpace(request?.PlanId) || request?.Delta == null)
-            {
-                _logger.LogWarning("Invalid request: PlanId={PlanId}, Delta={Delta}",
-                    request?.PlanId ?? "NULL", request?.Delta == null ? "NULL" : "Present");
-                return BadRequest(new { error = "Invalid request: PlanId and Delta required" });
-            }
-
-            try
-            {
-                // Find plan in cache or database
-                TravelPlan? plan = null;
-                if (_cache.TryGetValue(request.PlanId, out TravelPlan? cachedPlan) && cachedPlan != null)
-                {
-                    plan = cachedPlan;
-                }
-                else
-                {
-                    var userId = User?.Identity?.IsAuthenticated == true
-                        ? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                        : null;
-
-                    var anonymousCookieId = string.IsNullOrWhiteSpace(userId) && Request.Cookies.TryGetValue(AnonymousCookieName, out var anonId)
-                        ? anonId
-                        : null;
-
-                    if (userId != null)
-                    {
-                        plan = await _db.TravelPlans.FirstOrDefaultAsync(tp => tp.ExternalId == request.PlanId && tp.UserId == userId);
-                    }
-                    else if (anonymousCookieId != null)
-                    {
-                        plan = await _db.TravelPlans.FirstOrDefaultAsync(tp => tp.ExternalId == request.PlanId && tp.AnonymousCookieId == anonymousCookieId);
-                    }
-                }
-
-                if (plan == null)
-                {
-                    return NotFound(new { error = "Plan not found" });
-                }
-
-                // Validate delta
-                var validationError = ValidateDelta(request.Delta, plan);
-                if (validationError != null)
-                {
-                    return BadRequest(new { error = validationError });
-                }
-
-                // Apply delta to itinerary
-                var applier = new project.Services.PlanDeltaApplier();
-                var originalItinerary = plan.GeneratedItinerary;
-                _logger.LogInformation("Original itinerary length: {Length}", originalItinerary?.Length ?? 0);
-                _logger.LogInformation("Plan ID before apply: {Id}, ExternalId: {ExternalId}", plan.Id, plan.ExternalId);
-
-                plan.GeneratedItinerary = applier.ApplyDeltaToItinerary(plan.GeneratedItinerary, request.Delta);
-                _logger.LogInformation("Updated itinerary length: {Length}", plan.GeneratedItinerary?.Length ?? 0);
-                _logger.LogInformation("Itinerary changed: {Changed}", originalItinerary != plan.GeneratedItinerary);
-
-                // If truncation requested, also adjust dates
-                if (request.Delta.TruncateToDays is int newDays && newDays > 0)
-                {
-                    var totalDays = (plan.EndDate - plan.StartDate).Days + 1;
-                    if (newDays < totalDays)
-                    {
-                        plan.EndDate = plan.StartDate.AddDays(newDays - 1);
-                        _logger.LogInformation("Adjusted EndDate due to truncation: {EndDate}", plan.EndDate);
-                    }
-                }
-
-                // Save to database using a new scope to avoid threading issues
-                _logger.LogInformation("Attempting to save to DB. Plan.Id={Id}, ExternalId={ExternalId}", plan.Id, request.PlanId);
-
-                using var scope = _scopeFactory.CreateScope();
-                var scopedDb = scope.ServiceProvider.GetRequiredService<project.Data.ApplicationDbContext>();
-
-                // Find by ExternalId (GUID) not internal Id
-                var dbPlan = await scopedDb.TravelPlans.FirstOrDefaultAsync(tp => tp.ExternalId == request.PlanId);
-                if (dbPlan != null && plan.GeneratedItinerary != null)
-                {
-                    dbPlan.GeneratedItinerary = plan.GeneratedItinerary;
-                    dbPlan.EndDate = plan.EndDate; // Update EndDate if truncated
-                    var changeCount = await scopedDb.SaveChangesAsync();
-                    _logger.LogInformation("✅ Saved to database! ExternalId={ExternalId}, {ChangeCount} rows updated", request.PlanId, changeCount);
-                }
-                else
-                {
-                    _logger.LogWarning("❌ DbPlan not found in database for ExternalId={ExternalId}", request.PlanId);
-                }
-
-                // Update cache
-                _cache.Set(request.PlanId, plan, TimeSpan.FromMinutes(30));
-                _logger.LogInformation("Updated cache for plan {PlanId}", request.PlanId);
-
-                // Parse updated itinerary
-                var parsedDays = new List<ParsedDay>();
-                ParseItineraryStatic(plan.GeneratedItinerary, parsedDays);
-
-                _logger.LogInformation("Applied delta to plan {PlanId}: {ChangeCount} changes, {ParsedDays} days parsed",
-                    request.PlanId, request.Delta.Changes?.Count ?? 0, parsedDays.Count);
-
-                return new JsonResult(new
-                {
-                    success = true,
-                    newItinerary = plan.GeneratedItinerary,
-                    parsedDays = parsedDays,
-                    message = "Plan updated successfully"
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to apply delta to plan {PlanId}", request.PlanId);
-                return StatusCode(500, new { error = $"Failed to apply changes: {ex.Message}" });
-            }
-        }
-
         private static void ParseItineraryStatic(string? raw, List<ParsedDay> output)
         {
             output.Clear();
@@ -1156,61 +1134,6 @@ namespace project.Pages.TravelPlanner
                 }
             }
             if (buf != null) { output.Add(new ParsedDay(currentDay == 0 ? output.Count + 1 : currentDay, currentDate, buf.ToArray())); }
-        }
-
-        private string? ValidateDelta(project.Services.AI.PlanDelta delta, TravelPlan plan)
-        {
-            if (delta.Changes == null || !delta.Changes.Any())
-            {
-                // Allow empty changes if only truncation requested
-                if (delta.TruncateToDays is int t && t > 0)
-                {
-                    // ok
-                }
-                else
-                {
-                    return "No changes specified";
-                }
-            }
-
-            var totalDays = (plan.EndDate - plan.StartDate).Days + 1;
-
-            if (delta.TruncateToDays is int truncate)
-            {
-                if (truncate < 1 || truncate > totalDays)
-                    return $"truncateToDays must be between 1 and {totalDays}";
-            }
-
-            if (delta.Changes != null)
-                foreach (var change in delta.Changes)
-                {
-                    // Validate day number
-                    if (change.Day < 1 || change.Day > totalDays)
-                    {
-                        return $"Invalid day number: {change.Day}. Plan has {totalDays} days.";
-                    }
-
-                    // Check if at least one operation is specified
-                    var hasOperation = (change.AddMorning != null && change.AddMorning.Any()) ||
-                                       (change.AddAfternoon != null && change.AddAfternoon.Any()) ||
-                                       (change.AddEvening != null && change.AddEvening.Any()) ||
-                                       (change.Remove != null && change.Remove.Any());
-
-                    if (!hasOperation && string.IsNullOrWhiteSpace(change.Note))
-                    {
-                        return $"Day {change.Day}: No operations specified";
-                    }
-
-                    // Validate activities are not empty
-                    if (change.AddMorning != null && change.AddMorning.Any(a => string.IsNullOrWhiteSpace(a)))
-                        return $"Day {change.Day}: Empty activity in morning section";
-                    if (change.AddAfternoon != null && change.AddAfternoon.Any(a => string.IsNullOrWhiteSpace(a)))
-                        return $"Day {change.Day}: Empty activity in afternoon section";
-                    if (change.AddEvening != null && change.AddEvening.Any(a => string.IsNullOrWhiteSpace(a)))
-                        return $"Day {change.Day}: Empty activity in evening section";
-                }
-
-            return null;
         }
 
         // (seed helper removed for security)
